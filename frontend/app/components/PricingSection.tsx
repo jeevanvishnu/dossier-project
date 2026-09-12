@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCircle, ShieldCheck, Lightning, Cube, Stack, CaretRight, Headset, Star } from "@phosphor-icons/react";
+import { CheckCircle, Lightning, Cube, Stack, CaretRight, Headset, Star } from "@phosphor-icons/react";
 import Link from "next/link";
 
 export type CurrencyCode = "KZT" | "USD" | "EUR";
@@ -157,7 +157,7 @@ export function PricingSection() {
             <button
               onClick={() => setBillingCycle("monthly")}
               className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all ${billingCycle === "monthly"
-                  ? "bg-accent text-[#0D1117] shadow-sm"
+                  ? "bg-accent text-white shadow-sm"
                   : "text-secondary hover:text-primary"
                 }`}
             >
@@ -166,12 +166,12 @@ export function PricingSection() {
             <button
               onClick={() => setBillingCycle("annual")}
               className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all flex items-center gap-2 ${billingCycle === "annual"
-                  ? "bg-accent text-[#0D1117] shadow-sm"
+                  ? "bg-accent text-white shadow-sm"
                   : "text-secondary hover:text-primary"
                 }`}
             >
               Annual Billing
-              <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+              <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-500 border border-emerald-500/30">
                 Save 20%
               </span>
             </button>
@@ -226,7 +226,7 @@ export function PricingSection() {
             >
               {/* Popular Badge */}
               {isPopular && (
-                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-accent text-[#0D1117] text-xs font-black px-3.5 py-1 rounded-full uppercase tracking-wider shadow-sm flex items-center gap-1">
+                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-accent text-white text-xs font-black px-3.5 py-1 rounded-full uppercase tracking-wider shadow-sm flex items-center gap-1">
                   <Star size={12} weight="fill" />
                   Most Popular
                 </div>
@@ -288,7 +288,7 @@ export function PricingSection() {
                 <Link
                   href="#contact"
                   className={`btn w-full rounded-xl py-3 h-auto text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${isPopular
-                      ? "btn-primary bg-accent text-[#0D1117] hover:bg-accent-hover border-none shadow-md"
+                      ? "btn-primary bg-accent text-white hover:bg-accent-hover border-none shadow-md"
                       : "btn-outline text-accent border-accent/60 hover:bg-accent-light hover:border-accent"
                     }`}
                 >
@@ -305,7 +305,7 @@ export function PricingSection() {
       <div className="bg-surface border border-border/80 hover:border-accent/40 rounded-2xl p-6 sm:p-8 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6">
         <div className="flex flex-col gap-2 max-w-2xl text-center md:text-left">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-surface-raised border border-border text-secondary text-xs font-bold uppercase tracking-wide self-center md:self-start">
-            <Lightning size={14} className="text-amber-400" weight="fill" />
+            <Lightning size={14} className="text-amber-500" weight="fill" />
             Enterprise &amp; On-Demand
           </div>
           <h3 className="font-lexend text-2xl font-bold text-primary">
@@ -330,4 +330,3 @@ export function PricingSection() {
     </div>
   );
 }
-

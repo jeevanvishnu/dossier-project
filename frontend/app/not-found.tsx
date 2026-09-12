@@ -24,7 +24,7 @@ export default function NotFound() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 w-full sm:w-auto">
             <Link
               href="/"
-              className="btn btn-primary rounded-lg px-6 min-h-[42px] h-[42px] text-[#0D1117] bg-accent hover:bg-accent-hover border-none font-semibold text-sm w-full sm:w-auto flex items-center justify-center gap-2"
+              className="btn btn-primary rounded-lg px-6 min-h-[42px] h-[42px] text-white bg-accent hover:bg-accent-hover border-none font-semibold text-sm w-full sm:w-auto flex items-center justify-center gap-2 shadow-sm"
             >
               <ArrowLeft size={18} weight="bold" />
               Back to Home

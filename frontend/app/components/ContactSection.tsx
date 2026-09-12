@@ -12,7 +12,6 @@ import {
   Clock,
   ShieldCheck,
   Sparkle,
-  ArrowRight,
   ArrowClockwise
 } from "@phosphor-icons/react";
 
@@ -131,7 +130,7 @@ export function ContactSection() {
 
             {/* Bottom Support Badge */}
             <div className="pt-6 border-t border-border/40 flex items-center gap-3 text-xs text-secondary">
-              <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></div>
+              <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
               <span>Specialists Online • Average response under 2 hours</span>
             </div>
           </div>
@@ -142,7 +141,7 @@ export function ContactSection() {
             {isSubmitted ? (
               /* Success State Card */
               <div className="flex flex-col items-center justify-center py-6 px-4 text-center gap-6 animate-fadeIn">
-                <div className="w-16 h-16 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 shadow-inner">
+                <div className="w-16 h-16 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-500 shadow-inner">
                   <CheckCircle size={36} weight="fill" />
                 </div>
 
@@ -170,7 +169,7 @@ export function ContactSection() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-secondary">Turnaround Time:</span>
-                    <span className="text-emerald-400 font-medium flex items-center gap-1">
+                    <span className="text-emerald-500 font-medium flex items-center gap-1">
                       <Clock size={13} /> Within 24 Business Hours
                     </span>
                   </div>
@@ -200,7 +199,7 @@ export function ContactSection() {
                 </div>
 
                 {errorMsg && (
-                  <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-medium flex items-center gap-2">
+                  <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-500 text-xs font-medium flex items-center gap-2">
                     <ShieldCheck size={16} className="shrink-0" />
                     <span>{errorMsg}</span>
                   </div>
@@ -213,7 +212,7 @@ export function ContactSection() {
                   <div className="flex flex-col gap-2">
                     <label htmlFor="name" className="text-xs font-semibold text-secondary flex items-center gap-1.5">
                       <User size={14} className="text-accent" />
-                      Full Name <span className="text-rose-400">*</span>
+                      Full Name <span className="text-rose-500">*</span>
                     </label>
                     <div className="relative">
                       <input
@@ -233,7 +232,7 @@ export function ContactSection() {
                   <div className="flex flex-col gap-2">
                     <label htmlFor="phone" className="text-xs font-semibold text-secondary flex items-center gap-1.5">
                       <Phone size={14} className="text-accent" />
-                      Phone Number <span className="text-rose-400">*</span>
+                      Phone Number <span className="text-rose-500">*</span>
                     </label>
                     <div className="relative">
                       <input
@@ -258,7 +257,7 @@ export function ContactSection() {
                   <div className="flex flex-col gap-2">
                     <label htmlFor="email" className="text-xs font-semibold text-secondary flex items-center gap-1.5">
                       <EnvelopeSimple size={14} className="text-accent" />
-                      Work Email <span className="text-rose-400">*</span>
+                      Work Email <span className="text-rose-500">*</span>
                     </label>
                     <div className="relative">
                       <input
@@ -278,7 +277,7 @@ export function ContactSection() {
                   <div className="flex flex-col gap-2">
                     <label htmlFor="company" className="text-xs font-semibold text-secondary flex items-center gap-1.5">
                       <Buildings size={14} className="text-accent" />
-                      Company Name <span className="text-rose-400">*</span>
+                      Company Name <span className="text-rose-500">*</span>
                     </label>
                     <div className="relative">
                       <input
@@ -318,11 +317,11 @@ export function ContactSection() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full btn btn-primary bg-accent hover:bg-accent-hover text-[#0D1117] border-none font-semibold rounded-xl py-3.5 min-h-[48px] text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-accent/20 transition-all cursor-pointer disabled:opacity-70 mt-1"
+                  className="w-full btn btn-primary bg-accent hover:bg-accent-hover text-white border-none font-semibold rounded-xl py-3.5 min-h-[48px] text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-accent/20 transition-all cursor-pointer disabled:opacity-70 mt-1"
                 >
                   {isSubmitting ? (
                     <>
-                      <div className="w-5 h-5 border-2 border-[#0D1117] border-t-transparent rounded-full animate-spin"></div>
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                       <span>Generating Report Request...</span>
                     </>
                   ) : (
@@ -335,7 +334,7 @@ export function ContactSection() {
 
                 {/* Privacy & Guarantee note */}
                 <div className="flex items-center justify-center gap-2 text-center text-xs text-muted pt-1">
-                  <ShieldCheck size={14} className="text-emerald-400" />
+                  <ShieldCheck size={14} className="text-emerald-500" />
                   <span>Your information is encrypted &amp; never shared with third parties.</span>
                 </div>
 

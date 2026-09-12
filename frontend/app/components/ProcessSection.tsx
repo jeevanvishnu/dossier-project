@@ -29,9 +29,9 @@ export function ProcessSection() {
         tag: "Security & Credentials",
         accent: "from-sky-500/20 to-blue-500/10",
         items: [
-          { label: "Company Profile", status: "Verified", icon: <ShieldCheck size={14} className="text-emerald-400" /> },
+          { label: "Company Profile", status: "Verified", icon: <ShieldCheck size={14} className="text-emerald-500" /> },
           { label: "Role-Based Access", status: "Admin / Manager", icon: <CheckCircle size={14} className="text-accent" /> },
-          { label: "2FA & Encryption", status: "Active (256-bit)", icon: <Sparkle size={14} className="text-amber-400" /> }
+          { label: "2FA & Encryption", status: "Active (256-bit)", icon: <Sparkle size={14} className="text-amber-500" /> }
         ]
       }
     },
@@ -83,7 +83,7 @@ export function ProcessSection() {
           xmlStatus: "XML Validated 100%",
           history: "Audit Log Recorded",
           support: "24/7 Specialist Online",
-          icon: <Headset size={16} className="text-emerald-400" />
+          icon: <Headset size={16} className="text-emerald-500" />
         }
       }
     }
@@ -109,7 +109,7 @@ export function ProcessSection() {
 
       {/* Connected Interactive Stepper Navigation (Desktop & Tablet) */}
       <div className="relative hidden md:block">
-        {/* Background Connecting Line - Aligned perfectly with circle centers (top-6 = 24px) */}
+        {/* Background Connecting Line */}
         <div className="absolute top-6 left-[12.5%] right-[12.5%] -translate-y-1/2 h-[2px] bg-border-strong z-0">
           <div
             className="h-full bg-gradient-to-r from-accent via-sky-400 to-emerald-400 transition-all duration-500 ease-out"
@@ -132,7 +132,7 @@ export function ProcessSection() {
                 <div
                   className={`w-12 h-12 rounded-2xl flex items-center justify-center font-lexend font-bold text-base transition-all duration-300 shadow-md ${
                     isActive
-                      ? "bg-accent text-[#0D1117] ring-4 ring-accent/30 scale-110"
+                      ? "bg-accent text-white ring-4 ring-accent/30 scale-110"
                       : isCompleted
                       ? "bg-surface-raised border border-accent text-accent"
                       : "bg-surface border border-border text-secondary group-hover:border-accent/50 group-hover:text-primary"
@@ -174,7 +174,7 @@ export function ProcessSection() {
                   <span
                     className={`text-xs font-bold tracking-wider px-2.5 py-1 rounded-md transition-colors ${
                       isActive
-                        ? "bg-accent text-[#0D1117]"
+                        ? "bg-accent text-white"
                         : "bg-surface-raised border border-border/80 text-accent"
                     }`}
                   >
@@ -257,7 +257,7 @@ export function ProcessSection() {
                       </div>
                       <div className="flex justify-between text-[11px] text-secondary px-1">
                         <span>{step.microUi.workspace.category}</span>
-                        <span className="text-emerald-400 font-medium">{step.microUi.workspace.filesCount}</span>
+                        <span className="text-emerald-500 font-medium">{step.microUi.workspace.filesCount}</span>
                       </div>
                     </div>
                   )}
@@ -265,11 +265,11 @@ export function ProcessSection() {
                   {step.id === 4 && step.microUi.tracker && (
                     <div className="flex flex-col gap-1.5 pt-1">
                       <div className="bg-surface/90 p-2 rounded-lg border border-border/40 flex items-center justify-between">
-                        <span className="text-xs font-semibold text-emerald-400 flex items-center gap-1.5">
+                        <span className="text-xs font-semibold text-emerald-500 flex items-center gap-1.5">
                           <CheckCircle size={14} weight="fill" />
                           {step.microUi.tracker.xmlStatus}
                         </span>
-                        <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                        <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
                       </div>
                       <div className="flex items-center justify-between text-[11px] text-secondary px-1">
                         <span>{step.microUi.tracker.history}</span>

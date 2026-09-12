@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { List, X } from "@phosphor-icons/react";
+import { List, X, User as UserIcon, SignOut } from "@phosphor-icons/react";
 import { useAuthModal } from "./AuthModalContext";
+import { useAuth } from "../context/AuthContext";
+import { ThemeToggle } from "./ThemeToggle";
 
 const navLinks = [
   { name: "Home", href: "/" },
@@ -15,10 +17,11 @@ const navLinks = [
 export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { openAuthModal } = useAuthModal();
+  const { user, isAuthenticated, logout, isLoading } = useAuth();
 
   return (
     <header className="sticky top-0 w-full z-50 bg-bg/90 backdrop-blur-md shadow-xs border-b border-border/40">
-      <div className="max-w-[1560px] mx-auto px-4 md:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div className="w-full px-4 md:px-6 lg:px-8 h-16 flex items-center justify-between">
         <Link href="/" className="font-lexend font-bold text-xl text-primary flex items-center">
           ECTC
         </Link>
@@ -36,24 +39,52 @@ export function Navbar() {
           ))}
         </nav>
 
-        {/* Desktop Auth Button */}
-        <div className="hidden sm:flex items-center ml-auto lg:ml-0">
-          <button
-            onClick={() => openAuthModal("signin")}
-            className="btn btn-primary rounded-lg px-5 min-h-[38px] h-[38px] text-[#0D1117] bg-accent hover:bg-accent-hover border-none font-semibold text-sm"
-          >
-            Sign In
-          </button>
+        {/* Desktop Auth Controls & Theme Switcher */}
+        <div className="hidden sm:flex items-center ml-auto lg:ml-0 gap-3">
+          <ThemeToggle />
+
+          {isLoading ? (
+            <div className="w-24 h-9 bg-surface animate-pulse rounded-lg" />
+          ) : isAuthenticated && user ? (
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface border border-border">
+                <div className="w-6 h-6 rounded-full bg-accent/20 text-accent flex items-center justify-center font-bold text-xs">
+                  {user.name ? user.name.charAt(0).toUpperCase() : <UserIcon size={14} />}
+                </div>
+                <span className="text-xs font-semibold text-primary">{user.name}</span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-accent/10 text-accent font-medium uppercase tracking-wider">
+                  {user.role}
+                </span>
+              </div>
+              <button
+                onClick={() => logout()}
+                title="Sign Out"
+                className="p-2 text-secondary hover:text-red-400 hover:bg-surface-raised rounded-full transition-all duration-200"
+              >
+                <SignOut size={18} />
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => openAuthModal("signin")}
+              className="btn btn-primary rounded-lg px-5 min-h-[38px] h-[38px] text-white bg-accent hover:bg-accent-hover border-none font-semibold text-sm shadow-sm"
+            >
+              Sign In
+            </button>
+          )}
         </div>
 
-        {/* Mobile Menu Toggle */}
-        <button
-          className="lg:hidden p-2 text-secondary sm:ml-4"
-          onClick={() => setMobileMenuOpen(true)}
-          aria-label="Open menu"
-        >
-          <List size={24} />
-        </button>
+        {/* Mobile Menu Toggle & Theme Toggle */}
+        <div className="flex items-center gap-2 sm:hidden">
+          <ThemeToggle />
+          <button
+            className="p-2 text-secondary"
+            onClick={() => setMobileMenuOpen(true)}
+            aria-label="Open menu"
+          >
+            <List size={24} />
+          </button>
+        </div>
       </div>
 
       {/* Mobile Drawer */}
@@ -82,16 +113,45 @@ export function Navbar() {
                 </Link>
               ))}
             </nav>
-            <div className="mt-auto">
-              <button
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  openAuthModal("signin");
-                }}
-                className="btn btn-primary w-full rounded-lg min-h-[40px] h-[40px] text-[#0D1117] bg-accent hover:bg-accent-hover border-none font-semibold text-sm"
-              >
-                Sign In
-              </button>
+            <div className="mt-auto pt-4 space-y-4">
+              <div className="flex items-center justify-between p-3 rounded-xl bg-surface-raised border border-border">
+                <span className="text-xs font-semibold text-primary">Appearance</span>
+                <ThemeToggle showLabel />
+              </div>
+
+              {isAuthenticated && user ? (
+                <div className="space-y-3">
+                  <div className="p-3 rounded-xl bg-bg border border-border flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-primary">{user.name}</p>
+                      <p className="text-xs text-secondary">{user.email}</p>
+                    </div>
+                    <span className="text-[10px] px-2 py-0.5 rounded bg-accent/20 text-accent font-semibold uppercase">
+                      {user.role}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      logout();
+                    }}
+                    className="btn btn-outline border-red-500/30 text-red-400 hover:bg-red-500/10 w-full rounded-lg min-h-[40px] h-[40px] font-semibold text-sm flex items-center justify-center gap-2"
+                  >
+                    <SignOut size={16} />
+                    <span>Sign Out</span>
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    openAuthModal("signin");
+                  }}
+                  className="btn btn-primary w-full rounded-lg min-h-[40px] h-[40px] text-white bg-accent hover:bg-accent-hover border-none font-semibold text-sm"
+                >
+                  Sign In
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -99,4 +159,3 @@ export function Navbar() {
     </header>
   );
 }
-

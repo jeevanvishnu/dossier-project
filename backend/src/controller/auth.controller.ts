@@ -28,9 +28,11 @@ const COOKIE_OPTS_REFRESH = {
   maxAge:   7 * 24 * 60 * 60 * 1000, // 7 days
 };
 
+
 // ─────────────────────────────────────────────────────────────────────────────
 //  POST /api/auth/signin
 // ─────────────────────────────────────────────────────────────────────────────
+
 export async function signIn(req: Request, res: Response): Promise<void> {
   console.log("[SIGNIN] 📥 Request received:", req.body?.email);
 
