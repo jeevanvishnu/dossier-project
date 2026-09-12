@@ -3,9 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import { List, X, User as UserIcon, SignOut } from "@phosphor-icons/react";
+import { usePathname } from "next/navigation";
 import { useAuthModal } from "./AuthModalContext";
 import { useAuth } from "../context/AuthContext";
-import { ThemeToggle } from "./ThemeToggle";
 
 const navLinks = [
   { name: "Home", href: "/" },
@@ -18,11 +18,33 @@ export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { openAuthModal } = useAuthModal();
   const { user, isAuthenticated, logout, isLoading } = useAuth();
+  const pathname = usePathname();
+
+  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    if (href === "/" || href === "#top" || href === "#hero") {
+      if (pathname === "/") {
+        e.preventDefault();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    } else if (href.startsWith("#")) {
+      if (pathname === "/") {
+        e.preventDefault();
+        const element = document.querySelector(href);
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth" });
+        }
+      }
+    }
+  };
 
   return (
     <header className="sticky top-0 w-full z-50 bg-bg/90 backdrop-blur-md shadow-xs border-b border-border/40">
-      <div className="w-full px-4 md:px-6 lg:px-8 h-16 flex items-center justify-between">
-        <Link href="/" className="font-lexend font-bold text-xl text-primary flex items-center">
+      <div className="w-full max-w-[1650px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <Link
+          href="/"
+          onClick={(e) => handleNavClick(e, "/")}
+          className="font-lexend font-bold text-xl text-primary flex items-center"
+        >
           ECTC
         </Link>
 
@@ -32,6 +54,7 @@ export function Navbar() {
             <Link
               key={link.name}
               href={link.href}
+              onClick={(e) => handleNavClick(e, link.href)}
               className="text-secondary hover:text-primary font-medium transition-colors"
             >
               {link.name}
@@ -39,10 +62,8 @@ export function Navbar() {
           ))}
         </nav>
 
-        {/* Desktop Auth Controls & Theme Switcher */}
+        {/* Desktop Auth Controls */}
         <div className="hidden sm:flex items-center ml-auto lg:ml-0 gap-3">
-          <ThemeToggle />
-
           {isLoading ? (
             <div className="w-24 h-9 bg-surface animate-pulse rounded-lg" />
           ) : isAuthenticated && user ? (
@@ -74,9 +95,8 @@ export function Navbar() {
           )}
         </div>
 
-        {/* Mobile Menu Toggle & Theme Toggle */}
+        {/* Mobile Menu Toggle */}
         <div className="flex items-center gap-2 sm:hidden">
-          <ThemeToggle />
           <button
             className="p-2 text-secondary"
             onClick={() => setMobileMenuOpen(true)}
@@ -90,8 +110,8 @@ export function Navbar() {
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-50 flex">
-          <div 
-            className="fixed inset-0 bg-secondary/20 backdrop-blur-sm" 
+          <div
+            className="fixed inset-0 bg-secondary/20 backdrop-blur-sm"
             onClick={() => setMobileMenuOpen(false)}
           />
           <div className="relative ml-auto w-full max-w-xs bg-surface h-full shadow-lg flex flex-col pt-5 pb-6 px-4">
@@ -107,18 +127,16 @@ export function Navbar() {
                   key={link.name}
                   href={link.href}
                   className="text-lg py-4 text-secondary font-medium hover:text-primary transition-colors border-b border-border/50"
-                  onClick={() => setMobileMenuOpen(false)}
+                  onClick={(e) => {
+                    handleNavClick(e, link.href);
+                    setMobileMenuOpen(false);
+                  }}
                 >
                   {link.name}
                 </Link>
               ))}
             </nav>
             <div className="mt-auto pt-4 space-y-4">
-              <div className="flex items-center justify-between p-3 rounded-xl bg-surface-raised border border-border">
-                <span className="text-xs font-semibold text-primary">Appearance</span>
-                <ThemeToggle showLabel />
-              </div>
-
               {isAuthenticated && user ? (
                 <div className="space-y-3">
                   <div className="p-3 rounded-xl bg-bg border border-border flex items-center justify-between">

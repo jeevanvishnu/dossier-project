@@ -138,47 +138,46 @@ export function PricingSection() {
   return (
     <div className="flex flex-col gap-10 md:gap-14">
       {/* Section Header */}
-      <div className="flex flex-col items-center text-center max-w-3xl mx-auto gap-4">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-accent/10 border border-accent/30 text-accent text-xs font-semibold tracking-wider uppercase">
-          <Stack size={14} weight="bold" />
+      <div className="flex flex-col items-center text-center max-w-3xl mx-auto gap-3">
+        <span className="text-xs font-semibold tracking-[0.12em] text-accent uppercase">
           Transparent Investment
-        </div>
+        </span>
         <h2 className="font-lexend text-3xl sm:text-4xl lg:text-[2.6rem] font-bold text-primary tracking-tight leading-tight">
-          Our Tariffs &amp; Pricing Plans
+          Our Tariffs and Pricing Plans
         </h2>
         <p className="text-secondary text-base sm:text-lg leading-relaxed max-w-2xl">
           Flexible plans designed to accommodate any volume of pharmaceutical registration dossiers.
         </p>
 
         {/* Toggles Container: Billing Cycle & Currency Switcher */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-3">
-          {/* Billing Cycle Toggle */}
-          <div className="flex items-center gap-3 p-1.5 bg-surface-raised border border-border/80 rounded-xl">
+        <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 mt-3">
+          {/* Billing Cycle Segmented Control */}
+          <div className="inline-flex items-center p-1.5 bg-surface-raised border border-border/80 rounded-2xl shadow-inner">
             <button
               onClick={() => setBillingCycle("monthly")}
-              className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all ${billingCycle === "monthly"
-                  ? "bg-accent text-white shadow-sm"
-                  : "text-secondary hover:text-primary"
+              className={`px-4 sm:px-5 py-2 text-xs sm:text-sm font-bold rounded-xl transition-all duration-200 ${billingCycle === "monthly"
+                ? "bg-accent text-white shadow-md shadow-accent/25"
+                : "text-secondary hover:text-primary"
                 }`}
             >
               Billed Monthly
             </button>
             <button
               onClick={() => setBillingCycle("annual")}
-              className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all flex items-center gap-2 ${billingCycle === "annual"
-                  ? "bg-accent text-white shadow-sm"
-                  : "text-secondary hover:text-primary"
+              className={`px-4 sm:px-5 py-2 text-xs sm:text-sm font-bold rounded-xl transition-all duration-200 flex items-center gap-2 ${billingCycle === "annual"
+                ? "bg-accent text-white shadow-md shadow-accent/25"
+                : "text-secondary hover:text-primary"
                 }`}
             >
               Annual Billing
-              <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-500 border border-emerald-500/30">
+              <span className="text-[10px] uppercase font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
                 Save 20%
               </span>
             </button>
           </div>
 
-          {/* Currency Switcher (Radio Controls: ₸, $, €) */}
-          <div className="flex items-center gap-5 px-4 py-2.5 bg-surface-raised border border-border/80 rounded-xl select-none">
+          {/* Currency Switcher Segmented Control */}
+          <div className="inline-flex items-center p-1.5 bg-surface-raised border border-border/80 rounded-2xl shadow-inner select-none">
             {currencyOptions.map((opt) => {
               const isSelected = currency === opt.code;
               return (
@@ -186,22 +185,13 @@ export function PricingSection() {
                   key={opt.code}
                   type="button"
                   onClick={() => setCurrency(opt.code)}
-                  className="flex items-center gap-2 group cursor-pointer focus:outline-none transition-all"
+                  className={`px-3.5 py-2 text-xs sm:text-sm font-bold rounded-xl transition-all duration-200 flex items-center gap-1.5 ${isSelected
+                    ? "bg-accent/20 text-accent border border-accent/40 shadow-sm"
+                    : "text-secondary hover:text-primary"
+                    }`}
                 >
-                  <span
-                    className={`w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${isSelected
-                        ? "border-accent bg-transparent shadow-[0_0_8px_rgba(56,189,248,0.4)]"
-                        : "border-secondary/50 group-hover:border-secondary"
-                      }`}
-                  >
-                    {isSelected && <span className="w-2 h-2 rounded-full bg-accent" />}
-                  </span>
-                  <span
-                    className={`font-lexend font-bold text-sm transition-colors ${isSelected ? "text-accent font-black" : "text-secondary group-hover:text-primary"
-                      }`}
-                  >
-                    {opt.symbol}
-                  </span>
+                  <span className="font-extrabold text-sm">{opt.symbol}</span>
+                  <span className="text-xs font-semibold tracking-wide">{opt.code}</span>
                 </button>
               );
             })}
@@ -220,8 +210,8 @@ export function PricingSection() {
             <div
               key={tier.id}
               className={`relative bg-surface rounded-2xl p-6 flex flex-col justify-between transition-all duration-300 ${isPopular
-                  ? "border-2 border-accent shadow-xl shadow-accent/10 bg-gradient-to-b from-surface to-accent-light/20 scale-[1.02] z-10"
-                  : "border border-border/80 hover:border-accent/50 hover:shadow-lg"
+                ? "border-2 border-accent shadow-xl shadow-accent/10 bg-gradient-to-b from-surface to-accent-light/20 scale-[1.02] z-10"
+                : "border border-border/80 hover:border-accent/50 hover:shadow-lg"
                 }`}
             >
               {/* Popular Badge */}
@@ -288,8 +278,8 @@ export function PricingSection() {
                 <Link
                   href="#contact"
                   className={`btn w-full rounded-xl py-3 h-auto text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${isPopular
-                      ? "btn-primary bg-accent text-white hover:bg-accent-hover border-none shadow-md"
-                      : "btn-outline text-accent border-accent/60 hover:bg-accent-light hover:border-accent"
+                    ? "btn-primary bg-accent text-white hover:bg-accent-hover border-none shadow-md"
+                    : "btn-outline text-accent border-accent/60 hover:bg-accent-light hover:border-accent"
                     }`}
                 >
                   Select {tier.name}

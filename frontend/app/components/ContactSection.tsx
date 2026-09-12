@@ -67,15 +67,14 @@ export function ContactSection() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto flex flex-col gap-12 lg:gap-16">
+    <div className="w-full flex flex-col gap-12 lg:gap-16">
       {/* Section Header */}
       <div className="text-center max-w-5xl mx-auto flex flex-col items-center gap-3">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-accent/10 border border-accent/25 text-accent text-xs font-semibold tracking-wider uppercase">
-          <Sparkle size={14} className="animate-pulse" />
-          <span>Get In Touch</span>
-        </div>
+        <span className="text-xs font-semibold tracking-[0.12em] text-accent uppercase">
+          Get In Touch
+        </span>
         
-        <h2 className="font-lexend text-2xl sm:text-3xl md:text-4xl lg:text-[2.5rem] font-bold text-primary tracking-tight leading-tight md:whitespace-nowrap">
+        <h2 className="font-lexend text-2xl sm:text-3xl md:text-4xl lg:text-[2.5rem] font-bold text-primary tracking-tight leading-tight whitespace-nowrap">
           Request a Custom Dossier &amp; Compliance Report
         </h2>
         

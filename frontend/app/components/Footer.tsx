@@ -3,7 +3,7 @@ import Link from "next/link";
 export function Footer() {
   return (
     <footer className="bg-bg border-t border-border/40 text-primary pt-16 pb-8">
-      <div className="w-full px-4 md:px-6 lg:px-8">
+      <div className="w-full max-w-[1650px] mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
           {/* Col 1 */}
           <div className="flex flex-col gap-4">
@@ -12,7 +12,7 @@ export function Footer() {
               Delivering structured, professional services for trust-seeking clients.
             </p>
           </div>
-          
+
           {/* Col 2 */}
           <div className="flex flex-col gap-4">
             <h4 className="font-lexend font-semibold text-primary">Services</h4>
@@ -39,11 +39,11 @@ export function Footer() {
             <div className="flex flex-col gap-3">
               <span className="text-secondary">hello@ectc.com</span>
               <span className="text-secondary">+1 (555) 123-4567</span>
-              <span className="text-secondary leading-relaxed">123 Professional Way<br/>Suite 400<br/>New York, NY 10001</span>
+              <span className="text-secondary leading-relaxed">123 Professional Way<br />Suite 400<br />New York, NY 10001</span>
             </div>
           </div>
         </div>
-        
+
         <div className="pt-8 border-t border-border flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-muted text-sm">© {new Date().getFullYear()} ECTC. All rights reserved.</p>
           <div className="flex gap-6">

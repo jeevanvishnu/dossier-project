@@ -88,7 +88,7 @@ export function SupportWidget() {
                 <rect x="40" y="10" width="15" height="10" fill="#121824" />
                 <rect x="45" y="25" width="10" height="15" fill="#121824" />
                 <rect x="10" y="40" width="15" height="15" fill="#121824" />
-                <rect x="40" y="40" width="20" height="20" fill="#38BDF8" />
+                <rect x="40" y="40" width="20" height="20" fill="#0284C7" />
                 <rect x="65" y="45" width="25" height="10" fill="#121824" />
                 <rect x="45" y="65" width="15" height="25" fill="#121824" />
                 <rect x="70" y="65" width="20" height="20" fill="#121824" />

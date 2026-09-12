@@ -15,7 +15,6 @@ import {
   FileCode,
 } from "@phosphor-icons/react";
 import { useAuthModal } from "../components/AuthModalContext";
-import { ThemeToggle } from "../components/ThemeToggle";
 import { Footer } from "../components/Footer";
 
 export default function StartPage() {
@@ -58,7 +57,7 @@ export default function StartPage() {
               About Portal
             </a>
             <a href="#tariffs" className="text-secondary hover:text-accent transition-colors">
-              Tariffs & Pricing
+              Tariffs and Pricing
             </a>
             <a href="#process" className="text-secondary hover:text-accent transition-colors">
               Our Process
@@ -67,8 +66,6 @@ export default function StartPage() {
 
           {/* Right Action Controls */}
           <div className="flex items-center gap-3">
-            <ThemeToggle />
-
             {/* Language Selector */}
             <div className="flex items-center gap-1 bg-surface border border-border rounded-lg px-2 py-1 text-xs">
               <Globe className="text-accent" size={14} />
@@ -254,7 +251,8 @@ export default function StartPage() {
             Tariffs Tailored to Your Dossier Volume
           </h2>
           <p className="text-secondary text-sm max-w-xl mx-auto">
-            Select a flexible monthly storage tier or upgrade to the Tariff OWN unlimited annual lease plan.
+            Flexible plans designed to accommodate any volume of pharmaceutical registration dossiers.<br className="hidden sm:inline" />
+            Select a scalable monthly storage tier or upgrade to the Tariff OWN unlimited annual lease plan.
           </p>
         </div>
 
@@ -262,13 +260,12 @@ export default function StartPage() {
           {tariffs.map((t) => (
             <div
               key={t.name}
-              className={`rounded-2xl p-5 border flex flex-col justify-between transition-all ${
-                t.accent
+              className={`rounded-2xl p-5 border flex flex-col justify-between transition-all ${t.accent
                   ? "bg-accent/10 border-accent text-primary shadow-md ring-1 ring-accent"
                   : t.recommended
-                  ? "bg-surface border-accent/50 text-primary shadow-xs"
-                  : "bg-surface border-border text-primary shadow-xs"
-              }`}
+                    ? "bg-surface border-accent/50 text-primary shadow-xs"
+                    : "bg-surface border-border text-primary shadow-xs"
+                }`}
             >
               <div>
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-bg text-accent border border-border inline-block mb-3">
@@ -281,11 +278,10 @@ export default function StartPage() {
 
               <button
                 onClick={() => openAuthModal("signup")}
-                className={`w-full py-2 text-xs font-bold rounded-lg transition-colors ${
-                  t.accent || t.recommended
+                className={`w-full py-2 text-xs font-bold rounded-lg transition-colors ${t.accent || t.recommended
                     ? "bg-accent hover:bg-accent-hover text-white"
                     : "bg-bg hover:bg-surface-raised text-primary border border-border"
-                }`}
+                  }`}
               >
                 Select Plan
               </button>

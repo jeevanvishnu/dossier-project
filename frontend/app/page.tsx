@@ -22,8 +22,8 @@ export default function Home() {
       <main className="flex-1 flex flex-col">
 
         {/* Section 1: Hero */}
-        <Section className="bg-bg" id="hero">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10 items-center py-6 lg:py-10 min-h-[55vh]">
+        <Section className="bg-bg !py-0 flex items-center min-h-[75vh]" id="hero">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10 items-center py-4 lg:py-6 min-h-[75vh] w-full">
             <div className="flex flex-col items-start gap-5 pt-6 lg:pt-0">
               <h1 className="font-lexend text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tighter text-primary leading-[1.1]">
                 Streamlined Pharmaceutical Dossier &amp; Regulatory Submission Platform
@@ -32,11 +32,11 @@ export default function Home() {
                 Manage your contracts, track subscriptions, and seamlessly handle compliant regulatory workflows—all in one secure workspace.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto mt-4">
-                <Link href="#contact" className="btn btn-primary rounded-lg px-5 py-2 h-auto min-h-[40px] text-[#0D1117] bg-accent hover:bg-accent-hover border-none font-semibold text-sm w-full sm:w-auto">
+                <Link href="#contact" className="btn btn-primary rounded-lg px-5 py-2 h-auto min-h-[40px] text-white bg-accent hover:bg-accent-hover border-none font-semibold text-sm w-full sm:w-auto">
                   Start a project
                 </Link>
                 <Link href="#pricing" className="btn btn-outline rounded-lg px-5 py-2 h-auto min-h-[40px] text-accent border-accent hover:bg-accent-light hover:border-accent font-medium text-sm w-full sm:w-auto">
-                  View Tariffs &amp; Pricing
+                  View Tariffs and Pricing
                 </Link>
               </div>
             </div>
@@ -78,7 +78,7 @@ export default function Home() {
               }
             ].map((feature, i) => (
               <div key={i} className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-full bg-[#1C2536] border border-border/60 flex items-center justify-center shrink-0 shadow-sm">
+                <div className="w-12 h-12 rounded-full bg-surface-raised border border-border/60 flex items-center justify-center shrink-0 shadow-sm">
                   {feature.icon}
                 </div>
                 <div className="flex flex-col gap-1 pt-0.5">

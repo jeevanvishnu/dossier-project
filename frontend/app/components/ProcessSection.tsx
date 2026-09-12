@@ -90,18 +90,17 @@ export function ProcessSection() {
   ];
 
   return (
-    <div className="max-w-7xl mx-auto flex flex-col gap-10 lg:gap-14">
+    <div className="w-full flex flex-col gap-10 lg:gap-14">
       {/* Section Header */}
       <div className="text-center max-w-3xl mx-auto flex flex-col items-center gap-3">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/10 border border-accent/20 text-accent text-xs font-semibold tracking-wider uppercase">
-          <Sparkle size={14} className="animate-pulse" />
-          <span>Our Process</span>
-        </div>
-        
+        <span className="text-xs font-semibold tracking-[0.12em] text-accent uppercase">
+          Our Process
+        </span>
+
         <h2 className="font-lexend text-3xl sm:text-4xl lg:text-[2.6rem] font-bold text-primary tracking-tight leading-tight">
           How Our Process Works
         </h2>
-        
+
         <p className="text-secondary text-base sm:text-lg leading-relaxed mt-1">
           Getting started on the portal is structured into four simple, efficient steps designed to bring transparency to your regulatory workflow:
         </p>
@@ -130,20 +129,18 @@ export function ProcessSection() {
                 className="flex flex-col items-center group focus:outline-none cursor-pointer"
               >
                 <div
-                  className={`w-12 h-12 rounded-2xl flex items-center justify-center font-lexend font-bold text-base transition-all duration-300 shadow-md ${
-                    isActive
+                  className={`w-12 h-12 rounded-2xl flex items-center justify-center font-lexend font-bold text-base transition-all duration-300 shadow-md ${isActive
                       ? "bg-accent text-white ring-4 ring-accent/30 scale-110"
                       : isCompleted
-                      ? "bg-surface-raised border border-accent text-accent"
-                      : "bg-surface border border-border text-secondary group-hover:border-accent/50 group-hover:text-primary"
-                  }`}
+                        ? "bg-surface-raised border border-accent text-accent"
+                        : "bg-surface border border-border text-secondary group-hover:border-accent/50 group-hover:text-primary"
+                    }`}
                 >
                   {isCompleted ? <CheckCircle size={22} weight="fill" /> : `0${step.id}`}
                 </div>
                 <span
-                  className={`mt-3 text-xs font-semibold tracking-wide transition-colors ${
-                    isActive ? "text-accent" : "text-secondary group-hover:text-primary"
-                  }`}
+                  className={`mt-3 text-xs font-semibold tracking-wide transition-colors ${isActive ? "text-accent" : "text-secondary group-hover:text-primary"
+                    }`}
                 >
                   {step.badge}
                 </span>
@@ -162,30 +159,27 @@ export function ProcessSection() {
             <div
               key={step.id}
               onClick={() => setActiveStep(step.id)}
-              className={`group relative flex flex-col justify-between rounded-2xl p-6 transition-all duration-300 cursor-pointer ${
-                isActive
+              className={`group relative flex flex-col justify-between rounded-2xl p-6 transition-all duration-300 cursor-pointer ${isActive
                   ? "bg-surface border-2 border-accent shadow-lg shadow-accent/10 translate-y-[-2px]"
                   : "bg-surface/80 hover:bg-surface border border-border/70 hover:border-accent/40 shadow-sm"
-              }`}
+                }`}
             >
               {/* Card Header Top */}
               <div>
                 <div className="flex items-center justify-between mb-5">
                   <span
-                    className={`text-xs font-bold tracking-wider px-2.5 py-1 rounded-md transition-colors ${
-                      isActive
+                    className={`text-xs font-bold tracking-wider px-2.5 py-1 rounded-md transition-colors ${isActive
                         ? "bg-accent text-white"
                         : "bg-surface-raised border border-border/80 text-accent"
-                    }`}
+                      }`}
                   >
                     {step.badge}
                   </span>
                   <div
-                    className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all ${
-                      isActive
+                    className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all ${isActive
                         ? "bg-accent/20 border border-accent/40"
                         : "bg-surface-raised border border-border/60 group-hover:border-accent/30"
-                    }`}
+                      }`}
                   >
                     {step.icon}
                   </div>
@@ -195,7 +189,7 @@ export function ProcessSection() {
                 <h3 className="font-lexend text-xl font-bold text-primary mb-3 leading-snug group-hover:text-accent transition-colors">
                   {step.title}
                 </h3>
-                
+
                 <p className="text-secondary text-sm leading-relaxed mb-6">
                   {step.description}
                 </p>
@@ -229,11 +223,10 @@ export function ProcessSection() {
                       {step.microUi.plans.map((plan, idx) => (
                         <div
                           key={idx}
-                          className={`p-2 rounded-lg text-center border transition-all ${
-                            plan.active
+                          className={`p-2 rounded-lg text-center border transition-all ${plan.active
                               ? "bg-accent/20 border-accent/60 text-primary"
                               : "bg-surface/80 border-border/40 text-secondary"
-                          }`}
+                            }`}
                         >
                           <p className="text-xs font-bold leading-tight">{plan.name}</p>
                           <p className="text-[10px] text-secondary mt-0.5">{plan.desc}</p>
