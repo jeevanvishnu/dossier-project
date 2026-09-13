@@ -1,24 +1,28 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import { Link, usePathname } from "@/i18n/routing";
 import { List, X, User as UserIcon, SignOut } from "@phosphor-icons/react";
-import { usePathname } from "next/navigation";
 import { useAuthModal } from "./AuthModalContext";
 import { useAuth } from "../context/AuthContext";
-
-const navLinks = [
-  { name: "Home", href: "/" },
-  { name: "About", href: "#about" },
-  { name: "Pricing", href: "#pricing" },
-  { name: "Contact", href: "#contact" },
-];
+import { LanguageSwitcher } from "./LanguageSwitcher";
+import { useTranslations } from "next-intl";
 
 export function Navbar() {
+  const tNav = useTranslations("nav");
+  const tCommon = useTranslations("common");
+
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { openAuthModal } = useAuthModal();
   const { user, isAuthenticated, logout, isLoading } = useAuth();
   const pathname = usePathname();
+
+  const navLinks = [
+    { name: tNav("home"), href: "/" },
+    { name: tNav("about"), href: "#about" },
+    { name: tNav("pricing"), href: "#pricing" },
+    { name: tNav("contact"), href: "#contact" },
+  ];
 
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     if (href === "/" || href === "#top" || href === "#hero") {
@@ -45,7 +49,7 @@ export function Navbar() {
           onClick={(e) => handleNavClick(e, "/")}
           className="font-lexend font-bold text-xl text-primary flex items-center"
         >
-          ECTC
+          {tNav("brand")}
         </Link>
 
         {/* Desktop Nav */}
@@ -55,15 +59,17 @@ export function Navbar() {
               key={link.name}
               href={link.href}
               onClick={(e) => handleNavClick(e, link.href)}
-              className="text-secondary hover:text-primary font-medium transition-colors"
+              className="text-secondary hover:text-primary font-medium transition-colors text-sm"
             >
               {link.name}
             </Link>
           ))}
         </nav>
 
-        {/* Desktop Auth Controls */}
+        {/* Desktop Controls (Language + Auth) */}
         <div className="hidden sm:flex items-center ml-auto lg:ml-0 gap-3">
+          <LanguageSwitcher />
+
           {isLoading ? (
             <div className="w-24 h-9 bg-surface animate-pulse rounded-lg" />
           ) : isAuthenticated && user ? (
@@ -79,8 +85,8 @@ export function Navbar() {
               </div>
               <button
                 onClick={() => logout()}
-                title="Sign Out"
-                className="p-2 text-secondary hover:text-red-400 hover:bg-surface-raised rounded-full transition-all duration-200"
+                title={tCommon("signOut")}
+                className="p-2 text-secondary hover:text-red-400 hover:bg-surface-raised rounded-full transition-all duration-200 cursor-pointer"
               >
                 <SignOut size={18} />
               </button>
@@ -88,17 +94,18 @@ export function Navbar() {
           ) : (
             <button
               onClick={() => openAuthModal("signin")}
-              className="btn btn-primary rounded-lg px-5 min-h-[38px] h-[38px] text-white bg-accent hover:bg-accent-hover border-none font-semibold text-sm shadow-sm"
+              className="btn btn-primary rounded-lg px-5 min-h-[38px] h-[38px] text-white bg-accent hover:bg-accent-hover border-none font-semibold text-sm shadow-sm cursor-pointer"
             >
-              Sign In
+              {tCommon("signIn")}
             </button>
           )}
         </div>
 
-        {/* Mobile Menu Toggle */}
+        {/* Mobile Controls */}
         <div className="flex items-center gap-2 sm:hidden">
+          <LanguageSwitcher compact />
           <button
-            className="p-2 text-secondary"
+            className="p-2 text-secondary cursor-pointer"
             onClick={() => setMobileMenuOpen(true)}
             aria-label="Open menu"
           >
@@ -115,18 +122,23 @@ export function Navbar() {
             onClick={() => setMobileMenuOpen(false)}
           />
           <div className="relative ml-auto w-full max-w-xs bg-surface h-full shadow-lg flex flex-col pt-5 pb-6 px-4">
-            <div className="flex items-center justify-between mb-8">
-              <span className="font-lexend font-bold text-xl text-primary">ECTC</span>
-              <button onClick={() => setMobileMenuOpen(false)} className="p-2 text-secondary hover:text-accent transition-colors">
+            <div className="flex items-center justify-between mb-6">
+              <span className="font-lexend font-bold text-xl text-primary">{tNav("brand")}</span>
+              <button onClick={() => setMobileMenuOpen(false)} className="p-2 text-secondary hover:text-accent transition-colors cursor-pointer">
                 <X size={24} />
               </button>
             </div>
-            <nav className="flex flex-col gap-2">
+
+            <div className="mb-4">
+              <LanguageSwitcher />
+            </div>
+
+            <nav className="flex flex-col gap-1">
               {navLinks.map((link) => (
                 <Link
                   key={link.name}
                   href={link.href}
-                  className="text-lg py-4 text-secondary font-medium hover:text-primary transition-colors border-b border-border/50"
+                  className="text-base py-3 text-secondary font-medium hover:text-primary transition-colors border-b border-border/50"
                   onClick={(e) => {
                     handleNavClick(e, link.href);
                     setMobileMenuOpen(false);
@@ -153,10 +165,10 @@ export function Navbar() {
                       setMobileMenuOpen(false);
                       logout();
                     }}
-                    className="btn btn-outline border-red-500/30 text-red-400 hover:bg-red-500/10 w-full rounded-lg min-h-[40px] h-[40px] font-semibold text-sm flex items-center justify-center gap-2"
+                    className="btn btn-outline border-red-500/30 text-red-400 hover:bg-red-500/10 w-full rounded-lg min-h-[40px] h-[40px] font-semibold text-sm flex items-center justify-center gap-2 cursor-pointer"
                   >
                     <SignOut size={16} />
-                    <span>Sign Out</span>
+                    <span>{tCommon("signOut")}</span>
                   </button>
                 </div>
               ) : (
@@ -165,9 +177,9 @@ export function Navbar() {
                     setMobileMenuOpen(false);
                     openAuthModal("signin");
                   }}
-                  className="btn btn-primary w-full rounded-lg min-h-[40px] h-[40px] text-white bg-accent hover:bg-accent-hover border-none font-semibold text-sm"
+                  className="btn btn-primary w-full rounded-lg min-h-[40px] h-[40px] text-white bg-accent hover:bg-accent-hover border-none font-semibold text-sm cursor-pointer"
                 >
-                  Sign In
+                  {tCommon("signIn")}
                 </button>
               )}
             </div>

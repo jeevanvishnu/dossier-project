@@ -1,21 +1,27 @@
+"use client";
+
 import Image from "next/image";
-import Link from "next/link";
+import { Link } from "../../i18n/routing";
 import {
   CheckCircle,
   RocketLaunch,
   Clock,
   Wallet,
   Desktop,
-  Crosshair
-} from "@phosphor-icons/react/dist/ssr";
-import { Navbar } from "./components/Navbar";
-import { Footer } from "./components/Footer";
-import { Section } from "./components/Section";
-import { PricingSection } from "./components/PricingSection";
-import { ProcessSection } from "./components/ProcessSection";
-import { ContactSection } from "./components/ContactSection";
+} from "@phosphor-icons/react";
+import { Navbar } from "../components/Navbar";
+import { Footer } from "../components/Footer";
+import { Section } from "../components/Section";
+import { PricingSection } from "../components/PricingSection";
+import { ProcessSection } from "../components/ProcessSection";
+import { ContactSection } from "../components/ContactSection";
+import { useTranslations } from "next-intl";
 
 export default function Home() {
+  const tHero = useTranslations("hero");
+  const tFeat = useTranslations("features");
+  const tAbout = useTranslations("about");
+
   return (
     <>
       <Navbar />
@@ -26,24 +32,24 @@ export default function Home() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10 items-center py-4 lg:py-6 min-h-[75vh] w-full">
             <div className="flex flex-col items-start gap-5 pt-6 lg:pt-0">
               <h1 className="font-lexend text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tighter text-primary leading-[1.1]">
-                Streamlined Pharmaceutical Dossier &amp; Regulatory Submission Platform
+                {tHero("title")}
               </h1>
               <p className="text-secondary text-lg leading-relaxed max-w-[65ch]">
-                Manage your contracts, track subscriptions, and seamlessly handle compliant regulatory workflows—all in one secure workspace.
+                {tHero("description")}
               </p>
               <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto mt-4">
-                <Link href="#contact" className="btn btn-primary rounded-lg px-5 py-2 h-auto min-h-[40px] text-white bg-accent hover:bg-accent-hover border-none font-semibold text-sm w-full sm:w-auto">
-                  Start a project
+                <Link href="#contact" className="btn btn-primary rounded-lg px-5 py-2 h-auto min-h-[40px] text-white bg-accent hover:bg-accent-hover border-none font-semibold text-sm w-full sm:w-auto flex items-center justify-center">
+                  {tHero("startProject")}
                 </Link>
-                <Link href="#pricing" className="btn btn-outline rounded-lg px-5 py-2 h-auto min-h-[40px] text-accent border-accent hover:bg-accent-light hover:border-accent font-medium text-sm w-full sm:w-auto">
-                  View Tariffs and Pricing
+                <Link href="#pricing" className="btn btn-outline rounded-lg px-5 py-2 h-auto min-h-[40px] text-accent border-accent hover:bg-accent-light hover:border-accent font-medium text-sm w-full sm:w-auto flex items-center justify-center">
+                  {tHero("viewTariffs")}
                 </Link>
               </div>
             </div>
             <div className="relative w-full aspect-video md:aspect-[4/3] flex items-center justify-center">
               <Image
                 src="/images/hero-image.png"
-                alt="Technical Architecture"
+                alt={tHero("imgAlt")}
                 fill
                 className="object-contain"
                 priority
@@ -58,23 +64,23 @@ export default function Home() {
             {[
               {
                 icon: <RocketLaunch size={22} className="text-secondary" />,
-                heading: "The first Web portal",
-                subheading: "in Kazakhstan for the formation of the registration dossier"
+                heading: tFeat("f1Title"),
+                subheading: tFeat("f1Sub")
               },
               {
                 icon: <Clock size={22} className="text-secondary" />,
-                heading: "24/7 access",
-                subheading: "All you need for work is the Internet"
+                heading: tFeat("f2Title"),
+                subheading: tFeat("f2Sub")
               },
               {
                 icon: <Wallet size={22} className="text-secondary" />,
-                heading: "Advantageous tariff",
-                subheading: "Allows to plan according to the size of the dossier"
+                heading: tFeat("f3Title"),
+                subheading: tFeat("f3Sub")
               },
               {
                 icon: <Desktop size={22} className="text-secondary" />,
-                heading: "User-friendly interface",
-                subheading: "Quick user adaptability"
+                heading: tFeat("f4Title"),
+                subheading: tFeat("f4Sub")
               }
             ].map((feature, i) => (
               <div key={i} className="flex items-start gap-4">
@@ -98,7 +104,6 @@ export default function Home() {
         <Section className="bg-bg py-12 md:py-20" id="about">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center">
             
-            {/* Image Container */}
             <div className="lg:col-span-5 relative w-full h-[380px] sm:h-[460px] lg:h-[490px] flex items-center justify-center">
               <Image
                 src="/images/about-diagram.png"
@@ -109,32 +114,30 @@ export default function Home() {
               />
             </div>
 
-            {/* Content Column */}
             <div className="lg:col-span-7 flex flex-col gap-6">
               <div>
                 <p className="text-xs font-semibold tracking-[0.12em] text-accent uppercase mb-2">
-                  About Us
+                  {tAbout("tag")}
                 </p>
                 <h2 className="font-lexend text-3xl sm:text-4xl lg:text-[2.5rem] font-bold text-primary tracking-tight leading-[1.2]">
-                  Accelerating Regulatory &amp; Dossier Submissions
+                  {tAbout("title")}
                 </h2>
               </div>
               
               <p className="text-secondary text-base sm:text-lg leading-relaxed">
-                Our platform is engineered specifically to simplify and accelerate the preparation, management, and regulatory submission of pharmaceutical dossiers. Designed to meet industry standards, we bridge the gap between complex legal requirements and efficient digital workflows.
+                {tAbout("p1")}
               </p>
 
               <p className="text-secondary text-base sm:text-lg leading-relaxed">
-                Whether you are managing multi-country product submissions, tracking contract lifecycles, or monitoring subscription tariffs and document sequences, our centralized portal gives your team total control with 24/7 access, guaranteed security, and an intuitive interface built for rapid adaptation.
+                {tAbout("p2")}
               </p>
 
-              {/* 2x2 Feature Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 mt-2">
                 {[
-                  "Multi-country product submissions",
-                  "Contract lifecycle tracking",
-                  "Subscription tariffs & document sequences",
-                  "24/7 access & guaranteed security"
+                  tAbout("check1"),
+                  tAbout("check2"),
+                  tAbout("check3"),
+                  tAbout("check4")
                 ].map((feature, i) => (
                   <div key={i} className="flex items-center gap-3 p-3.5 rounded-xl bg-surface/80 border border-border/80 hover:border-accent/40 hover:bg-surface transition-all duration-300 shadow-sm group">
                     <div className="w-8 h-8 rounded-lg bg-accent/10 border border-accent/20 flex items-center justify-center shrink-0 group-hover:bg-accent/20 transition-colors">
@@ -149,17 +152,17 @@ export default function Home() {
           </div>
         </Section>
 
-        {/* Section 4: Our Tariffs & Pricing Plans */}
+        {/* Section 4: Tariffs */}
         <Section className="bg-bg py-12 md:py-20" id="pricing">
           <PricingSection />
         </Section>
 
-        {/* Section 5: Our Process */}
+        {/* Section 5: Process */}
         <Section className="bg-bg py-12 md:py-20" id="process">
           <ProcessSection />
         </Section>
 
-        {/* Section 6: Contact & Report Request Section */}
+        {/* Section 6: Contact */}
         <Section className="bg-bg py-12 md:py-20" id="contact">
           <ContactSection />
         </Section>

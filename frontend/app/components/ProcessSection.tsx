@@ -13,17 +13,18 @@ import {
   Headset,
   Sparkle
 } from "@phosphor-icons/react";
+import { useTranslations } from "next-intl";
 
 export function ProcessSection() {
+  const tProc = useTranslations("process");
   const [activeStep, setActiveStep] = useState<number>(1);
 
   const steps = [
     {
       id: 1,
       badge: "STEP 01",
-      title: "Registration & Account Setup",
-      description:
-        "Sign up on the platform and configure your company data, user roles, and security credentials inside the account settings.",
+      title: tProc("step1Title"),
+      description: tProc("step1Desc"),
       icon: <UserPlus size={26} className="text-accent" />,
       microUi: {
         tag: "Security & Credentials",
@@ -38,9 +39,8 @@ export function ProcessSection() {
     {
       id: 2,
       badge: "STEP 02",
-      title: "Choose a Tariff Plan",
-      description:
-        "Select a subscription tariff (such as standard monthly tiers or the unlimited OWN plan) that matches your document volume and lease duration.",
+      title: tProc("step2Title"),
+      description: tProc("step2Desc"),
       icon: <Receipt size={26} className="text-accent" />,
       microUi: {
         tag: "Tariff Selector",
@@ -54,9 +54,8 @@ export function ProcessSection() {
     {
       id: 3,
       badge: "STEP 03",
-      title: "Create Projects & Upload Dossiers",
-      description:
-        "Build your submission workspace by filling out project metadata and uploading the required regulatory documents organized by sequence categories.",
+      title: tProc("step3Title"),
+      description: tProc("step3Desc"),
       icon: <CloudArrowUp size={26} className="text-accent" />,
       microUi: {
         tag: "Workspace & Dossiers",
@@ -72,9 +71,8 @@ export function ProcessSection() {
     {
       id: 4,
       badge: "STEP 04",
-      title: "Track & Submit",
-      description:
-        "Monitor real-time status updates, review XML formation history, and successfully process your regulatory applications with 24/7 support at your side.",
+      title: tProc("step4Title"),
+      description: tProc("step4Desc"),
       icon: <ChartLineUp size={26} className="text-accent" />,
       microUi: {
         tag: "XML Tracking & Support",
@@ -94,15 +92,15 @@ export function ProcessSection() {
       {/* Section Header */}
       <div className="text-center max-w-3xl mx-auto flex flex-col items-center gap-3">
         <span className="text-xs font-semibold tracking-[0.12em] text-accent uppercase">
-          Our Process
+          {tProc("tag")}
         </span>
 
         <h2 className="font-lexend text-3xl sm:text-4xl lg:text-[2.6rem] font-bold text-primary tracking-tight leading-tight">
-          How Our Process Works
+          {tProc("title")}
         </h2>
 
         <p className="text-secondary text-base sm:text-lg leading-relaxed mt-1">
-          Getting started on the portal is structured into four simple, efficient steps designed to bring transparency to your regulatory workflow:
+          {tProc("desc")}
         </p>
       </div>
 
@@ -129,18 +127,20 @@ export function ProcessSection() {
                 className="flex flex-col items-center group focus:outline-none cursor-pointer"
               >
                 <div
-                  className={`w-12 h-12 rounded-2xl flex items-center justify-center font-lexend font-bold text-base transition-all duration-300 shadow-md ${isActive
+                  className={`w-12 h-12 rounded-2xl flex items-center justify-center font-lexend font-bold text-base transition-all duration-300 shadow-md ${
+                    isActive
                       ? "bg-accent text-white ring-4 ring-accent/30 scale-110"
                       : isCompleted
-                        ? "bg-surface-raised border border-accent text-accent"
-                        : "bg-surface border border-border text-secondary group-hover:border-accent/50 group-hover:text-primary"
-                    }`}
+                      ? "bg-surface-raised border border-accent text-accent"
+                      : "bg-surface border border-border text-secondary group-hover:border-accent/50 group-hover:text-primary"
+                  }`}
                 >
                   {isCompleted ? <CheckCircle size={22} weight="fill" /> : `0${step.id}`}
                 </div>
                 <span
-                  className={`mt-3 text-xs font-semibold tracking-wide transition-colors ${isActive ? "text-accent" : "text-secondary group-hover:text-primary"
-                    }`}
+                  className={`mt-3 text-xs font-semibold tracking-wide transition-colors ${
+                    isActive ? "text-accent" : "text-secondary group-hover:text-primary"
+                  }`}
                 >
                   {step.badge}
                 </span>
@@ -159,27 +159,30 @@ export function ProcessSection() {
             <div
               key={step.id}
               onClick={() => setActiveStep(step.id)}
-              className={`group relative flex flex-col justify-between rounded-2xl p-6 transition-all duration-300 cursor-pointer ${isActive
+              className={`group relative flex flex-col justify-between rounded-2xl p-6 transition-all duration-300 cursor-pointer ${
+                isActive
                   ? "bg-surface border-2 border-accent shadow-lg shadow-accent/10 translate-y-[-2px]"
                   : "bg-surface/80 hover:bg-surface border border-border/70 hover:border-accent/40 shadow-sm"
-                }`}
+              }`}
             >
               {/* Card Header Top */}
               <div>
                 <div className="flex items-center justify-between mb-5">
                   <span
-                    className={`text-xs font-bold tracking-wider px-2.5 py-1 rounded-md transition-colors ${isActive
+                    className={`text-xs font-bold tracking-wider px-2.5 py-1 rounded-md transition-colors ${
+                      isActive
                         ? "bg-accent text-white"
                         : "bg-surface-raised border border-border/80 text-accent"
-                      }`}
+                    }`}
                   >
                     {step.badge}
                   </span>
                   <div
-                    className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all ${isActive
+                    className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all ${
+                      isActive
                         ? "bg-accent/20 border border-accent/40"
                         : "bg-surface-raised border border-border/60 group-hover:border-accent/30"
-                      }`}
+                    }`}
                   >
                     {step.icon}
                   </div>
@@ -203,7 +206,6 @@ export function ProcessSection() {
                     <ArrowRight size={12} className="opacity-70 group-hover:translate-x-1 transition-transform" />
                   </div>
 
-                  {/* Micro UI Specific Content */}
                   {step.id === 1 && step.microUi.items && (
                     <div className="flex flex-col gap-1.5 pt-1">
                       {step.microUi.items.map((item, idx) => (
@@ -223,10 +225,11 @@ export function ProcessSection() {
                       {step.microUi.plans.map((plan, idx) => (
                         <div
                           key={idx}
-                          className={`p-2 rounded-lg text-center border transition-all ${plan.active
+                          className={`p-2 rounded-lg text-center border transition-all ${
+                            plan.active
                               ? "bg-accent/20 border-accent/60 text-primary"
                               : "bg-surface/80 border-border/40 text-secondary"
-                            }`}
+                          }`}
                         >
                           <p className="text-xs font-bold leading-tight">{plan.name}</p>
                           <p className="text-[10px] text-secondary mt-0.5">{plan.desc}</p>

@@ -1,11 +1,14 @@
 "use client";
 
 import React, { useState } from "react";
-import { AppShell } from "../components/AppShell";
+import { AppShell } from "../../components/AppShell";
+import { ComingSoon } from "../../components/ComingSoon";
+import { useTranslations } from "next-intl";
 import { Receipt, CheckCircle, MagnifyingGlass, DownloadSimple } from "@phosphor-icons/react";
 import toast from "react-hot-toast";
 
 export default function PaymentsPage() {
+  const tPayments = useTranslations("payments");
   const [searchTerm, setSearchTerm] = useState("");
 
   const [transactions] = useState([
@@ -47,21 +50,29 @@ export default function PaymentsPage() {
 
   return (
     <AppShell>
+      {/* Active Coming Soon View */}
+      <ComingSoon
+        title={tPayments("title")}
+        description={tPayments("sub")}
+      />
+
+      {/* 
+      ========================================================================
+      ORIGINAL PAYMENTS PAGE DESIGN CODE (COMMENTED OUT FOR PRESERVATION)
+      ========================================================================
       <div className="space-y-6">
-        {/* Header */}
         <div className="bg-surface border border-border p-5 rounded-2xl shadow-xs">
           <span className="text-[10px] uppercase tracking-wider font-bold text-accent px-2 py-0.5 rounded bg-accent/10 border border-accent/20">
             Financial Ledger & Audits
           </span>
           <h1 className="font-lexend text-2xl font-bold text-primary mt-1">
-            Payment History & Transaction Ledger
+            Payment History & Transaction Ledger (/payments)
           </h1>
           <p className="text-xs text-secondary">
             Complete financial transaction audit trail listing past invoices, amounts in Tenge (KZT), and execution statuses.
           </p>
         </div>
 
-        {/* Filter Bar */}
         <div className="bg-surface border border-border p-4 rounded-2xl flex items-center justify-between gap-4 shadow-xs">
           <div className="flex items-center gap-2 bg-bg border border-border rounded-xl px-3 py-2 text-xs text-muted w-full sm:w-80">
             <MagnifyingGlass size={16} className="text-muted shrink-0" />
@@ -83,7 +94,6 @@ export default function PaymentsPage() {
           </button>
         </div>
 
-        {/* Transaction Ledger Table */}
         <div className="bg-surface border border-border rounded-2xl overflow-hidden shadow-sm">
           <div className="p-5 border-b border-border flex items-center gap-2">
             <Receipt size={20} className="text-accent" />
@@ -137,6 +147,7 @@ export default function PaymentsPage() {
           </div>
         </div>
       </div>
+      */}
     </AppShell>
   );
 }

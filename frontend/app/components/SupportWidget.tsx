@@ -2,8 +2,10 @@
 
 import React, { useState } from "react";
 import { QrCode, TelegramLogo, Clock, ShieldCheck, X } from "@phosphor-icons/react";
+import { useTranslations } from "next-intl";
 
 export function SupportWidget() {
+  const tSupp = useTranslations("support");
   const [showQrModal, setShowQrModal] = useState(false);
 
   return (
@@ -12,15 +14,15 @@ export function SupportWidget() {
         <div className="flex items-center justify-between gap-2 mb-2 pb-2 border-b border-border">
           <div className="flex items-center gap-1.5 font-semibold text-primary">
             <TelegramLogo className="text-accent text-base" />
-            <span>Tech Support</span>
+            <span>{tSupp("widgetTitle")}</span>
           </div>
           <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-            Online
+            {tSupp("onlineStatus")}
           </span>
         </div>
 
         <p className="text-secondary text-[11px] leading-relaxed mb-2.5">
-          Telegram assist & issue resolution for eCTD submissions.
+          {tSupp("widgetSub")}
         </p>
 
         <div className="flex items-center gap-1.5 text-[11px] text-muted mb-3">
@@ -47,7 +49,6 @@ export function SupportWidget() {
         </div>
       </div>
 
-      {/* QR Modal */}
       {showQrModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="relative bg-surface border border-border rounded-2xl max-w-sm w-full p-6 text-center shadow-2xl animate-in fade-in zoom-in-95 duration-200">
@@ -63,13 +64,12 @@ export function SupportWidget() {
             </div>
 
             <h3 className="font-lexend font-bold text-lg text-primary mb-1">
-              Technical Support Telegram
+              {tSupp("widgetTitle")} Telegram
             </h3>
             <p className="text-xs text-secondary mb-4 leading-relaxed">
-              Scan this QR code with your mobile device or Telegram app to launch a direct technical ticket.
+              {tSupp("widgetSub")}
             </p>
 
-            {/* Generated QR Code representation */}
             <div className="bg-white p-4 rounded-xl inline-block mx-auto mb-4 shadow-inner border border-gray-200">
               <svg viewBox="0 0 100 100" className="w-36 h-36">
                 <rect width="100" height="100" fill="white" />
@@ -108,7 +108,7 @@ export function SupportWidget() {
                 className="btn btn-accent w-full text-white font-semibold text-xs py-2.5 rounded-lg flex items-center justify-center gap-2"
               >
                 <TelegramLogo size={18} />
-                Open Telegram Chat directly
+                {tSupp("chatWithUs")}
               </a>
             </div>
           </div>

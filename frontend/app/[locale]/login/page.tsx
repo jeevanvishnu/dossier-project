@@ -1,14 +1,17 @@
 "use client";
 
 import React, { useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { Link, useRouter } from "../../../i18n/routing";
 import { Pill, LockKey, Envelope, ArrowRight, ShieldCheck, UserCheck } from "@phosphor-icons/react";
-import { useAuth } from "../context/AuthContext";
-import { ThemeToggle } from "../components/ThemeToggle";
+import { useAuth } from "../../context/AuthContext";
+import { ThemeToggle } from "../../components/ThemeToggle";
+import { LanguageSwitcher } from "../../components/LanguageSwitcher";
 import toast from "react-hot-toast";
+import { useTranslations } from "next-intl";
 
 export default function LoginPage() {
+  const tAuth = useTranslations("auth");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   const { signIn, isLoading } = useAuth();
   const [email, setEmail] = useState("admin@ectc.kz");
@@ -24,22 +27,22 @@ export default function LoginPage() {
 
     const success = await signIn(email, password);
     if (success) {
-      toast.success(`Authenticated as ${roleSelect.toUpperCase()}`);
+      toast.success(`${tAuth("authenticatedAs")} ${roleSelect.toUpperCase()}`);
       if (roleSelect === "admin") {
         router.push("/profile/account");
       } else {
         router.push("/dashboard");
       }
     } else {
-      // Demo fallback if backend server isn't running on local environment
-      toast.success(`Demo Access Granted as ${roleSelect.toUpperCase()}`);
+      toast.success(`${tAuth("demoGranted")} ${roleSelect.toUpperCase()}`);
       router.push("/dashboard");
     }
   };
 
   return (
     <div className="min-h-screen bg-bg text-secondary flex flex-col justify-center items-center px-4 relative overflow-hidden">
-      <div className="absolute top-4 right-4 z-20">
+      <div className="absolute top-4 right-4 z-20 flex items-center gap-3">
+        <LanguageSwitcher compact />
         <ThemeToggle showLabel />
       </div>
 
@@ -54,10 +57,10 @@ export default function LoginPage() {
             </div>
           </Link>
           <h1 className="font-lexend font-extrabold text-2xl text-primary mb-1">
-            ECTC Unified Portal Login
+            {tAuth("loginTitle")}
           </h1>
           <p className="text-xs text-secondary">
-            Kazakhstan Pharmaceutical & Medical Regulatory Submission Platform
+            {tAuth("loginSub")}
           </p>
         </div>
 
@@ -76,7 +79,7 @@ export default function LoginPage() {
             }`}
           >
             <ShieldCheck size={16} />
-            <span>Admin Role</span>
+            <span>{tAuth("adminRole")}</span>
           </button>
           <button
             type="button"
@@ -91,14 +94,14 @@ export default function LoginPage() {
             }`}
           >
             <UserCheck size={16} />
-            <span>User Role</span>
+            <span>{tAuth("userRole")}</span>
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-xs font-bold text-primary mb-1.5">
-              Corporate Work Email
+              {tAuth("emailLabel")}
             </label>
             <div className="flex items-center gap-2 bg-bg border border-border focus-within:border-accent rounded-xl px-3 py-2.5 transition-colors">
               <Envelope size={18} className="text-muted" />
@@ -106,7 +109,7 @@ export default function LoginPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="user@pharma.kz"
+                placeholder={tAuth("emailPlaceholder")}
                 required
                 className="bg-transparent text-xs text-primary placeholder-muted outline-none w-full font-medium"
               />
@@ -115,7 +118,7 @@ export default function LoginPage() {
 
           <div>
             <label className="block text-xs font-bold text-primary mb-1.5">
-              Password
+              {tAuth("passwordLabel")}
             </label>
             <div className="flex items-center gap-2 bg-bg border border-border focus-within:border-accent rounded-xl px-3 py-2.5 transition-colors">
               <LockKey size={18} className="text-muted" />
@@ -123,7 +126,7 @@ export default function LoginPage() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••••••"
+                placeholder={tAuth("passwordPlaceholder")}
                 required
                 className="bg-transparent text-xs text-primary placeholder-muted outline-none w-full font-medium"
               />
@@ -133,17 +136,17 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full py-3 bg-accent hover:bg-accent-hover text-white font-bold text-xs rounded-xl transition-all shadow-md flex items-center justify-center gap-2 mt-2"
+            className="w-full py-3 bg-accent hover:bg-accent-hover text-white font-bold text-xs rounded-xl transition-all shadow-md flex items-center justify-center gap-2 mt-2 cursor-pointer"
           >
-            <span>{isLoading ? "Authenticating..." : "Sign In to Workspace"}</span>
+            <span>{isLoading ? tAuth("authenticating") : tAuth("submitSignIn")}</span>
             <ArrowRight size={16} />
           </button>
         </form>
 
         <div className="mt-6 pt-4 border-t border-border text-center text-xs text-muted">
-          <span>Need technical assistance or account creation? </span>
+          <span>{tAuth("needHelp")} </span>
           <Link href="/start#contact" className="text-accent hover:underline font-semibold">
-            Contact Support
+            {tAuth("contactSupport")}
           </Link>
         </div>
       </div>

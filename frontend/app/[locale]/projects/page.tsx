@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import Link from "next/link";
-import { AppShell } from "../components/AppShell";
+import { Link } from "../../../i18n/routing";
+import { AppShell } from "../../components/AppShell";
 import {
   Plus,
   Pill,
@@ -10,8 +10,12 @@ import {
   MagnifyingGlass,
 } from "@phosphor-icons/react";
 import toast from "react-hot-toast";
+import { useTranslations } from "next-intl";
 
 export default function ProjectsPage() {
+  const tProjects = useTranslations("projects");
+  const tCommon = useTranslations("common");
+
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -103,19 +107,19 @@ export default function ProjectsPage() {
               Dossier Submission Workspace
             </span>
             <h1 className="font-lexend text-2xl font-bold text-primary mt-1">
-              My Projects & Dossier Submissions
+              {tProjects("title")}
             </h1>
             <p className="text-xs text-secondary">
-              Medicinal product metadata, country submission roles, eCTD sequence tracking, and document trees.
+              {tProjects("sub")}
             </p>
           </div>
 
           <button
             onClick={() => setShowCreateModal(true)}
-            className="px-4 py-2 bg-accent hover:bg-accent-hover text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center gap-1.5 shrink-0"
+            className="px-4 py-2 bg-accent hover:bg-accent-hover text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center gap-1.5 shrink-0 cursor-pointer"
           >
             <Plus size={16} />
-            <span>Create New Dossier Project</span>
+            <span>{tProjects("newProjectBtn")}</span>
           </button>
         </div>
 
@@ -125,7 +129,7 @@ export default function ProjectsPage() {
             <MagnifyingGlass size={16} className="text-muted shrink-0" />
             <input
               type="text"
-              placeholder="Search product name, project ID..."
+              placeholder={tCommon("search")}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="bg-transparent text-primary outline-none w-full text-xs"
@@ -210,14 +214,13 @@ export default function ProjectsPage() {
                 </div>
                 <button
                   onClick={() => setShowCreateModal(false)}
-                  className="text-secondary hover:text-primary text-xs font-bold px-2 py-1 bg-bg border border-border rounded"
+                  className="text-secondary hover:text-primary text-xs font-bold px-2 py-1 bg-bg border border-border rounded cursor-pointer"
                 >
-                  ✕ Close
+                  ✕ {tCommon("close")}
                 </button>
               </div>
 
               <form onSubmit={handleCreateProject} className="space-y-4 text-xs">
-                {/* Product Metadata */}
                 <div className="space-y-3">
                   <h3 className="font-lexend font-bold text-accent text-xs uppercase tracking-wider">
                     1. Medicinal Product Information
@@ -245,105 +248,6 @@ export default function ProjectsPage() {
                         className="w-full bg-bg border border-border rounded-lg p-2.5 text-primary outline-none focus:border-accent"
                       />
                     </div>
-
-                    <div>
-                      <label className="block text-primary font-semibold mb-1">Product Type</label>
-                      <input
-                        type="text"
-                        required
-                        value={newProject.productType}
-                        onChange={(e) => setNewProject({ ...newProject, productType: e.target.value })}
-                        className="w-full bg-bg border border-border rounded-lg p-2.5 text-primary outline-none focus:border-accent"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-primary font-semibold mb-1">Assigned Tariff</label>
-                      <select
-                        value={newProject.assignedTariff}
-                        onChange={(e) => setNewProject({ ...newProject, assignedTariff: e.target.value })}
-                        className="w-full bg-bg border border-border rounded-lg p-2.5 text-primary outline-none focus:border-accent"
-                      >
-                        <option value="Tariff OWN (Unlimited)">Tariff OWN (Unlimited)</option>
-                        <option value="Tariff S (50 Records)">Tariff S (50 Records)</option>
-                        <option value="Tariff M (200 Records)">Tariff M (200 Records)</option>
-                        <option value="Tariff L (500 Records)">Tariff L (500 Records)</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-primary font-semibold mb-1">Manufacturer Details</label>
-                      <input
-                        type="text"
-                        required
-                        value={newProject.manufacturer}
-                        onChange={(e) => setNewProject({ ...newProject, manufacturer: e.target.value })}
-                        className="w-full bg-bg border border-border rounded-lg p-2.5 text-primary outline-none focus:border-accent"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-primary font-semibold mb-1">Applicant Organization</label>
-                      <input
-                        type="text"
-                        required
-                        value={newProject.applicant}
-                        onChange={(e) => setNewProject({ ...newProject, applicant: e.target.value })}
-                        className="w-full bg-bg border border-border rounded-lg p-2.5 text-primary outline-none focus:border-accent"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Submission Config */}
-                <div className="space-y-3 pt-3 border-t border-border">
-                  <h3 className="font-lexend font-bold text-accent text-xs uppercase tracking-wider">
-                    2. Dossier Submission Request Configuration
-                  </h3>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-primary font-semibold mb-1">Submission Country</label>
-                      <input
-                        type="text"
-                        value={newProject.submissionCountry}
-                        onChange={(e) => setNewProject({ ...newProject, submissionCountry: e.target.value })}
-                        className="w-full bg-bg border border-border rounded-lg p-2.5 text-primary outline-none focus:border-accent"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-primary font-semibold mb-1">Submission Role</label>
-                      <select
-                        value={newProject.submissionRole}
-                        onChange={(e) => setNewProject({ ...newProject, submissionRole: e.target.value })}
-                        className="w-full bg-bg border border-border rounded-lg p-2.5 text-primary outline-none focus:border-accent"
-                      >
-                        <option value="Reference Member State (RMS)">Reference Member State (RMS)</option>
-                        <option value="Concerned Member State (CMS)">Concerned Member State (CMS)</option>
-                        <option value="National Procedure">National Procedure</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-primary font-semibold mb-1">Procedure Type</label>
-                      <input
-                        type="text"
-                        value={newProject.procedureType}
-                        onChange={(e) => setNewProject({ ...newProject, procedureType: e.target.value })}
-                        className="w-full bg-bg border border-border rounded-lg p-2.5 text-primary outline-none focus:border-accent"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-primary font-semibold mb-1">Initial Sequence Number</label>
-                      <input
-                        type="text"
-                        value={newProject.initialSequence}
-                        onChange={(e) => setNewProject({ ...newProject, initialSequence: e.target.value })}
-                        className="w-full bg-bg border border-border rounded-lg p-2.5 text-primary outline-none font-mono focus:border-accent"
-                      />
-                    </div>
                   </div>
                 </div>
 
@@ -351,15 +255,15 @@ export default function ProjectsPage() {
                   <button
                     type="button"
                     onClick={() => setShowCreateModal(false)}
-                    className="px-4 py-2 bg-bg hover:bg-surface-raised border border-border text-secondary font-semibold rounded-lg"
+                    className="px-4 py-2 bg-bg hover:bg-surface-raised border border-border text-secondary font-semibold rounded-lg cursor-pointer"
                   >
-                    Cancel
+                    {tCommon("cancel")}
                   </button>
                   <button
                     type="submit"
-                    className="px-5 py-2 bg-accent hover:bg-accent-hover text-white font-bold rounded-lg transition-all shadow-sm"
+                    className="px-5 py-2 bg-accent hover:bg-accent-hover text-white font-bold rounded-lg transition-all shadow-sm cursor-pointer"
                   >
-                    Save & Create Project Workspace
+                    {tCommon("save")}
                   </button>
                 </div>
               </form>

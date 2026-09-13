@@ -1,7 +1,7 @@
-import Link from "next/link";
+import { Link } from "../../i18n/routing";
 import { ArrowLeft } from "@phosphor-icons/react/dist/ssr";
-import { Navbar } from "./components/Navbar";
-import { Footer } from "./components/Footer";
+import { Navbar } from "../components/Navbar";
+import { Footer } from "../components/Footer";
 
 export default function NotFound() {
   return (
@@ -28,12 +28,6 @@ export default function NotFound() {
             >
               <ArrowLeft size={18} weight="bold" />
               Back to Home
-            </Link>
-            <Link
-              href="/#contact"
-              className="btn btn-ghost text-secondary hover:text-primary rounded-lg px-5 min-h-[42px] h-[42px] font-medium text-sm w-full sm:w-auto"
-            >
-              Contact Support
             </Link>
           </div>
         </div>

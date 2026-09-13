@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, use } from "react";
-import Link from "next/link";
-import { AppShell } from "../../components/AppShell";
+import { Link } from "../../../../i18n/routing";
+import { AppShell } from "../../../components/AppShell";
 import {
   Folder,
   FileCode,
@@ -16,12 +16,15 @@ import {
   DownloadSimple,
 } from "@phosphor-icons/react";
 import toast from "react-hot-toast";
+import { useTranslations } from "next-intl";
 
 interface PageParams {
   params: Promise<{ id: string }>;
 }
 
 export default function ProjectDetailPage({ params }: PageParams) {
+  const tProjects = useTranslations("projects");
+  const tCommon = useTranslations("common");
   const { id } = use(params);
 
   const [activeCategory, setActiveCategory] = useState<"admin" | "resume" | "minonazare">("admin");
@@ -153,7 +156,6 @@ export default function ProjectDetailPage({ params }: PageParams) {
   return (
     <AppShell>
       <div className="space-y-6">
-        {/* Navigation Breadcrumb */}
         <div className="flex items-center gap-2 text-xs font-semibold">
           <Link href="/projects" className="text-accent hover:underline">
             ← Back to Projects Workspace
@@ -162,7 +164,6 @@ export default function ProjectDetailPage({ params }: PageParams) {
           <span className="text-primary font-bold">Project Detail [{id}]</span>
         </div>
 
-        {/* Project Header Overview */}
         <div className="bg-surface border border-border p-5 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xs">
           <div>
             <div className="flex items-center gap-2 mb-1">
@@ -183,14 +184,13 @@ export default function ProjectDetailPage({ params }: PageParams) {
 
           <button
             onClick={handleGenerateXml}
-            className="px-5 py-2.5 bg-accent hover:bg-accent-hover text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center gap-2 shrink-0"
+            className="px-5 py-2.5 bg-accent hover:bg-accent-hover text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center gap-2 shrink-0 cursor-pointer"
           >
             <Sparkle size={18} />
             <span>Generate eCTD XML Package</span>
           </button>
         </div>
 
-        {/* Multi-Category File Tree & Drag-Drop Component */}
         <div className="bg-surface border border-border rounded-2xl p-6 shadow-sm space-y-6">
           <div className="flex items-center justify-between pb-4 border-b border-border">
             <div className="flex items-center gap-2">
@@ -202,11 +202,10 @@ export default function ProjectDetailPage({ params }: PageParams) {
             <span className="text-xs font-semibold text-accent">Active Sequence: #0004</span>
           </div>
 
-          {/* Category Tabs */}
           <div className="flex items-center gap-2 bg-bg p-1.5 rounded-xl border border-border">
             <button
               onClick={() => setActiveCategory("admin")}
-              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-2 ${
+              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-2 cursor-pointer ${
                 activeCategory === "admin"
                   ? "bg-accent text-white"
                   : "text-secondary hover:text-primary"
@@ -221,7 +220,7 @@ export default function ProjectDetailPage({ params }: PageParams) {
 
             <button
               onClick={() => setActiveCategory("resume")}
-              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-2 ${
+              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-2 cursor-pointer ${
                 activeCategory === "resume"
                   ? "bg-accent text-white"
                   : "text-secondary hover:text-primary"
@@ -236,7 +235,7 @@ export default function ProjectDetailPage({ params }: PageParams) {
 
             <button
               onClick={() => setActiveCategory("minonazare")}
-              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-2 ${
+              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-2 cursor-pointer ${
                 activeCategory === "minonazare"
                   ? "bg-accent text-white"
                   : "text-secondary hover:text-primary"
@@ -250,7 +249,6 @@ export default function ProjectDetailPage({ params }: PageParams) {
             </button>
           </div>
 
-          {/* Drag & Drop Upload Zone */}
           <div
             onDragEnter={handleDrag}
             onDragOver={handleDrag}
@@ -281,7 +279,6 @@ export default function ProjectDetailPage({ params }: PageParams) {
             </span>
           </div>
 
-          {/* Document File Tree Table */}
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs text-secondary">
               <thead className="bg-bg text-primary uppercase font-bold text-[10px] tracking-wider border-b border-border">
@@ -327,7 +324,6 @@ export default function ProjectDetailPage({ params }: PageParams) {
           </div>
         </div>
 
-        {/* Dossier & XML History Tables */}
         <div className="bg-surface border border-border rounded-2xl overflow-hidden shadow-sm">
           <div className="p-5 border-b border-border flex items-center gap-2">
             <FileZip size={20} className="text-accent" />
@@ -361,7 +357,7 @@ export default function ProjectDetailPage({ params }: PageParams) {
                     <td className="py-3.5 px-4 text-right">
                       <button
                         onClick={() => toast.success(`Downloading Sequence ${h.sequence} eCTD ZIP...`)}
-                        className="p-1.5 text-accent hover:bg-accent/15 rounded-lg transition-colors inline-flex items-center gap-1 font-bold text-[11px]"
+                        className="p-1.5 text-accent hover:bg-accent/15 rounded-lg transition-colors inline-flex items-center gap-1 font-bold text-[11px] cursor-pointer"
                       >
                         <DownloadSimple size={14} />
                         <span>ZIP</span>

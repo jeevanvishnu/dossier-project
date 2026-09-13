@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { AppShell } from "../components/AppShell";
+import { AppShell } from "../../components/AppShell";
 import {
   CaretDown,
   CaretUp,
@@ -16,8 +16,10 @@ import {
   UserGear,
   ListBullets,
 } from "@phosphor-icons/react";
+import { useTranslations } from "next-intl";
 
 export default function SystemTourPage() {
+  const tTour = useTranslations("tour");
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
   const faqs = [
@@ -43,7 +45,7 @@ export default function SystemTourPage() {
     {
       title: "Dashboard Overview (/dashboard)",
       icon: SquaresFour,
-      desc: "Centralized control center featuring the Current Tariff Plan Widget, administrative announcements area, My Dossiers real-time breakdown (Pinned, In Progress, Total), and PDF User Manual download.",
+      desc: tTour("welcomeStepDesc"),
     },
     {
       title: "My Contracts Register (/contracts)",
@@ -58,7 +60,7 @@ export default function SystemTourPage() {
     {
       title: "My Projects & Dossiers (/projects)",
       icon: Folders,
-      desc: "Captures medicinal product metadata, submission country/roles (RMS/CMS), multi-category file tree (Adin information, Resume, Minonazare) with drag-and-drop uploads and MD5 checksum tracking.",
+      desc: tTour("dossierStepDesc"),
     },
     {
       title: "Account & User Settings (/profile/account)",
@@ -68,27 +70,25 @@ export default function SystemTourPage() {
     {
       title: "Activity Log & Audit Trail (/journal)",
       icon: ListBullets,
-      desc: "Tamper-evident audit trail table tracking logins, session exits, file uploads, and file deletions with precise timestamps and transaction hashes.",
+      desc: tTour("securityStepDesc"),
     },
   ];
 
   return (
     <AppShell>
       <div className="space-y-6">
-        {/* Header */}
         <div className="bg-surface border border-border p-5 rounded-2xl shadow-xs">
           <span className="text-[10px] uppercase tracking-wider font-bold text-accent px-2 py-0.5 rounded bg-accent/10 border border-border">
             Interactive Walkthrough & Regulations
           </span>
           <h1 className="font-lexend text-2xl font-bold text-primary mt-1">
-            System Tour & Technical Support (/tour)
+            {tTour("title")} (/tour)
           </h1>
           <p className="text-xs text-secondary">
-            In-depth module walkthroughs, common Q&A friction resolution, and official technical support regulations.
+            {tTour("sub")}
           </p>
         </div>
 
-        {/* Technical Support Regulations Card */}
         <div className="bg-surface border border-border rounded-2xl p-6 shadow-sm">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="space-y-2">
@@ -127,7 +127,6 @@ export default function SystemTourPage() {
           </div>
         </div>
 
-        {/* Q&A Accordions */}
         <div className="bg-surface border border-border rounded-2xl p-6 shadow-sm space-y-4">
           <h2 className="font-lexend font-bold text-base text-primary pb-3 border-b border-border">
             Frequently Asked Questions & Friction Resolution
@@ -141,7 +140,7 @@ export default function SystemTourPage() {
               >
                 <button
                   onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
-                  className="w-full p-4 text-left flex items-center justify-between text-xs font-bold text-primary hover:text-accent transition-colors"
+                  className="w-full p-4 text-left flex items-center justify-between text-xs font-bold text-primary hover:text-accent transition-colors cursor-pointer"
                 >
                   <span>{faq.q}</span>
                   {openFaq === idx ? (
@@ -161,7 +160,6 @@ export default function SystemTourPage() {
           </div>
         </div>
 
-        {/* Module Walkthrough Descriptions */}
         <div className="bg-surface border border-border rounded-2xl p-6 shadow-sm space-y-4">
           <h2 className="font-lexend font-bold text-base text-primary pb-3 border-b border-border">
             In-Depth Module Walkthrough Descriptions

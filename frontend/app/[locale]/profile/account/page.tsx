@@ -1,7 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import { AppShell } from "../../components/AppShell";
+import { AppShell } from "../../../components/AppShell";
+import { ComingSoon } from "../../../components/ComingSoon";
+import { useTranslations } from "next-intl";
 import {
   UploadSimple,
   LockKey,
@@ -15,6 +17,7 @@ import {
 import toast from "react-hot-toast";
 
 export default function AccountSettingsPage() {
+  const tProfile = useTranslations("profile");
   const [activeTab, setActiveTab] = useState<"users" | "avatar" | "password" | "company">("users");
 
   // User List Management State (Admin View)
@@ -149,21 +152,29 @@ export default function AccountSettingsPage() {
 
   return (
     <AppShell>
+      {/* Active Coming Soon View */}
+      <ComingSoon
+        title={tProfile("title")}
+        description={tProfile("sub")}
+      />
+
+      {/* 
+      ========================================================================
+      ORIGINAL ACCOUNT PROFILE PAGE DESIGN CODE (COMMENTED OUT FOR PRESERVATION)
+      ========================================================================
       <div className="space-y-6">
-        {/* Header */}
         <div className="bg-surface border border-border p-5 rounded-2xl shadow-xs">
           <span className="text-[10px] uppercase tracking-wider font-bold text-accent px-2 py-0.5 rounded bg-accent/10 border border-accent/20">
             Organization & Security Controls
           </span>
           <h1 className="font-lexend text-2xl font-bold text-primary mt-1">
-            Account & Login Settings
+            Account & Login Settings (/profile/account)
           </h1>
           <p className="text-xs text-secondary">
             User administration table, avatar photo uploads, security credential updates, and corporate TIN/BIN details.
           </p>
         </div>
 
-        {/* Tab Navigation */}
         <div className="flex items-center gap-2 bg-surface border border-border p-1.5 rounded-2xl overflow-x-auto shadow-xs">
           <button
             onClick={() => setActiveTab("users")}
@@ -206,7 +217,6 @@ export default function AccountSettingsPage() {
           </button>
         </div>
 
-        {/* TAB 1: User List Management Table (Admin View) */}
         {activeTab === "users" && (
           <div className="bg-surface border border-border rounded-2xl overflow-hidden shadow-sm">
             <div className="p-5 border-b border-border flex items-center justify-between">
@@ -298,7 +308,6 @@ export default function AccountSettingsPage() {
           </div>
         )}
 
-        {/* TAB 2: Photo Upload Card */}
         {activeTab === "avatar" && (
           <div className="bg-surface border border-border rounded-2xl p-6 shadow-sm max-w-xl space-y-4">
             <div className="flex items-center gap-2 pb-3 border-b border-border">
@@ -328,27 +337,28 @@ export default function AccountSettingsPage() {
                   type="file"
                   accept="image/*"
                   onChange={handleAvatarChange}
-                  className="block w-full text-xs text-secondary file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-accent/15 file:text-accent hover:file:bg-accent/25 cursor-pointer"
+                  className="block w-full text-xs text-secondary file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-accent file:text-white hover:file:bg-accent-hover file:cursor-pointer cursor-pointer"
                 />
-                {avatarError && <p className="text-xs font-semibold text-red-500">{avatarError}</p>}
+                {avatarError && (
+                  <p className="text-xs text-red-500 font-medium">{avatarError}</p>
+                )}
               </div>
             </div>
           </div>
         )}
 
-        {/* TAB 3: Password Update Card */}
         {activeTab === "password" && (
-          <div className="bg-surface border border-border rounded-2xl p-6 shadow-sm max-w-xl space-y-4">
+          <div className="bg-surface border border-border rounded-2xl p-6 shadow-sm max-w-lg space-y-4">
             <div className="flex items-center gap-2 pb-3 border-b border-border">
               <LockKey size={20} className="text-accent" />
               <h2 className="font-lexend font-bold text-base text-primary">
-                Password Update Card
+                Security Password Update Panel
               </h2>
             </div>
 
             <form onSubmit={handlePasswordSubmit} className="space-y-4 text-xs">
               <div>
-                <label className="block text-primary font-bold mb-1">Current Security Password</label>
+                <label className="block text-primary font-bold mb-1">Current Password</label>
                 <input
                   type="password"
                   required
@@ -359,7 +369,7 @@ export default function AccountSettingsPage() {
               </div>
 
               <div>
-                <label className="block text-primary font-bold mb-1">New Password (Min 8 Chars)</label>
+                <label className="block text-primary font-bold mb-1">New Security Password (Min 8 Chars)</label>
                 <input
                   type="password"
                   required
@@ -370,7 +380,7 @@ export default function AccountSettingsPage() {
               </div>
 
               <div>
-                <label className="block text-primary font-bold mb-1">Confirm New Password</label>
+                <label className="block text-primary font-bold mb-1">Confirm New Security Password</label>
                 <input
                   type="password"
                   required
@@ -390,7 +400,6 @@ export default function AccountSettingsPage() {
           </div>
         )}
 
-        {/* TAB 4: Company Data & Representation Panel */}
         {activeTab === "company" && (
           <div className="bg-surface border border-border rounded-2xl p-6 shadow-sm max-w-2xl space-y-4">
             <div className="flex items-center gap-2 pb-3 border-b border-border">
@@ -469,7 +478,6 @@ export default function AccountSettingsPage() {
           </div>
         )}
 
-        {/* Modal for Add User */}
         {showAddUserModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
             <div className="bg-surface border border-border rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
@@ -550,6 +558,7 @@ export default function AccountSettingsPage() {
           </div>
         )}
       </div>
+      */}
     </AppShell>
   );
 }

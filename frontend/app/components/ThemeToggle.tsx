@@ -17,28 +17,27 @@ export function ThemeToggle({ className = "", showLabel = false }: ThemeTogglePr
     setMounted(true);
   }, []);
 
-  if (!mounted) {
-    return (
-      <div className={`w-9 h-9 rounded-xl bg-surface/50 animate-pulse ${className}`} />
-    );
-  }
+  const isLight = mounted ? theme === "light" : false;
 
-  const isLight = theme === "light";
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    toggleTheme();
+  };
 
   return (
     <button
-      onClick={toggleTheme}
+      onClick={handleClick}
       type="button"
-      className={`relative inline-flex items-center justify-center gap-2 p-2 rounded-xl bg-surface-raised/80 hover:bg-surface border border-border/80 text-secondary hover:text-primary transition-all duration-200 shadow-xs focus:outline-none focus:ring-2 focus:ring-accent/40 ${className}`}
-      title={isLight ? "Switch to Navy Dark Mode" : "Switch to Light (White) Mode"}
+      className={`p-2 text-secondary hover:text-primary rounded-lg bg-bg border border-border transition-colors cursor-pointer flex items-center justify-center gap-1.5 ${className}`}
+      title={isLight ? "Switch to Dark Mode" : "Switch to Light Mode"}
       aria-label="Toggle Theme"
     >
       {isLight ? (
-        <Sun size={18} className="text-amber-500 animate-spin-once" weight="fill" />
+        <Sun size={18} className="text-amber-500" weight="fill" />
       ) : (
-        <Moon size={18} className="text-accent animate-pulse" weight="fill" />
+        <Moon size={18} className="text-accent" weight="fill" />
       )}
-      {showLabel && (
+      {showLabel && mounted && (
         <span className="text-xs font-semibold select-none">
           {isLight ? "Light Mode" : "Dark Navy"}
         </span>
