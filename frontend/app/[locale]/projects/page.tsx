@@ -10,7 +10,7 @@ import {
   MagnifyingGlass,
   SquaresFour,
   List,
-  Gear,
+  SlidersHorizontal,
   PencilSimple,
   Trash,
   User,
@@ -289,14 +289,6 @@ export default function ProjectsPage() {
                         {prj.status}
                       </span>
                     </div>
-
-                    <button
-                      onClick={() => setActiveSettingsProject(prj)}
-                      title="Project Settings & Actions"
-                      className="p-1.5 hover:bg-bg border border-transparent hover:border-border text-secondary hover:text-accent rounded-lg transition-colors cursor-pointer"
-                    >
-                      <Gear size={18} />
-                    </button>
                   </div>
 
                   <h3 className="font-lexend font-bold text-base text-primary mb-1 group-hover:text-accent transition-colors">
@@ -368,11 +360,7 @@ export default function ProjectsPage() {
                     <th className="py-3.5 px-4">Responsible User</th>
                     <th className="py-3.5 px-4">Tariff</th>
                     <th className="py-3.5 px-4">Status</th>
-                    <th className="py-3.5 px-4 text-center">
-                      <div className="flex items-center justify-center gap-1">
-                        <Gear size={16} className="text-accent" />
-                      </div>
-                    </th>
+                    <th className="py-3.5 px-4 text-center">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -440,16 +428,9 @@ export default function ProjectsPage() {
                         </span>
                       </td>
 
-                      {/* 10. Gear Icon Actions */}
+                      {/* 10. Actions */}
                       <td className="py-3.5 px-4 text-center whitespace-nowrap">
                         <div className="flex items-center justify-center gap-1.5">
-                          <button
-                            onClick={() => setActiveSettingsProject(prj)}
-                            title="Project Settings & Details"
-                            className="p-1.5 hover:bg-bg border border-border text-secondary hover:text-accent rounded-lg transition-colors cursor-pointer"
-                          >
-                            <Gear size={16} />
-                          </button>
                           <Link
                             href={`/projects/${prj.id}`}
                             title="Open Workspace"
@@ -619,7 +600,7 @@ export default function ProjectsPage() {
             <div className="bg-surface border border-border rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-5">
               <div className="flex items-center justify-between border-b border-border pb-3">
                 <div className="flex items-center gap-2">
-                  <Gear size={22} className="text-accent" />
+                  <SlidersHorizontal size={22} className="text-accent" />
                   <div>
                     <h2 className="font-lexend font-bold text-base text-primary">
                       Project Configuration ({activeSettingsProject.id})

@@ -4,7 +4,6 @@ import React, { useState } from "react";
 import {
   CheckCircle,
   CaretDown,
-  Broom,
   FloppyDiskBack,
   Globe,
   ListChecks,
@@ -139,7 +138,7 @@ export const DossierDataView: React.FC = () => {
   };
 
   const handleSaveCard2 = () => {
-    toast.success("Dossier Data Configuration saved (Сохранено)!");
+    toast.success("Dossier Data Configuration saved!");
   };
 
   const handleAddExcipient = () => {
@@ -715,14 +714,6 @@ export const DossierDataView: React.FC = () => {
         {/* Card Footer Actions */}
         <div className="flex justify-end items-center gap-3 pt-2 border-t border-border">
           <button
-            onClick={handleClearCard1}
-            type="button"
-            className="px-4 py-2 bg-surface-raised hover:bg-border text-primary border border-border text-xs font-semibold rounded-xl transition-all flex items-center gap-2 cursor-pointer"
-          >
-            <Broom size={16} />
-            <span>Clear Data</span>
-          </button>
-          <button
             onClick={handleSaveCard1}
             type="button"
             className="px-4 py-2 bg-accent hover:bg-accent-hover text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer"
@@ -867,7 +858,7 @@ export const DossierDataView: React.FC = () => {
             className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer"
           >
             <Check size={16} weight="bold" />
-            <span>Save Data (Сохранять данные)</span>
+            <span>Save Data</span>
           </button>
         </div>
       </div>
