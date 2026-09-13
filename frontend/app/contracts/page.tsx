@@ -63,7 +63,7 @@ export default function ContractsPage() {
             <span className="text-[10px] uppercase tracking-wider font-medium text-accent px-2 py-0.5 rounded bg-accent/10 border border-accent/20">
               Contract Lifecycle Management
             </span>
-            <h1 className="font-lexend text-xl font-medium text-primary mt-1">
+            <h1 className="font-lexend text-2xl font-bold text-primary mt-1">
               My Contracts Register
             </h1>
             <p className="text-xs text-secondary">
@@ -96,25 +96,22 @@ export default function ContractsPage() {
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <button
               onClick={() => setFilterType("all")}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
-                filterType === "all" ? "bg-accent text-white" : "bg-bg text-secondary hover:text-primary border border-border"
-              }`}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${filterType === "all" ? "bg-accent text-white" : "bg-bg text-secondary hover:text-primary border border-border"
+                }`}
             >
               All Contracts ({contracts.length})
             </button>
             <button
               onClick={() => setFilterType("active")}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
-                filterType === "active" ? "bg-emerald-500 text-white" : "bg-bg text-secondary hover:text-primary border border-border"
-              }`}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${filterType === "active" ? "bg-emerald-500 text-white" : "bg-bg text-secondary hover:text-primary border border-border"
+                }`}
             >
               Active Legal
             </button>
             <button
               onClick={() => setFilterType("expired")}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
-                filterType === "expired" ? "bg-red-500 text-white" : "bg-bg text-secondary hover:text-primary border border-border"
-              }`}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${filterType === "expired" ? "bg-red-500 text-white" : "bg-bg text-secondary hover:text-primary border border-border"
+                }`}
             >
               Expired Terms
             </button>

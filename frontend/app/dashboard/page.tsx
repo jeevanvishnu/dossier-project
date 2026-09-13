@@ -26,7 +26,7 @@ export default function DashboardPage() {
   });
 
   const [activeTariff, setActiveTariff] = useState({
-    name: "Tariff OWN (MUP) (unlimited)",
+    name: "Tariff OWN (MUP) (Unlimited)",
     isUnlimited: true,
     storageLimit: "Unlimited",
     recordsLimit: "Unlimited",
@@ -81,14 +81,14 @@ export default function DashboardPage() {
 
   const handleResetTariff = () => {
     setActiveTariff({
-      name: "Tariff OWN (MUP) (unlimited)",
+      name: "Tariff OWN (MUP) (Unlimited)",
       isUnlimited: true,
       storageLimit: "Unlimited",
       recordsLimit: "Unlimited",
       status: "Active Plan",
     });
-    setEditTariffName("Tariff OWN (MUP) (unlimited)");
-    toast.success("Reset to default Tariff OWN (MUP) (unlimited)!");
+    setEditTariffName("Tariff OWN (MUP) (Unlimited)");
+    toast.success("Reset to default Tariff OWN (MUP) (Unlimited)!");
   };
 
   return (
@@ -108,7 +108,7 @@ export default function DashboardPage() {
                     <CreditCard size={20} weight="bold" />
                   </div>
                   <div>
-                    <h3 className="font-lexend font-bold text-xs uppercase tracking-wider text-muted">
+                    <h3 className="font-lexend font-semibold text-xs uppercase tracking-wider text-muted">
                       Current Tariff Plan Widget
                     </h3>
                     <span className="text-[11px] font-semibold text-emerald-500 flex items-center gap-1">
@@ -125,7 +125,7 @@ export default function DashboardPage() {
                       setIsEditModalOpen(true);
                     }}
                     title="Edit/Modify tariff parameters"
-                    className="px-2.5 py-1.5 rounded-xl bg-bg hover:bg-surface-raised border border-border text-secondary hover:text-accent transition-colors flex items-center gap-1.5 text-xs font-semibold shadow-2xs"
+                    className="px-2.5 py-1.5 rounded-xl bg-bg hover:bg-surface-raised border border-border text-secondary hover:text-accent transition-colors flex items-center gap-1.5 text-xs font-medium shadow-2xs"
                   >
                     <PencilSimple size={16} />
                     <span className="hidden sm:inline">Edit</span>
@@ -133,7 +133,7 @@ export default function DashboardPage() {
                   <button
                     onClick={() => setIsDeleteModalOpen(true)}
                     title="Delete or clear current tariff configuration"
-                    className="px-2.5 py-1.5 rounded-xl bg-bg hover:bg-red-500/10 border border-border text-secondary hover:text-red-500 transition-colors flex items-center gap-1.5 text-xs font-semibold shadow-2xs"
+                    className="px-2.5 py-1.5 rounded-xl bg-bg hover:bg-red-500/10 border border-border text-secondary hover:text-red-500 transition-colors flex items-center gap-1.5 text-xs font-medium shadow-2xs"
                   >
                     <Trash size={16} />
                     <span className="hidden sm:inline">Delete</span>
@@ -145,11 +145,11 @@ export default function DashboardPage() {
               {activeTariff.isUnlimited ? (
                 <div className="bg-bg border border-border rounded-xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
                   <div className="space-y-1.5 text-center sm:text-left">
-                    <span className="text-[10px] font-extrabold text-muted uppercase tracking-wider">Active Subscription Plan Name</span>
-                    <h2 className="font-lexend font-extrabold text-lg text-primary">
+                    <span className="text-[10px] font-semibold text-muted uppercase tracking-wider">Active Subscription Plan Name</span>
+                    <h2 className="font-lexend font-bold text-base md:text-lg text-primary">
                       {activeTariff.name}
                     </h2>
-                    <p className="text-xs text-secondary leading-relaxed">
+                    <p className="text-xs text-secondary leading-relaxed font-normal">
                       Unlimited data storage space, records, and capacity limits allocated.
                     </p>
                   </div>
@@ -157,7 +157,7 @@ export default function DashboardPage() {
                   {/* Infinity Symbol Visual Box */}
                   <div className="flex flex-col items-center justify-center p-3.5 rounded-2xl bg-accent/10 border border-accent/25 text-accent min-w-[125px] shrink-0 text-center shadow-xs">
                     <InfinityIcon size={38} weight="bold" />
-                    <span className="text-[10px] font-extrabold uppercase tracking-wider mt-1 text-accent">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider mt-1 text-accent">
                       Infinity (∞)
                     </span>
                     <span className="text-[9px] text-muted font-medium">Unlimited Capacity</span>
@@ -165,12 +165,12 @@ export default function DashboardPage() {
                 </div>
               ) : (
                 <div className="bg-bg border border-dashed border-red-500/30 rounded-xl p-5 flex flex-col items-center justify-center text-center space-y-2">
-                  <span className="text-xs font-semibold text-red-400">Tariff Configuration Cleared / Inactive</span>
+                  <span className="text-xs font-medium text-red-400">Tariff Configuration Cleared / Inactive</span>
                   <button
                     onClick={handleResetTariff}
-                    className="text-xs text-accent underline font-semibold hover:text-accent-hover"
+                    className="text-xs text-accent underline font-medium hover:text-accent-hover"
                   >
-                    Restore Tariff OWN (MUP) (unlimited)
+                    Restore Tariff OWN (MUP) (Unlimited)
                   </button>
                 </div>
               )}
@@ -192,7 +192,7 @@ export default function DashboardPage() {
                     <p className="text-[10px] text-muted font-medium">Administrative Announcements</p>
                   </div>
                 </div>
-                <span className="px-2 py-0.5 rounded-full bg-accent/15 text-accent font-bold text-[10px]">
+                <span className="px-2 py-0.5 rounded-full bg-accent/15 text-accent font-semibold text-[10px]">
                   {announcements.length} New
                 </span>
               </div>
@@ -201,12 +201,12 @@ export default function DashboardPage() {
                 {announcements.map((item) => (
                   <div key={item.id} className="bg-bg border border-border p-3.5 rounded-xl hover:border-accent/30 transition-colors">
                     <div className="flex items-center justify-between gap-2 mb-1">
-                      <span className="text-xs font-bold text-primary truncate max-w-[200px]">{item.title}</span>
-                      <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-accent/15 text-accent shrink-0">
+                      <span className="text-xs font-semibold text-primary truncate max-w-[200px]">{item.title}</span>
+                      <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-accent/15 text-accent shrink-0">
                         {item.category}
                       </span>
                     </div>
-                    <p className="text-[11px] text-secondary leading-snug line-clamp-2">{item.content}</p>
+                    <p className="text-[11px] text-secondary leading-snug line-clamp-2 font-normal">{item.content}</p>
                     <div className="mt-2 text-[9px] text-muted font-medium flex items-center justify-between border-t border-border/40 pt-1.5">
                       <span>Ref ID: {item.id}</span>
                       <span>{item.date}</span>
@@ -219,13 +219,13 @@ export default function DashboardPage() {
 
         </div>
 
-        {/* 3-Card Header Grid (Matching reference image changeplan.png) */}
+        {/* 3-Card Header Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
           {/* Card 1: My dossiers */}
           <div className="bg-surface border border-border rounded-2xl p-6 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
             <div>
-              <h3 className="font-lexend font-bold text-lg text-primary text-center mb-6">
+              <h3 className="font-lexend font-semibold text-base md:text-lg text-primary text-center mb-6">
                 My dossiers
               </h3>
 
@@ -233,14 +233,14 @@ export default function DashboardPage() {
                 {/* Pinned */}
                 <div className="flex items-center justify-between py-1.5 px-2 rounded-xl">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-red-600 text-white flex items-center justify-center shadow-xs shrink-0">
+                    <div className="w-8 h-8 rounded-lg bg-accent text-white flex items-center justify-center shadow-xs shrink-0">
                       <PushPin size={18} weight="fill" />
                     </div>
-                    <span className="text-sm font-semibold text-primary">Pinned</span>
+                    <span className="text-sm font-medium text-primary">Pinned</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-secondary/30 font-light">|</span>
-                    <span className="font-lexend font-bold text-base text-primary min-w-[20px] text-right">
+                    <span className="font-lexend font-semibold text-base text-primary min-w-[20px] text-right">
                       {dossierCounts.pinned}
                     </span>
                   </div>
@@ -252,11 +252,11 @@ export default function DashboardPage() {
                     <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center shadow-xs shrink-0">
                       <LockKey size={18} weight="fill" />
                     </div>
-                    <span className="text-sm font-semibold text-primary">In progress</span>
+                    <span className="text-sm font-medium text-primary">In progress</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-secondary/30 font-light">|</span>
-                    <span className="font-lexend font-bold text-base text-primary min-w-[20px] text-right">
+                    <span className="font-lexend font-semibold text-base text-primary min-w-[20px] text-right">
                       {dossierCounts.inProgress}
                     </span>
                   </div>
@@ -268,11 +268,11 @@ export default function DashboardPage() {
                     <div className="w-8 h-8 rounded-lg bg-slate-700 text-white flex items-center justify-center shadow-xs shrink-0">
                       <Files size={18} weight="fill" />
                     </div>
-                    <span className="text-sm font-semibold text-primary">Total count</span>
+                    <span className="text-sm font-medium text-primary">Total count</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-secondary/30 font-light">|</span>
-                    <span className="font-lexend font-bold text-base text-primary min-w-[20px] text-right">
+                    <span className="font-lexend font-semibold text-base text-primary min-w-[20px] text-right">
                       {dossierCounts.total}
                     </span>
                   </div>
@@ -283,7 +283,7 @@ export default function DashboardPage() {
             <div className="mt-8">
               <Link
                 href="/projects"
-                className="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-semibold text-sm rounded-xl transition-all shadow-xs hover:shadow-md flex items-center justify-center text-center"
+                className="w-full py-3 bg-accent hover:bg-accent-hover text-white font-medium text-sm rounded-xl transition-all shadow-xs hover:shadow-md flex items-center justify-center text-center"
               >
                 Complete in progress
               </Link>
@@ -293,7 +293,7 @@ export default function DashboardPage() {
           {/* Card 2: Running out of space on your tariff? */}
           <div className="bg-surface border border-border rounded-2xl p-6 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
             <div>
-              <h3 className="font-lexend font-bold text-lg text-primary text-center mb-4 leading-snug">
+              <h3 className="font-lexend font-semibold text-base md:text-lg text-primary text-center mb-4 leading-snug">
                 Running out of space on your tariff?
               </h3>
 
@@ -310,7 +310,7 @@ export default function DashboardPage() {
             <div className="mt-8">
               <Link
                 href="/tariffs"
-                className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm rounded-xl transition-all shadow-xs hover:shadow-md flex items-center justify-center text-center"
+                className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-sm rounded-xl transition-all shadow-xs hover:shadow-md flex items-center justify-center text-center"
               >
                 Change plan
               </Link>
@@ -320,7 +320,7 @@ export default function DashboardPage() {
           {/* Card 3: Don't forget to study the manual! */}
           <div className="bg-surface border border-border rounded-2xl p-6 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
             <div>
-              <h3 className="font-lexend font-bold text-lg text-primary text-center mb-4 leading-snug">
+              <h3 className="font-lexend font-semibold text-base md:text-lg text-primary text-center mb-4 leading-snug">
                 Don't forget to study the manual!
               </h3>
 
@@ -337,7 +337,7 @@ export default function DashboardPage() {
             <div className="mt-8">
               <button
                 onClick={handleDownloadManual}
-                className="w-full py-3 bg-slate-900 hover:bg-black dark:bg-slate-800 dark:hover:bg-slate-700 text-white font-semibold text-sm rounded-xl transition-all shadow-xs hover:shadow-md flex items-center justify-center text-center"
+                className="w-full py-3 bg-slate-900 hover:bg-black dark:bg-slate-800 dark:hover:bg-slate-700 text-white font-medium text-sm rounded-xl transition-all shadow-xs hover:shadow-md flex items-center justify-center text-center"
               >
                 Download manual now!
               </button>
@@ -382,13 +382,13 @@ export default function DashboardPage() {
               <div className="bg-bg p-3 rounded-xl border border-border space-y-1 text-xs">
                 <div className="flex justify-between">
                   <span className="text-secondary">Capacity Limits:</span>
-                  <span className="text-emerald-500 font-bold flex items-center gap-1">
+                  <span className="text-emerald-500 font-semibold flex items-center gap-1">
                     <InfinityIcon size={14} /> Unlimited (∞)
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-secondary">Data Storage:</span>
-                  <span className="text-emerald-500 font-bold">Unlimited</span>
+                  <span className="text-emerald-500 font-semibold">Unlimited</span>
                 </div>
               </div>
 
@@ -402,7 +402,7 @@ export default function DashboardPage() {
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-accent hover:bg-accent-hover text-white rounded-xl text-xs font-bold transition-colors shadow-xs"
+                  className="px-4 py-2 bg-accent hover:bg-accent-hover text-white rounded-xl text-xs font-semibold transition-colors shadow-xs"
                 >
                   Save Parameters
                 </button>
@@ -431,7 +431,7 @@ export default function DashboardPage() {
 
             <p className="text-xs text-secondary leading-relaxed">
               Are you sure you want to clear or delete the active subscription plan configuration (
-              <strong className="text-primary">{activeTariff.name}</strong>)? This will remove your active capacity allocation status until reconfigured.
+              <strong className="text-primary font-semibold">{activeTariff.name}</strong>)? This will remove your active capacity allocation status until reconfigured.
             </p>
 
             <div className="flex items-center justify-end gap-3 pt-2">
@@ -445,7 +445,7 @@ export default function DashboardPage() {
               <button
                 type="button"
                 onClick={handleConfirmDeleteTariff}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition-colors shadow-xs"
+                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-semibold transition-colors shadow-xs"
               >
                 Clear Tariff Configuration
               </button>
@@ -456,5 +456,6 @@ export default function DashboardPage() {
     </AppShell>
   );
 }
+
 
 

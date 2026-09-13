@@ -150,13 +150,13 @@ export function PricingSection() {
         </p>
 
         {/* Toggles Container: Billing Cycle & Currency Switcher */}
-        <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 mt-3">
+        <div className="flex flex-wrap items-center justify-center gap-2.5 sm:gap-3 mt-2">
           {/* Billing Cycle Segmented Control */}
-          <div className="inline-flex items-center p-1.5 bg-surface-raised border border-border/80 rounded-2xl shadow-inner">
+          <div className="inline-flex items-center p-1 bg-surface-raised border border-border/80 rounded-xl shadow-inner">
             <button
               onClick={() => setBillingCycle("monthly")}
-              className={`px-4 sm:px-5 py-2 text-xs sm:text-sm font-bold rounded-xl transition-all duration-200 ${billingCycle === "monthly"
-                ? "bg-accent text-white shadow-md shadow-accent/25"
+              className={`px-3 sm:px-4 py-1.5 text-xs font-bold rounded-lg transition-all duration-200 ${billingCycle === "monthly"
+                ? "bg-accent text-white shadow-sm shadow-accent/25"
                 : "text-secondary hover:text-primary"
                 }`}
             >
@@ -164,20 +164,20 @@ export function PricingSection() {
             </button>
             <button
               onClick={() => setBillingCycle("annual")}
-              className={`px-4 sm:px-5 py-2 text-xs sm:text-sm font-bold rounded-xl transition-all duration-200 flex items-center gap-2 ${billingCycle === "annual"
-                ? "bg-accent text-white shadow-md shadow-accent/25"
+              className={`px-3 sm:px-4 py-1.5 text-xs font-bold rounded-lg transition-all duration-200 flex items-center gap-1.5 ${billingCycle === "annual"
+                ? "bg-accent text-white shadow-sm shadow-accent/25"
                 : "text-secondary hover:text-primary"
                 }`}
             >
               Annual Billing
-              <span className="text-[10px] uppercase font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+              <span className="text-[9px] uppercase font-extrabold px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
                 Save 20%
               </span>
             </button>
           </div>
 
           {/* Currency Switcher Segmented Control */}
-          <div className="inline-flex items-center p-1.5 bg-surface-raised border border-border/80 rounded-2xl shadow-inner select-none">
+          <div className="inline-flex items-center p-1 bg-surface-raised border border-border/80 rounded-xl shadow-inner select-none">
             {currencyOptions.map((opt) => {
               const isSelected = currency === opt.code;
               return (
@@ -185,13 +185,13 @@ export function PricingSection() {
                   key={opt.code}
                   type="button"
                   onClick={() => setCurrency(opt.code)}
-                  className={`px-3.5 py-2 text-xs sm:text-sm font-bold rounded-xl transition-all duration-200 flex items-center gap-1.5 ${isSelected
+                  className={`px-2.5 py-1.5 text-xs font-bold rounded-lg transition-all duration-200 flex items-center gap-1 ${isSelected
                     ? "bg-accent/20 text-accent border border-accent/40 shadow-sm"
                     : "text-secondary hover:text-primary"
                     }`}
                 >
-                  <span className="font-extrabold text-sm">{opt.symbol}</span>
-                  <span className="text-xs font-semibold tracking-wide">{opt.code}</span>
+                  <span className="font-extrabold text-xs">{opt.symbol}</span>
+                  <span className="text-[11px] font-semibold tracking-wide">{opt.code}</span>
                 </button>
               );
             })}
