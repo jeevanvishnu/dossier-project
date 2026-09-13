@@ -246,7 +246,7 @@
   "projects": {
     "title": "Regulatory Projects & Dossier Submissions",
     "sub": "Track product dossiers, eCTD submission sequences, and regulatory compliance status.",
-    "newProjectBtn": "Start New Project",
+    "newProjectBtn": "Create a Project",
     "filterCategory": "All Categories",
     "projectName": "Project Title",
     "regulatoryBody": "Regulatory Authority",

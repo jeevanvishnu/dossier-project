@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { AppShell } from "../../components/AppShell";
+import { ComingSoon } from "../../components/ComingSoon";
 import { FileText, CheckCircle, WarningOctagon, Plus, DownloadSimple, MagnifyingGlass } from "@phosphor-icons/react";
 import toast from "react-hot-toast";
 import { useTranslations } from "next-intl";
@@ -60,6 +61,16 @@ export default function ContractsPage() {
 
   return (
     <AppShell>
+      {/* Active Coming Soon View */}
+      <ComingSoon
+        title={tContracts("title")}
+        description={tContracts("sub")}
+      />
+
+      {/* 
+      ========================================================================
+      ORIGINAL CONTRACTS PAGE DESIGN CODE (COMMENTED OUT FOR PRESERVATION)
+      ========================================================================
       <div className="space-y-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-surface border border-border p-5 rounded-2xl shadow-xs">
           <div>
@@ -181,6 +192,7 @@ export default function ContractsPage() {
           </div>
         </div>
       </div>
+      */}
     </AppShell>
   );
 }
