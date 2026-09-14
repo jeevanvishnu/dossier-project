@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
-import { Link, usePathname } from "@/i18n/routing";
+import React, { useState, useEffect } from "react";
+import { Link, usePathname, useRouter } from "@/i18n/routing";
 import { Sidebar } from "./Sidebar";
 import { Bell, List, User, CaretRight, CheckCircle } from "@phosphor-icons/react";
 import { useAuth } from "../context/AuthContext";
+import { useAuthModal } from "./AuthModalContext";
 import { ThemeToggle } from "./ThemeToggle";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { useTranslations } from "next-intl";
@@ -12,9 +13,30 @@ import { useTranslations } from "next-intl";
 export function AppShell({ children }: { children: React.ReactNode }) {
   const tApp = useTranslations("appShell");
   const pathname = usePathname();
+  const router = useRouter();
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const { user } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
+  const { openAuthModal } = useAuthModal();
+
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.push("/");
+      openAuthModal("signin");
+    }
+  }, [isLoading, isAuthenticated, router, openAuthModal]);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-bg flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-accent border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return null;
+  }
 
   const getBreadcrumbTitle = () => {
     if (!pathname || pathname === "/dashboard") return tApp("breadcrumbOverview");

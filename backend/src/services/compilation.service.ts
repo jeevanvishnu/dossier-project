@@ -64,20 +64,20 @@ export function sanitizeSequence(rawSeq?: string | null): string {
  * Strips regional folders like '/us/' or '/kz/' and builds nested section paths using backslashes.
  */
 export function getEctdFolderPath(nodeId: string, _countryStr?: string | null): string {
-  if (!nodeId) return "m1\\";
+  if (!nodeId) return "m1/";
 
   // Clean off 5-digit docId suffix if present (e.g., '1.3.1-02001' -> '1.3.1')
   const cleanCode = nodeId.replace(/-\d{5}$/, "").trim();
 
-  // Section 1.0 (Cover letter) files reside directly in m1\ root directory
-  if (cleanCode === "1.0") return "m1\\";
+  // Section 1.0 (Cover letter) files reside directly in m1/ root directory
+  if (cleanCode === "1.0") return "m1/";
 
-  // Direct sub-module 1.2 files (e.g. 1.2.2, 1.2.5) reside in m1\1.2\ directory
-  if (["1.2", "1.2.1", "1.2.2", "1.2.3", "1.2.5"].includes(cleanCode)) return "m1\\1.2\\";
+  // Direct sub-module 1.2 files (e.g. 1.2.2, 1.2.5) reside in m1/1.2/ directory
+  if (["1.2", "1.2.1", "1.2.2", "1.2.3", "1.2.5"].includes(cleanCode)) return "m1/1.2/";
 
   const parts = cleanCode.split(".").filter(Boolean);
 
-  if (parts.length === 0) return "m1\\";
+  if (parts.length === 0) return "m1/";
 
   const mainModuleNum = parts[0];
   const modulePrefix = `m${mainModuleNum}`;
@@ -89,7 +89,7 @@ export function getEctdFolderPath(nodeId: string, _countryStr?: string | null): 
     pathParts.push(currentSection);
   }
 
-  return pathParts.join("\\") + "\\";
+  return pathParts.join("/") + "/";
 }
 
 export interface CompilationResult {
@@ -127,15 +127,7 @@ export async function compileEctdPackage(
 ): Promise<CompilationResult> {
   const country = (config?.submissionCountry || "KZ").toUpperCase();
 
-  // 1. Generate EAEU R.022 XML Backbone in memory
-  const xmlContent = generateEaeuManifestXml(project, config, documents, {
-    sanitizeFileNameFn: sanitizeFileName,
-    sanitizeSequenceFn: sanitizeSequence,
-    getEctdFolderPathFn: getEctdFolderPath,
-  });
-  const xmlChecksum = calculateMD5(xmlContent);
-
-  // 2. Concurrently download physical document buffers (filtering out 'delete' tombstones)
+  // 1. Concurrently download physical document buffers (filtering out 'delete' tombstones)
   const docsToDownload = documents.filter(
     (d) => d.status !== "deleted" && d.operation !== "delete" && !!d.imageKitUrl
   );
@@ -143,11 +135,26 @@ export async function compileEctdPackage(
   const downloadedDocs = await mapConcurrent(docsToDownload, 5, async (doc) => {
     try {
       const buffer = await downloadFileBuffer(doc.imageKitUrl!);
-      return { doc, buffer };
+      const realMd5 = calculateMD5(buffer);
+      return { doc: { ...doc, md5Checksum: realMd5 }, buffer };
     } catch (err: any) {
       throw new Error(`Failed to download document "${doc.originalName}" (${doc.nodeId}): ${err.message}`);
     }
   });
+
+  // Map updated documents with their real computed MD5 checksums
+  const updatedDocuments = documents.map((d) => {
+    const downloaded = downloadedDocs.find((item) => item.doc.id === d.id);
+    return downloaded ? downloaded.doc : d;
+  });
+
+  // 2. Generate EAEU R.022 XML Backbone in memory with verified file checksums
+  const xmlContent = generateEaeuManifestXml(project, config, updatedDocuments, {
+    sanitizeFileNameFn: sanitizeFileName,
+    sanitizeSequenceFn: sanitizeSequence,
+    getEctdFolderPathFn: getEctdFolderPath,
+  });
+  const xmlChecksum = calculateMD5(xmlContent);
 
   // 3. Construct ZIP Archive entirely in memory
   const archive = createZipArchive({ zlib: { level: 9 } });
@@ -160,10 +167,24 @@ export async function compileEctdPackage(
     },
   });
 
+  const streamFinished = new Promise<void>((resolve, reject) => {
+    bufferStream.on("finish", resolve);
+    bufferStream.on("error", reject);
+  });
+
+  // Pipe zip archive stream into buffer stream
   archive.pipe(bufferStream);
 
-  // Append index.xml (EAEU R.022 XML Manifest)
-  archive.append(Buffer.from(xmlContent, "utf-8"), { name: "index.xml" });
+  const sequenceStr = sanitizeSequence(config?.dossierSequence);
+  const cleanProduct = (project.productName || project.projectCode)
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, "_")
+    .replace(/[^a-z0-9_\u0400-\u04FF-]/gi, "");
+  const projectXmlFileName = `${cleanProduct || "dossier"}_${sequenceStr}.xml`;
+
+  // Append single project-named XML manifest into the root of the archive (e.g. sorbit_0000.xml)
+  archive.append(Buffer.from(xmlContent, "utf-8"), { name: projectXmlFileName });
 
   // Append physical documents into their respective eCTD folders
   for (const { doc, buffer } of downloadedDocs) {
@@ -175,11 +196,11 @@ export async function compileEctdPackage(
   }
 
   await archive.finalize();
+  await streamFinished;
 
   // Wait for stream write completion
   const zipBuffer = Buffer.concat(chunks);
   const zipChecksum = calculateMD5(zipBuffer);
-  const sequenceStr = sanitizeSequence(config?.dossierSequence);
   const fullName = `${project.projectCode}_${sequenceStr}_${Date.now()}.zip`;
 
   return {

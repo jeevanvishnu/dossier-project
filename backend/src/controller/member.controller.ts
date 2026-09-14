@@ -2,13 +2,13 @@ import { Request, Response } from "express";
 import { db } from "../db/db";
 import { projectMembers, users, auditLogs } from "../db/schema";
 import { addMemberSchema } from "../validators/project.validator";
-import { parseIdParam } from "../utils/params.util";
+import { parseIdParam, resolveProjectId } from "../utils/params.util";
 import { eq, and } from "drizzle-orm";
 
 export async function addProjectMember(req: Request, res: Response): Promise<void> {
   try {
-    const projectId = parseIdParam(req.params.id);
-    if (isNaN(projectId)) {
+    const projectId = await resolveProjectId(req.params.id);
+    if (!projectId) {
       res.status(400).json({ success: false, message: "Invalid project ID" });
       return;
     }
@@ -71,8 +71,8 @@ export async function addProjectMember(req: Request, res: Response): Promise<voi
 
 export async function getProjectMembers(req: Request, res: Response): Promise<void> {
   try {
-    const projectId = parseIdParam(req.params.id);
-    if (isNaN(projectId)) {
+    const projectId = await resolveProjectId(req.params.id);
+    if (!projectId) {
       res.status(400).json({ success: false, message: "Invalid project ID" });
       return;
     }
@@ -103,10 +103,10 @@ export async function getProjectMembers(req: Request, res: Response): Promise<vo
 
 export async function removeProjectMember(req: Request, res: Response): Promise<void> {
   try {
-    const projectId = parseIdParam(req.params.id);
+    const projectId = await resolveProjectId(req.params.id);
     const memberId = parseIdParam(req.params.memberId);
 
-    if (isNaN(projectId) || isNaN(memberId)) {
+    if (!projectId || isNaN(memberId)) {
       res.status(400).json({ success: false, message: "Invalid IDs provided" });
       return;
     }

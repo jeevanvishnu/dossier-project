@@ -1,3 +1,7 @@
+import { db } from "../db/db";
+import { projects } from "../db/schema";
+import { eq, ilike, or } from "drizzle-orm";
+
 /**
  * Helper to safely extract a single string from Express req.params, which can be string | string[].
  */
@@ -14,3 +18,27 @@ export function parseIdParam(param: string | string[] | undefined): number {
   if (!str) return NaN;
   return parseInt(str, 10);
 }
+
+/**
+ * Helper to resolve numeric project ID from either numeric ID or projectCode string.
+ */
+export async function resolveProjectId(param: string | string[] | undefined): Promise<number | null> {
+  const rawStr = getSingleParam(param);
+  if (!rawStr) return null;
+
+  // If purely numeric digits, parse directly as number
+  if (/^\d+$/.test(rawStr)) {
+    const parsedId = parseInt(rawStr, 10);
+    return isNaN(parsedId) ? null : parsedId;
+  }
+
+  // Combined lookup by exact or case-insensitive projectCode in a single DB query
+  const existingProject = await db.query.projects.findFirst({
+    where: or(eq(projects.projectCode, rawStr), ilike(projects.projectCode, rawStr)),
+    columns: { id: true },
+  });
+
+  return existingProject ? existingProject.id : null;
+}
+
+

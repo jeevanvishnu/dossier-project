@@ -16,10 +16,12 @@ import {
   Key,
 } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
+import { useRouter } from "@/i18n/routing";
 
 export function AuthModal() {
   const tAuth = useTranslations("auth");
   const tCommon = useTranslations("common");
+  const router = useRouter();
 
   const { isOpen, mode, closeAuthModal, setMode } = useAuthModal();
   const { signIn, isLoading } = useAuth();
@@ -75,6 +77,7 @@ export function AuthModal() {
       closeAuthModal();
       setSignInEmail("");
       setSignInPassword("");
+      router.push("/dashboard");
     }
   };
 
@@ -212,6 +215,33 @@ export function AuthModal() {
             )
           )}
 
+          {mode !== "forgot" && (
+            <div className="flex border-b border-border mb-6">
+              <button
+                type="button"
+                onClick={() => setMode("signin")}
+                className={`flex-1 py-2.5 text-xs font-bold transition-colors border-b-2 ${
+                  mode === "signin"
+                    ? "border-accent text-accent"
+                    : "border-transparent text-secondary hover:text-primary"
+                }`}
+              >
+                {tAuth("signInTab")}
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode("signup")}
+                className={`flex-1 py-2.5 text-xs font-bold transition-colors border-b-2 ${
+                  mode === "signup"
+                    ? "border-accent text-accent"
+                    : "border-transparent text-secondary hover:text-primary"
+                }`}
+              >
+                {tAuth("signUpTab")}
+              </button>
+            </div>
+          )}
+
           {mode === "signin" && (
             <form onSubmit={handleSignInSubmit} className="space-y-4">
               <div>
@@ -280,6 +310,70 @@ export function AuthModal() {
                   </>
                 ) : (
                   <span>{tAuth("submitSignIn")}</span>
+                )}
+              </button>
+            </form>
+          )}
+
+          {mode === "signup" && (
+            <form onSubmit={handleSignInSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-primary mb-1.5 tracking-wide">
+                  {tAuth("emailLabel")}
+                </label>
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-secondary group-focus-within:text-accent transition-colors">
+                    <EnvelopeSimple size={18} />
+                  </div>
+                  <input
+                    type="email"
+                    required
+                    placeholder={tAuth("emailPlaceholder")}
+                    value={signInEmail}
+                    onChange={(e) => setSignInEmail(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 bg-bg border border-border focus:border-accent focus:ring-2 focus:ring-accent/20 rounded-2xl text-primary placeholder-muted text-sm outline-none transition-all"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-primary mb-1.5 tracking-wide">
+                  {tAuth("passwordLabel")}
+                </label>
+                <div className="relative group">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-secondary group-focus-within:text-accent transition-colors">
+                    <LockKey size={18} />
+                  </div>
+                  <input
+                    type={showSignInPassword ? "text" : "password"}
+                    required
+                    placeholder={tAuth("passwordPlaceholder")}
+                    value={signInPassword}
+                    onChange={(e) => setSignInPassword(e.target.value)}
+                    className="w-full pl-10 pr-10 py-3 bg-bg border border-border focus:border-accent focus:ring-2 focus:ring-accent/20 rounded-2xl text-primary placeholder-muted text-sm outline-none transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowSignInPassword(!showSignInPassword)}
+                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-secondary hover:text-primary transition-colors"
+                  >
+                    {showSignInPassword ? <EyeSlash size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full mt-2 btn btn-primary rounded-2xl h-11 text-white bg-accent hover:bg-accent-hover border-none font-bold text-sm shadow-md flex items-center justify-center gap-2 transition-all transform active:scale-[0.99]"
+              >
+                {isLoading ? (
+                  <>
+                    <CircleNotch size={18} className="animate-spin" />
+                    <span>{tAuth("authenticating")}</span>
+                  </>
+                ) : (
+                  <span>{tAuth("submitSignUp")}</span>
                 )}
               </button>
             </form>

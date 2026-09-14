@@ -29,10 +29,16 @@ export async function uploadToImageKit(
   fileName: string,
   folder: string = "/ectd-dossiers"
 ): Promise<{ url: string; fileId: string }> {
+  if (!fileBuffer || fileBuffer.length === 0) {
+    throw new Error("[ImageKit Service] Provided file buffer is empty or invalid.");
+  }
+
   const imagekit = getImageKitClient();
+  const filePayload = Buffer.isBuffer(fileBuffer) ? fileBuffer.toString("base64") : fileBuffer;
+
   const result = await imagekit.upload({
-    file: fileBuffer,
-    fileName,
+    file: filePayload,
+    fileName: fileName || "document.pdf",
     folder,
   });
 

@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { db } from "../db/db";
 import { projectMembers } from "../db/schema";
-import { parseIdParam } from "../utils/params.util";
+import { resolveProjectId } from "../utils/params.util";
 import { eq, and } from "drizzle-orm";
 
 export interface ProjectRequest extends Request {
@@ -27,10 +27,10 @@ export function checkProjectRole(...allowedRoles: ("owner" | "editor" | "viewer"
         return next();
       }
 
-      const projectId = parseIdParam(req.params.id || req.params.projectId);
+      const projectId = await resolveProjectId(req.params.id || req.params.projectId);
 
-      if (isNaN(projectId)) {
-        res.status(400).json({ success: false, message: "Invalid project ID parameter." });
+      if (!projectId) {
+        res.status(400).json({ success: false, message: "Invalid project ID or code parameter." });
         return;
       }
 

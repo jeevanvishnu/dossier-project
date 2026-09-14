@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import {
   CaretDown,
   FloppyDiskBack,
@@ -9,9 +10,16 @@ import {
   Plus,
   Trash,
   Tag,
+  CircleNotch,
+  CheckCircle,
+  LockKey,
+  PencilSimple,
+  X,
+  ArrowRight,
 } from "@phosphor-icons/react";
 import toast from "react-hot-toast";
 import { api, handleApiError } from "@/app/lib/axios";
+import { SkeletonForm } from "@/app/components/ui/Skeleton";
 
 interface ExcipientItem {
   id: string;
@@ -22,13 +30,33 @@ interface ExcipientItem {
 
 interface DossierDataViewProps {
   projectId?: string;
+  onNavigateToUpload?: () => void;
+  onStatusChange?: (status: { isProjectSaved: boolean; isDossierSaved: boolean }) => void;
 }
 
-export const DossierDataView: React.FC<DossierDataViewProps> = ({ projectId = "1" }) => {
+export const DossierDataView: React.FC<DossierDataViewProps> = ({
+  projectId = "1",
+  onNavigateToUpload,
+  onStatusChange,
+}) => {
+  const tWorkspace = useTranslations("workspace");
+  const tCommon = useTranslations("common");
+
   // Sub-tabs state
   const [activeSubTab, setActiveSubTab] = useState<string>("Medicinal Product");
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [isSaving, setIsSaving] = useState<boolean>(false);
+
+  // Separate saving & verification status for Section 1 and Section 2
+  const [isSavingProject, setIsSavingProject] = useState<boolean>(false);
+  const [isSavingDossier, setIsSavingDossier] = useState<boolean>(false);
+  const [isProjectSaved, setIsProjectSaved] = useState<boolean>(false);
+  const [isDossierSaved, setIsDossierSaved] = useState<boolean>(false);
+  const [isEditingProject, setIsEditingProject] = useState<boolean>(false);
+  const [isEditingDossier, setIsEditingDossier] = useState<boolean>(false);
+
+  // Calculated edit accessibility
+  const isSection1Disabled = isProjectSaved && !isEditingProject;
+  const isSection2Disabled = !isProjectSaved || (isDossierSaved && !isEditingDossier);
 
   const subTabs = [
     "Medicinal Product",
@@ -38,6 +66,15 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({ projectId = "1
     "Indications",
     "Manufacturer",
   ];
+
+  const subTabsMap: Record<string, string> = {
+    "Medicinal Product": tWorkspace("subTabMedicinalProduct"),
+    "Active Substance": tWorkspace("subTabActiveSubstance"),
+    "Excipients": tWorkspace("subTabExcipients"),
+    "Pharmaceutical Product": tWorkspace("subTabPharmProduct"),
+    "Indications": tWorkspace("subTabIndications"),
+    "Manufacturer": tWorkspace("subTabManufacturer"),
+  };
 
   // 1. Medicinal Product Form State
   const [medicinalState, setMedicinalState] = useState({
@@ -135,6 +172,10 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({ projectId = "1
   // Concurrency version control state
   const [projectVersion, setProjectVersion] = useState<number | undefined>(undefined);
 
+  // Snapshots for cancel functionality
+  const [savedMedicinalState, setSavedMedicinalState] = useState<typeof medicinalState | null>(null);
+  const [savedConfigState, setSavedConfigState] = useState<typeof configState | null>(null);
+
   // Load project metadata from backend API
   useEffect(() => {
     if (!projectId) return;
@@ -145,47 +186,67 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({ projectId = "1
         const response = await api.get(`/projects/${projectId}/dossier-data`);
         if (response.data?.success && response.data?.data) {
           const { project, dossierConfig } = response.data.data;
-          if (project) {
-            if (typeof project.version === "number") {
-              setProjectVersion(project.version);
+            let projSaved = false;
+            let dosSaved = false;
+
+            if (project) {
+              if (typeof project.version === "number") {
+                setProjectVersion(project.version);
+              }
+              const fetchedMedicinal = {
+                productName: project.productName || "",
+                dosageForm: project.dosageForm || "External spray",
+                productType: project.productType || "Reproduced (Generic)",
+                additionalFeature: "Prescription / Topical antifungal",
+                manufacturer: project.manufacturer || "",
+                mah: project.mahHolder || "",
+                responsibleUser: project.responsibleUser || "Dr. Alikhan Saparov",
+                tariff: project.tariff || "Standard eCTD Submission Fee - 450,000 KZT",
+                status: project.status || "Active",
+              };
+              setMedicinalState(fetchedMedicinal);
+              setSavedMedicinalState(fetchedMedicinal);
+              projSaved = Boolean(project.isProjectSaved);
+              setIsProjectSaved(projSaved);
             }
-            setMedicinalState((prev) => ({
-              ...prev,
-              productName: project.productName || prev.productName,
-              dosageForm: project.dosageForm || prev.dosageForm,
-              productType: project.productType || prev.productType,
-              manufacturer: project.manufacturer || prev.manufacturer,
-              mah: project.mahHolder || prev.mah,
-              responsibleUser: project.responsibleUser || prev.responsibleUser,
-              tariff: project.tariff || prev.tariff,
-              status: project.status || prev.status,
-            }));
+            if (dossierConfig) {
+              const rawCountry = dossierConfig.submissionCountry;
+              const normalizedCountry = (!rawCountry || rawCountry === "US" || rawCountry === "KZ") ? "KAZAKHSTAN" : rawCountry;
+              const fetchedConfig = {
+                submissionCountry: normalizedCountry,
+                roleOfSubmissionCountry: dossierConfig.role || "Reference Member State (RMS)",
+                procedureType: dossierConfig.procedureType || "Mutual Recognition (MRP)",
+                typeOfProcedure: dossierConfig.typeOfProcedure || "Bringing into conformity",
+                applicationNumber: dossierConfig.applicationNumber || "KZ-MOH-2026-88192",
+                dossierSequence: dossierConfig.dossierSequence || "Sequence 0000",
+              };
+              setConfigState(fetchedConfig);
+              setSavedConfigState(fetchedConfig);
+              dosSaved = Boolean(dossierConfig.isDossierSaved);
+              setIsDossierSaved(dosSaved);
+            }
+
+            if (onStatusChange) {
+              onStatusChange({ isProjectSaved: projSaved, isDossierSaved: dosSaved });
+            }
           }
-          if (dossierConfig) {
-            setConfigState((prev) => ({
-              ...prev,
-              submissionCountry: dossierConfig.submissionCountry || prev.submissionCountry,
-              roleOfSubmissionCountry: dossierConfig.role || prev.roleOfSubmissionCountry,
-              procedureType: dossierConfig.procedureType || prev.procedureType,
-              typeOfProcedure: dossierConfig.typeOfProcedure || prev.typeOfProcedure,
-              applicationNumber: dossierConfig.applicationNumber || prev.applicationNumber,
-              dossierSequence: dossierConfig.dossierSequence || prev.dossierSequence,
-            }));
-          }
+        } catch (err: any) {
+          console.warn("Could not fetch project dossier data from API:", err?.message);
+        } finally {
+          setIsLoading(false);
         }
-      } catch (err: any) {
-        // Fallback gracefully to default state if endpoint fails or project doesn't exist yet in DB
-        console.warn("Could not fetch project dossier data from API:", err?.message);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+      };
 
-    fetchDossierData();
-  }, [projectId]);
+      fetchDossierData();
+    }, [projectId, onStatusChange]);
 
-  const saveToBackend = async () => {
-    setIsSaving(true);
+  // Section 1: Save Project Data
+  const handleSaveCard1 = async () => {
+    if (!medicinalState.productName.trim()) {
+      toast.error("Product Name is required.");
+      return;
+    }
+    setIsSavingProject(true);
     try {
       const payload = {
         version: projectVersion,
@@ -197,6 +258,69 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({ projectId = "1
         responsibleUser: medicinalState.responsibleUser,
         tariff: medicinalState.tariff,
         status: medicinalState.status,
+      };
+
+      const response = await api.put(`/projects/${projectId}/dossier-data`, payload);
+      if (response.data?.success) {
+        if (response.data?.data?.project?.version) {
+          setProjectVersion(response.data.data.project.version);
+        }
+        setSavedMedicinalState(medicinalState);
+        setIsProjectSaved(true);
+        setIsEditingProject(false);
+        if (onStatusChange) {
+          onStatusChange({ isProjectSaved: true, isDossierSaved });
+        }
+        toast.success("Project data saved successfully! Dossier Configuration is now activated.");
+      }
+    } catch (err: any) {
+      if (err?.response?.status === 409) {
+        toast.error(
+          "Conflict: Another team member has updated this dossier data. Please refresh and try again.",
+          { duration: 6000 }
+        );
+      } else {
+        handleApiError(err, "Failed to save project data");
+      }
+    } finally {
+      setIsSavingProject(false);
+    }
+  };
+
+  // Medicinal Product Metadata: Cancel Handler
+  const handleCancelCard1 = () => {
+    if (savedMedicinalState) {
+      setMedicinalState(savedMedicinalState);
+    }
+    setIsEditingProject(false);
+    toast("Editing project data cancelled.");
+  };
+
+  // Medicinal Product Metadata: Edit Handler
+  const handleEditCard1 = async () => {
+    if (isEditingProject) {
+      await handleSaveCard1();
+    } else {
+      setSavedMedicinalState(medicinalState);
+      setIsEditingProject(true);
+      toast.success("Project Data enabled for editing. Modify fields and click 'Update Data'.");
+    }
+  };
+
+  // Dossier Data Configuration: Save Handler
+  const handleSaveCard2 = async () => {
+    if (!isProjectSaved) {
+      toast.error("Please save Project Data first to activate Dossier Data Configuration.");
+      return;
+    }
+    if (!configState.submissionCountry || !configState.procedureType) {
+      toast.error("Submission Country and Procedure Type are required.");
+      return;
+    }
+    setIsSavingDossier(true);
+    try {
+      const payload = {
+        version: projectVersion,
         submissionCountry: configState.submissionCountry,
         role: configState.roleOfSubmissionCountry,
         procedureType: configState.procedureType,
@@ -210,7 +334,13 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({ projectId = "1
         if (response.data?.data?.project?.version) {
           setProjectVersion(response.data.data.project.version);
         }
-        toast.success("Dossier metadata saved successfully to database!");
+        setSavedConfigState(configState);
+        setIsDossierSaved(true);
+        setIsEditingDossier(false);
+        if (onStatusChange) {
+          onStatusChange({ isProjectSaved: true, isDossierSaved: true });
+        }
+        toast.success("Dossier data configuration saved successfully!");
       }
     } catch (err: any) {
       if (err?.response?.status === 409) {
@@ -219,22 +349,35 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({ projectId = "1
           { duration: 6000 }
         );
       } else {
-        handleApiError(err, "Failed to save dossier data to database");
+        handleApiError(err, "Failed to save dossier configuration");
       }
     } finally {
-      setIsSaving(false);
+      setIsSavingDossier(false);
     }
   };
 
-  const handleSaveCard1 = () => {
-    saveToBackend();
+  // Section 2: Cancel Handler
+  const handleCancelCard2 = () => {
+    if (savedConfigState) {
+      setConfigState(savedConfigState);
+    }
+    setIsEditingDossier(false);
+    toast("Editing dossier configuration cancelled.");
   };
 
-  const handleSaveCard2 = () => {
-    saveToBackend();
+  // Section 2: Edit Handler
+  const handleEditCard2 = async () => {
+    if (isEditingDossier) {
+      await handleSaveCard2();
+    } else {
+      setSavedConfigState(configState);
+      setIsEditingDossier(true);
+      toast.success("Dossier Configuration enabled for editing. Modify fields and click 'Update Configuration'.");
+    }
   };
 
   const handleAddExcipient = () => {
+    if (isSection1Disabled) return;
     if (!newExcipient.name || !newExcipient.concentration) {
       toast.error("Please provide both name and concentration for the excipient.");
       return;
@@ -251,11 +394,13 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({ projectId = "1
   };
 
   const handleDeleteExcipient = (id: string) => {
+    if (isSection1Disabled) return;
     setExcipientsList(excipientsList.filter((e) => e.id !== id));
     toast.error("Excipient removed.");
   };
 
   const handleAddIcd10Tag = () => {
+    if (isSection1Disabled) return;
     if (!newIcd10Tag.trim()) return;
     if (indicationsState.icd10Tags.includes(newIcd10Tag.trim())) {
       toast.error("Tag already exists.");
@@ -269,11 +414,160 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({ projectId = "1
   };
 
   const handleRemoveIcd10Tag = (tag: string) => {
+    if (isSection1Disabled) return;
     setIndicationsState({
       ...indicationsState,
       icd10Tags: indicationsState.icd10Tags.filter((t) => t !== tag),
     });
   };
+
+  // Helper renderers with green tick & disabled/edit support
+  const renderTextInput = (
+    label: string,
+    value: string,
+    onChange: (val: string) => void,
+    isSaved: boolean,
+    isDisabled?: boolean,
+    required?: boolean,
+    placeholder?: string,
+    extraClasses?: string
+  ) => (
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between">
+        <label className="block text-xs font-semibold text-secondary">
+          {label} {required && <span className="text-red-400">*</span>}
+        </label>
+        {isSaved && (
+          <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400 font-semibold uppercase tracking-wider">
+            <CheckCircle size={12} weight="fill" />
+            Valid
+          </span>
+        )}
+      </div>
+      <div className="relative flex items-center">
+        <input
+          type="text"
+          placeholder={placeholder}
+          value={value}
+          disabled={isDisabled}
+          onChange={(e) => onChange(e.target.value)}
+          className={`w-full bg-bg border ${
+            isDisabled
+              ? "border-border/60 text-secondary bg-surface-raised/40 cursor-not-allowed opacity-75"
+              : isSaved
+              ? "border-emerald-500/70 focus:border-emerald-500 bg-emerald-950/10 text-primary"
+              : "border-border focus:border-accent text-primary"
+          } text-xs rounded-xl px-3 py-2.5 ${isSaved ? "pr-9" : ""} focus:outline-none transition-all ${
+            extraClasses || ""
+          }`}
+        />
+        {isSaved && (
+          <CheckCircle
+            size={16}
+            weight="fill"
+            className="absolute right-2.5 text-emerald-400 pointer-events-none z-10"
+          />
+        )}
+      </div>
+    </div>
+  );
+
+  const renderSelectInput = (
+    label: string,
+    value: string,
+    onChange: (val: string) => void,
+    options: { label: string; value: string }[],
+    isSaved: boolean,
+    isDisabled?: boolean,
+    required?: boolean
+  ) => (
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between">
+        <label className="block text-xs font-semibold text-secondary">
+          {label} {required && <span className="text-red-400">*</span>}
+        </label>
+        {isSaved && (
+          <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400 font-semibold uppercase tracking-wider">
+            <CheckCircle size={12} weight="fill" />
+            Valid
+          </span>
+        )}
+      </div>
+      <div className="relative flex items-center">
+        <select
+          value={value}
+          disabled={isDisabled}
+          onChange={(e) => onChange(e.target.value)}
+          className={`w-full bg-bg border ${
+            isDisabled
+              ? "border-border/60 text-secondary bg-surface-raised/40 cursor-not-allowed opacity-75"
+              : isSaved
+              ? "border-emerald-500/70 focus:border-emerald-500 bg-emerald-950/10 text-primary"
+              : "border-border focus:border-accent text-primary"
+          } text-xs rounded-xl px-3 py-2.5 ${isSaved ? "pr-12" : "pr-8"} appearance-none focus:outline-none transition-all ${
+            isDisabled ? "cursor-not-allowed" : "cursor-pointer"
+          }`}
+        >
+          {options.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+        <div className="absolute right-2.5 flex items-center gap-1 pointer-events-none z-10">
+          {isSaved && <CheckCircle size={15} weight="fill" className="text-emerald-400" />}
+          <CaretDown size={12} className="text-secondary" />
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderTextareaInput = (
+    label: string,
+    value: string,
+    onChange: (val: string) => void,
+    isSaved: boolean,
+    isDisabled?: boolean,
+    rows: number = 2
+  ) => (
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between">
+        <label className="block text-xs font-semibold text-secondary">{label}</label>
+        {isSaved && (
+          <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400 font-semibold uppercase tracking-wider">
+            <CheckCircle size={12} weight="fill" />
+            Valid
+          </span>
+        )}
+      </div>
+      <div className="relative flex items-center">
+        <textarea
+          rows={rows}
+          value={value}
+          disabled={isDisabled}
+          onChange={(e) => onChange(e.target.value)}
+          className={`w-full bg-bg border ${
+            isDisabled
+              ? "border-border/60 text-secondary bg-surface-raised/40 cursor-not-allowed opacity-75"
+              : isSaved
+              ? "border-emerald-500/70 focus:border-emerald-500 bg-emerald-950/10 text-primary"
+              : "border-border focus:border-accent text-primary"
+          } text-xs rounded-xl p-3 ${isSaved ? "pr-9" : ""} focus:outline-none resize-none transition-all`}
+        />
+        {isSaved && (
+          <CheckCircle
+            size={16}
+            weight="fill"
+            className="absolute right-2.5 top-3 text-emerald-400 pointer-events-none z-10"
+          />
+        )}
+      </div>
+    </div>
+  );
+
+  if (isLoading) {
+    return <SkeletonForm />;
+  }
 
   return (
     <div className="space-y-6">
@@ -283,12 +577,19 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({ projectId = "1
         <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-border">
           <div className="flex items-center gap-2">
             <h2 className="font-lexend font-bold text-base md:text-lg text-primary">
-              Section 1: Project Data (Metadata Form)
+              {tWorkspace("section1Title")}
             </h2>
           </div>
-          <span className="text-xs font-bold px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 uppercase tracking-wider">
-            Active Sub-tab: {activeSubTab.toUpperCase()}
-          </span>
+          {isProjectSaved ? (
+            <span className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 uppercase tracking-wider flex items-center gap-1.5">
+              <CheckCircle size={14} weight="fill" />
+              {isEditingProject ? tWorkspace("editingStatus") : tWorkspace("savedStatus")}
+            </span>
+          ) : (
+            <span className="text-xs font-bold px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 uppercase tracking-wider">
+              {subTabsMap[activeSubTab]?.toUpperCase()}
+            </span>
+          )}
         </div>
 
         {/* Horizontal Sub-Tabs */}
@@ -306,7 +607,7 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({ projectId = "1
                     : "bg-surface-raised text-secondary hover:text-primary hover:bg-border border border-border"
                 }`}
               >
-                {tab}
+                {subTabsMap[tab] || tab}
               </button>
             );
           })}
@@ -315,213 +616,129 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({ projectId = "1
         {/* SUB-TAB 1: Medicinal Product */}
         {activeSubTab === "Medicinal Product" && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Field 1: Product Name */}
-            <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-secondary">Product Name</label>
-              <input
-                type="text"
-                value={medicinalState.productName}
-                onChange={(e) =>
-                  setMedicinalState({ ...medicinalState, productName: e.target.value })
-                }
-                className="w-full bg-bg border border-border focus:border-accent text-primary text-xs rounded-xl px-3 py-2.5 focus:outline-none transition-colors"
-              />
-            </div>
-
-            {/* Field 2: Dosage Form */}
-            <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-secondary">Dosage Form</label>
-              <div className="relative flex items-center">
-                <select
-                  value={medicinalState.dosageForm}
-                  onChange={(e) => setMedicinalState({ ...medicinalState, dosageForm: e.target.value })}
-                  className="w-full bg-bg border border-border focus:border-accent text-primary text-xs rounded-xl px-3 py-2.5 pr-8 appearance-none focus:outline-none transition-colors cursor-pointer"
-                >
-                  <option value="External spray">External spray</option>
-                  <option value="Cream">Cream</option>
-                  <option value="Ointment">Ointment</option>
-                  <option value="Solution">Solution</option>
-                </select>
-                <CaretDown size={12} className="absolute right-2.5 text-secondary pointer-events-none" />
-              </div>
-            </div>
-
-            {/* Field 3: Product Type */}
-            <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-secondary">
-                Product Type
-              </label>
-              <div className="relative flex items-center">
-                <select
-                  value={medicinalState.productType}
-                  onChange={(e) =>
-                    setMedicinalState({ ...medicinalState, productType: e.target.value })
-                  }
-                  className="w-full bg-bg border border-border focus:border-accent text-primary text-xs rounded-xl px-3 py-2.5 pr-8 appearance-none focus:outline-none transition-colors cursor-pointer"
-                >
-                  <option value="Reproduced (Generic)">Reproduced (Generic)</option>
-                  <option value="Original">Original</option>
-                  <option value="Biosimilar">Biosimilar</option>
-                </select>
-                <CaretDown size={12} className="absolute right-2.5 text-secondary pointer-events-none" />
-              </div>
-            </div>
-
-            {/* Field 4: Additional Feature */}
-            <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-secondary">
-                Additional Feature
-              </label>
-              <div className="relative flex items-center">
-                <select
-                  value={medicinalState.additionalFeature}
-                  onChange={(e) =>
-                    setMedicinalState({ ...medicinalState, additionalFeature: e.target.value })
-                  }
-                  className="w-full bg-bg border border-border focus:border-accent text-primary text-xs rounded-xl px-3 py-2.5 pr-8 appearance-none focus:outline-none transition-colors cursor-pointer"
-                >
-                  <option value="Prescription / Topical antifungal">
-                    Prescription / Topical antifungal
-                  </option>
-                  <option value="OTC / Topical antifungal">OTC / Topical antifungal</option>
-                </select>
-                <CaretDown size={12} className="absolute right-2.5 text-secondary pointer-events-none" />
-              </div>
-            </div>
-
-            {/* Field 5: Manufacturer */}
-            <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-secondary">Manufacturer</label>
-              <input
-                type="text"
-                value={medicinalState.manufacturer}
-                onChange={(e) => setMedicinalState({ ...medicinalState, manufacturer: e.target.value })}
-                className="w-full bg-bg border border-border focus:border-accent text-primary text-xs rounded-xl px-3 py-2.5 focus:outline-none transition-colors"
-              />
-            </div>
-
-            {/* Field 6: Marketing Authorization Holder (MAH) */}
-            <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-secondary">
-                Marketing Authorization Holder (MAH)
-              </label>
-              <input
-                type="text"
-                value={medicinalState.mah}
-                onChange={(e) => setMedicinalState({ ...medicinalState, mah: e.target.value })}
-                className="w-full bg-bg border border-border focus:border-accent text-primary text-xs rounded-xl px-3 py-2.5 focus:outline-none transition-colors"
-              />
-            </div>
-
-            {/* Field 7: User Responsible for the Project */}
-            <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-secondary">
-                User Responsible for the Project
-              </label>
-              <div className="relative flex items-center">
-                <select
-                  value={medicinalState.responsibleUser}
-                  onChange={(e) =>
-                    setMedicinalState({ ...medicinalState, responsibleUser: e.target.value })
-                  }
-                  className="w-full bg-bg border border-border focus:border-accent text-primary text-xs rounded-xl px-3 py-2.5 pr-8 appearance-none focus:outline-none transition-colors cursor-pointer"
-                >
-                  <option value="Dr. Alikhan Saparov">
-                    Dr. Alikhan Saparov
-                  </option>
-                  <option value="Elena Vance">
-                    Elena Vance
-                  </option>
-                </select>
-                <CaretDown size={12} className="absolute right-2.5 text-secondary pointer-events-none" />
-              </div>
-            </div>
-
-            {/* Field 8: Tariff */}
-            <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-secondary">Tariff</label>
-              <div className="relative flex items-center">
-                <select
-                  value={medicinalState.tariff}
-                  onChange={(e) =>
-                    setMedicinalState({ ...medicinalState, tariff: e.target.value })
-                  }
-                  className="w-full bg-bg border border-border focus:border-accent text-primary text-xs rounded-xl px-3 py-2.5 pr-8 appearance-none focus:outline-none transition-colors cursor-pointer"
-                >
-                  <option value="Standard eCTD Submission Fee - 450,000 KZT">
-                    Standard eCTD Submission Fee - 450,000 KZT
-                  </option>
-                  <option value="Tariff OWN (MUP)">Tariff OWN (MUP)</option>
-                  <option value="Tariff Standard (EAEU)">Tariff Standard (EAEU)</option>
-                </select>
-                <CaretDown size={12} className="absolute right-2.5 text-secondary pointer-events-none" />
-              </div>
-            </div>
+            {renderTextInput(
+              "Product Name",
+              medicinalState.productName,
+              (val) => setMedicinalState({ ...medicinalState, productName: val }),
+              isProjectSaved,
+              isSection1Disabled
+            )}
+            {renderSelectInput(
+              "Dosage Form",
+              medicinalState.dosageForm,
+              (val) => setMedicinalState({ ...medicinalState, dosageForm: val }),
+              [
+                { label: "External spray", value: "External spray" },
+                { label: "Cream", value: "Cream" },
+                { label: "Ointment", value: "Ointment" },
+                { label: "Solution", value: "Solution" },
+              ],
+              isProjectSaved,
+              isSection1Disabled
+            )}
+            {renderSelectInput(
+              "Product Type",
+              medicinalState.productType,
+              (val) => setMedicinalState({ ...medicinalState, productType: val }),
+              [
+                { label: "Reproduced (Generic)", value: "Reproduced (Generic)" },
+                { label: "Original", value: "Original" },
+                { label: "Biosimilar", value: "Biosimilar" },
+              ],
+              isProjectSaved,
+              isSection1Disabled
+            )}
+            {renderSelectInput(
+              "Additional Feature",
+              medicinalState.additionalFeature,
+              (val) => setMedicinalState({ ...medicinalState, additionalFeature: val }),
+              [
+                { label: "Prescription / Topical antifungal", value: "Prescription / Topical antifungal" },
+                { label: "OTC / Topical antifungal", value: "OTC / Topical antifungal" },
+              ],
+              isProjectSaved,
+              isSection1Disabled
+            )}
+            {renderTextInput(
+              "Manufacturer",
+              medicinalState.manufacturer,
+              (val) => setMedicinalState({ ...medicinalState, manufacturer: val }),
+              isProjectSaved,
+              isSection1Disabled
+            )}
+            {renderTextInput(
+              "Marketing Authorization Holder (MAH)",
+              medicinalState.mah,
+              (val) => setMedicinalState({ ...medicinalState, mah: val }),
+              isProjectSaved,
+              isSection1Disabled
+            )}
+            {renderSelectInput(
+              "User Responsible for the Project",
+              medicinalState.responsibleUser,
+              (val) => setMedicinalState({ ...medicinalState, responsibleUser: val }),
+              [
+                { label: "Dr. Alikhan Saparov", value: "Dr. Alikhan Saparov" },
+                { label: "Elena Vance", value: "Elena Vance" },
+              ],
+              isProjectSaved,
+              isSection1Disabled
+            )}
+            {renderSelectInput(
+              "Tariff",
+              medicinalState.tariff,
+              (val) => setMedicinalState({ ...medicinalState, tariff: val }),
+              [
+                { label: "Standard eCTD Submission Fee - 450,000 KZT", value: "Standard eCTD Submission Fee - 450,000 KZT" },
+                { label: "Tariff OWN (MUP)", value: "Tariff OWN (MUP)" },
+                { label: "Tariff Standard (EAEU)", value: "Tariff Standard (EAEU)" },
+              ],
+              isProjectSaved,
+              isSection1Disabled
+            )}
           </div>
         )}
 
         {/* SUB-TAB 2: Active Substance */}
         {activeSubTab === "Active Substance" && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-secondary">
-                International Nonproprietary Name (INN) <span className="text-red-400">*</span>
-              </label>
-              <input
-                type="text"
-                value={activeSubstanceState.inn}
-                onChange={(e) =>
-                  setActiveSubstanceState({ ...activeSubstanceState, inn: e.target.value })
-                }
-                className="w-full bg-bg border border-border focus:border-accent text-primary text-xs rounded-xl px-3 py-2.5 focus:outline-none transition-colors font-semibold"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-secondary">CAS Number</label>
-              <input
-                type="text"
-                value={activeSubstanceState.casNumber}
-                onChange={(e) =>
-                  setActiveSubstanceState({ ...activeSubstanceState, casNumber: e.target.value })
-                }
-                className="w-full bg-bg border border-border focus:border-accent text-primary text-xs rounded-xl px-3 py-2.5 focus:outline-none transition-colors font-mono"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-secondary">
-                Manufacturer of Active Substance
-              </label>
-              <input
-                type="text"
-                value={activeSubstanceState.activeManufacturer}
-                onChange={(e) =>
-                  setActiveSubstanceState({
-                    ...activeSubstanceState,
-                    activeManufacturer: e.target.value,
-                  })
-                }
-                className="w-full bg-bg border border-border focus:border-accent text-primary text-xs rounded-xl px-3 py-2.5 focus:outline-none transition-colors"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-secondary">
-                Quality Standard (Ph. Eur. / USP)
-              </label>
-              <input
-                type="text"
-                value={activeSubstanceState.qualityStandard}
-                onChange={(e) =>
-                  setActiveSubstanceState({
-                    ...activeSubstanceState,
-                    qualityStandard: e.target.value,
-                  })
-                }
-                className="w-full bg-bg border border-border focus:border-accent text-primary text-xs rounded-xl px-3 py-2.5 focus:outline-none transition-colors font-semibold"
-              />
-            </div>
+            {renderTextInput(
+              "International Nonproprietary Name (INN)",
+              activeSubstanceState.inn,
+              (val) => setActiveSubstanceState({ ...activeSubstanceState, inn: val }),
+              isProjectSaved,
+              isSection1Disabled,
+              true,
+              "",
+              "font-semibold"
+            )}
+            {renderTextInput(
+              "CAS Number",
+              activeSubstanceState.casNumber,
+              (val) => setActiveSubstanceState({ ...activeSubstanceState, casNumber: val }),
+              isProjectSaved,
+              isSection1Disabled,
+              false,
+              "",
+              "font-mono"
+            )}
+            {renderTextInput(
+              "Manufacturer of Active Substance",
+              activeSubstanceState.activeManufacturer,
+              (val) => setActiveSubstanceState({ ...activeSubstanceState, activeManufacturer: val }),
+              isProjectSaved,
+              isSection1Disabled
+            )}
+            {renderTextInput(
+              "Quality Standard (Ph. Eur. / USP)",
+              activeSubstanceState.qualityStandard,
+              (val) => setActiveSubstanceState({ ...activeSubstanceState, qualityStandard: val }),
+              isProjectSaved,
+              isSection1Disabled,
+              false,
+              "",
+              "font-semibold"
+            )}
           </div>
         )}
 
@@ -535,9 +752,10 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({ projectId = "1
                 <input
                   type="text"
                   placeholder="Ethanol 96%"
+                  disabled={isSection1Disabled}
                   value={newExcipient.name}
                   onChange={(e) => setNewExcipient({ ...newExcipient, name: e.target.value })}
-                  className="w-full bg-surface border border-border focus:border-accent text-primary text-xs rounded-lg px-3 py-2 focus:outline-none"
+                  className="w-full bg-surface border border-border focus:border-accent text-primary text-xs rounded-lg px-3 py-2 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                 />
               </div>
               <div className="w-full md:w-1/3 space-y-1">
@@ -545,17 +763,19 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({ projectId = "1
                 <input
                   type="text"
                   placeholder="55.0 % v/v"
+                  disabled={isSection1Disabled}
                   value={newExcipient.concentration}
                   onChange={(e) => setNewExcipient({ ...newExcipient, concentration: e.target.value })}
-                  className="w-full bg-surface border border-border focus:border-accent text-primary text-xs rounded-lg px-3 py-2 focus:outline-none"
+                  className="w-full bg-surface border border-border focus:border-accent text-primary text-xs rounded-lg px-3 py-2 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                 />
               </div>
               <div className="w-full md:w-1/3 space-y-1">
                 <label className="block text-[11px] font-semibold text-secondary">Functional Category</label>
                 <select
+                  disabled={isSection1Disabled}
                   value={newExcipient.category}
                   onChange={(e) => setNewExcipient({ ...newExcipient, category: e.target.value })}
-                  className="w-full bg-surface border border-border focus:border-accent text-primary text-xs rounded-lg px-3 py-2 focus:outline-none cursor-pointer"
+                  className="w-full bg-surface border border-border focus:border-accent text-primary text-xs rounded-lg px-3 py-2 focus:outline-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <option value="Vehicle">Vehicle</option>
                   <option value="Solvent / Vehicle">Solvent / Vehicle</option>
@@ -566,8 +786,9 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({ projectId = "1
               </div>
               <button
                 onClick={handleAddExcipient}
+                disabled={isSection1Disabled}
                 type="button"
-                className="w-full md:w-auto px-4 py-2 bg-accent hover:bg-accent-hover text-white font-bold text-xs rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0"
+                className="w-full md:w-auto px-4 py-2 bg-accent hover:bg-accent-hover text-white font-bold text-xs rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Plus size={15} weight="bold" />
                 <span>Add Excipient</span>
@@ -588,14 +809,18 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({ projectId = "1
                 <tbody className="divide-y divide-border bg-surface">
                   {excipientsList.map((exc) => (
                     <tr key={exc.id} className="hover:bg-surface-raised transition-colors">
-                      <td className="py-3 px-4 font-semibold text-primary">{exc.name}</td>
+                      <td className="py-3 px-4 font-semibold text-primary flex items-center gap-2">
+                        {isProjectSaved && <CheckCircle size={14} weight="fill" className="text-emerald-400 shrink-0" />}
+                        <span>{exc.name}</span>
+                      </td>
                       <td className="py-3 px-4 font-mono text-accent font-bold">{exc.concentration}</td>
                       <td className="py-3 px-4">{exc.category}</td>
                       <td className="py-3 px-4 text-center">
                         <button
                           onClick={() => handleDeleteExcipient(exc.id)}
+                          disabled={isSection1Disabled}
                           type="button"
-                          className="p-1.5 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer"
+                          className="p-1.5 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
                         >
                           <Trash size={15} />
                         </button>
@@ -611,56 +836,42 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({ projectId = "1
         {/* SUB-TAB 4: Pharmaceutical Product */}
         {activeSubTab === "Pharmaceutical Product" && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-secondary">Shelf-Life Parameters</label>
-              <input
-                type="text"
-                value={pharmaceuticalState.shelfLife}
-                onChange={(e) =>
-                  setPharmaceuticalState({ ...pharmaceuticalState, shelfLife: e.target.value })
-                }
-                className="w-full bg-bg border border-border focus:border-accent text-primary text-xs rounded-xl px-3 py-2.5 focus:outline-none font-semibold"
-              />
+            {renderTextInput(
+              "Shelf-Life Parameters",
+              pharmaceuticalState.shelfLife,
+              (val) => setPharmaceuticalState({ ...pharmaceuticalState, shelfLife: val }),
+              isProjectSaved,
+              isSection1Disabled,
+              false,
+              "",
+              "font-semibold"
+            )}
+            {renderTextInput(
+              "Packaging Sizes",
+              pharmaceuticalState.packagingSizes,
+              (val) => setPharmaceuticalState({ ...pharmaceuticalState, packagingSizes: val }),
+              isProjectSaved,
+              isSection1Disabled
+            )}
+            <div className="md:col-span-2">
+              {renderTextareaInput(
+                "Storage Conditions & Precautions",
+                pharmaceuticalState.storageConditions,
+                (val) => setPharmaceuticalState({ ...pharmaceuticalState, storageConditions: val }),
+                isProjectSaved,
+                isSection1Disabled,
+                2
+              )}
             </div>
-
-            <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-secondary">Packaging Sizes</label>
-              <input
-                type="text"
-                value={pharmaceuticalState.packagingSizes}
-                onChange={(e) =>
-                  setPharmaceuticalState({ ...pharmaceuticalState, packagingSizes: e.target.value })
-                }
-                className="w-full bg-bg border border-border focus:border-accent text-primary text-xs rounded-xl px-3 py-2.5 focus:outline-none"
-              />
-            </div>
-
-            <div className="space-y-1.5 md:col-span-2">
-              <label className="block text-xs font-semibold text-secondary">
-                Storage Conditions & Precautions
-              </label>
-              <textarea
-                rows={2}
-                value={pharmaceuticalState.storageConditions}
-                onChange={(e) =>
-                  setPharmaceuticalState({ ...pharmaceuticalState, storageConditions: e.target.value })
-                }
-                className="w-full bg-bg border border-border focus:border-accent text-primary text-xs rounded-xl p-3 focus:outline-none resize-none"
-              />
-            </div>
-
-            <div className="space-y-1.5 md:col-span-2">
-              <label className="block text-xs font-semibold text-secondary">
-                Container Closure Description
-              </label>
-              <textarea
-                rows={2}
-                value={pharmaceuticalState.containerClosure}
-                onChange={(e) =>
-                  setPharmaceuticalState({ ...pharmaceuticalState, containerClosure: e.target.value })
-                }
-                className="w-full bg-bg border border-border focus:border-accent text-primary text-xs rounded-xl p-3 focus:outline-none resize-none"
-              />
+            <div className="md:col-span-2">
+              {renderTextareaInput(
+                "Container Closure Description",
+                pharmaceuticalState.containerClosure,
+                (val) => setPharmaceuticalState({ ...pharmaceuticalState, containerClosure: val }),
+                isProjectSaved,
+                isSection1Disabled,
+                2
+              )}
             </div>
           </div>
         )}
@@ -669,40 +880,29 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({ projectId = "1
         {activeSubTab === "Indications" && (
           <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-1.5 md:col-span-2">
-                <label className="block text-xs font-semibold text-secondary">
-                  Therapeutic Indications Text Area
-                </label>
-                <textarea
-                  rows={3}
-                  value={indicationsState.therapeuticIndications}
-                  onChange={(e) =>
-                    setIndicationsState({ ...indicationsState, therapeuticIndications: e.target.value })
-                  }
-                  className="w-full bg-bg border border-border focus:border-accent text-primary text-xs rounded-xl p-3 focus:outline-none resize-none"
-                />
+              <div className="md:col-span-2">
+                {renderTextareaInput(
+                  "Therapeutic Indications Text Area",
+                  indicationsState.therapeuticIndications,
+                  (val) => setIndicationsState({ ...indicationsState, therapeuticIndications: val }),
+                  isProjectSaved,
+                  isSection1Disabled,
+                  3
+                )}
               </div>
-
-              <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-secondary">
-                  Target Patient Population Selector
-                </label>
-                <div className="relative flex items-center">
-                  <select
-                    value={indicationsState.targetPopulation}
-                    onChange={(e) =>
-                      setIndicationsState({ ...indicationsState, targetPopulation: e.target.value })
-                    }
-                    className="w-full bg-bg border border-border focus:border-accent text-primary text-xs rounded-xl px-3 py-2.5 pr-8 appearance-none focus:outline-none cursor-pointer"
-                  >
-                    <option value="Adults & Adolescents > 12 yrs">Adults & Adolescents &gt; 12 yrs</option>
-                    <option value="Adults Only (≥ 18 yrs)">Adults Only (≥ 18 yrs)</option>
-                    <option value="Pediatric Population (2-12 yrs)">Pediatric Population (2-12 yrs)</option>
-                    <option value="All Age Groups">All Age Groups</option>
-                  </select>
-                  <CaretDown size={12} className="absolute right-2.5 text-secondary pointer-events-none" />
-                </div>
-              </div>
+              {renderSelectInput(
+                "Target Patient Population Selector",
+                indicationsState.targetPopulation,
+                (val) => setIndicationsState({ ...indicationsState, targetPopulation: val }),
+                [
+                  { label: "Adults & Adolescents > 12 yrs", value: "Adults & Adolescents > 12 yrs" },
+                  { label: "Adults Only (≥ 18 yrs)", value: "Adults Only (≥ 18 yrs)" },
+                  { label: "Pediatric Population (2-12 yrs)", value: "Pediatric Population (2-12 yrs)" },
+                  { label: "All Age Groups", value: "All Age Groups" },
+                ],
+                isProjectSaved,
+                isSection1Disabled
+              )}
 
               {/* ICD-10 Tags */}
               <div className="space-y-2">
@@ -713,14 +913,16 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({ projectId = "1
                   <input
                     type="text"
                     placeholder="B35.1 (Tinea unguium)"
+                    disabled={isSection1Disabled}
                     value={newIcd10Tag}
                     onChange={(e) => setNewIcd10Tag(e.target.value)}
-                    className="flex-1 bg-bg border border-border focus:border-accent text-primary text-xs rounded-xl px-3 py-2 focus:outline-none"
+                    className="flex-1 bg-bg border border-border focus:border-accent text-primary text-xs rounded-xl px-3 py-2 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
                   />
                   <button
                     onClick={handleAddIcd10Tag}
+                    disabled={isSection1Disabled}
                     type="button"
-                    className="px-3 py-2 bg-accent hover:bg-accent-hover text-white text-xs font-bold rounded-xl cursor-pointer"
+                    className="px-3 py-2 bg-accent hover:bg-accent-hover text-white text-xs font-bold rounded-xl cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Add Tag
                   </button>
@@ -733,12 +935,14 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({ projectId = "1
                     >
                       <Tag size={12} />
                       <span>{tag}</span>
-                      <button
-                        onClick={() => handleRemoveIcd10Tag(tag)}
-                        className="hover:text-red-400 cursor-pointer ml-1"
-                      >
-                        ×
-                      </button>
+                      {!isSection1Disabled && (
+                        <button
+                          onClick={() => handleRemoveIcd10Tag(tag)}
+                          className="hover:text-red-400 cursor-pointer ml-1"
+                        >
+                          ×
+                        </button>
+                      )}
                     </span>
                   ))}
                 </div>
@@ -750,212 +954,260 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({ projectId = "1
         {/* SUB-TAB 6: Manufacturer */}
         {activeSubTab === "Manufacturer" && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-secondary">Primary Manufacturing Sites</label>
-              <input
-                type="text"
-                value={manufacturerState.primarySite}
-                onChange={(e) =>
-                  setManufacturerState({ ...manufacturerState, primarySite: e.target.value })
-                }
-                className="w-full bg-bg border border-border focus:border-accent text-primary text-xs rounded-xl px-3 py-2.5 focus:outline-none"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-secondary">
-                Secondary Packaging Facilities
-              </label>
-              <input
-                type="text"
-                value={manufacturerState.secondaryPackaging}
-                onChange={(e) =>
-                  setManufacturerState({ ...manufacturerState, secondaryPackaging: e.target.value })
-                }
-                className="w-full bg-bg border border-border focus:border-accent text-primary text-xs rounded-xl px-3 py-2.5 focus:outline-none"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-secondary">Batch Release Locations</label>
-              <input
-                type="text"
-                value={manufacturerState.batchReleaseLocation}
-                onChange={(e) =>
-                  setManufacturerState({ ...manufacturerState, batchReleaseLocation: e.target.value })
-                }
-                className="w-full bg-bg border border-border focus:border-accent text-primary text-xs rounded-xl px-3 py-2.5 focus:outline-none"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-secondary">
-                GMP Certificate Number
-              </label>
-              <input
-                type="text"
-                value={manufacturerState.gmpCertificate}
-                onChange={(e) =>
-                  setManufacturerState({ ...manufacturerState, gmpCertificate: e.target.value })
-                }
-                className="w-full bg-bg border border-border focus:border-accent text-primary text-xs rounded-xl px-3 py-2.5 focus:outline-none font-mono font-bold text-accent"
-              />
-            </div>
+            {renderTextInput(
+              "Primary Manufacturing Sites",
+              manufacturerState.primarySite,
+              (val) => setManufacturerState({ ...manufacturerState, primarySite: val }),
+              isProjectSaved,
+              isSection1Disabled
+            )}
+            {renderTextInput(
+              "Secondary Packaging Facilities",
+              manufacturerState.secondaryPackaging,
+              (val) => setManufacturerState({ ...manufacturerState, secondaryPackaging: val }),
+              isProjectSaved,
+              isSection1Disabled
+            )}
+            {renderTextInput(
+              "Batch Release Locations",
+              manufacturerState.batchReleaseLocation,
+              (val) => setManufacturerState({ ...manufacturerState, batchReleaseLocation: val }),
+              isProjectSaved,
+              isSection1Disabled
+            )}
+            {renderTextInput(
+              "GMP Certificate Number",
+              manufacturerState.gmpCertificate,
+              (val) => setManufacturerState({ ...manufacturerState, gmpCertificate: val }),
+              isProjectSaved,
+              isSection1Disabled,
+              false,
+              "",
+              "font-mono font-bold text-accent"
+            )}
           </div>
         )}
 
-        {/* Card Footer Actions */}
+        {/* Card 1 Footer Actions */}
         <div className="flex justify-end items-center gap-3 pt-2 border-t border-border">
-          <button
-            onClick={handleSaveCard1}
-            disabled={isSaving}
-            type="button"
-            className="px-4 py-2 bg-accent hover:bg-accent-hover text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
-          >
-            <FloppyDiskBack size={16} weight="fill" />
-            <span>{isSaving ? "Saving..." : "Save Data"}</span>
-          </button>
+          {isProjectSaved ? (
+            <div className="flex items-center gap-3">
+              {isEditingProject && (
+                <button
+                  onClick={handleCancelCard1}
+                  type="button"
+                  className="px-4 py-2.5 bg-surface-raised hover:bg-border text-secondary hover:text-primary border border-border text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 shadow-xs"
+                >
+                  <X size={15} weight="bold" />
+                  <span>{tWorkspace("cancelBtn")}</span>
+                </button>
+              )}
+              <button
+                onClick={handleEditCard1}
+                disabled={isSavingProject}
+                type="button"
+                className="px-5 py-2.5 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50 active:scale-95 border border-amber-400/40"
+              >
+                {isSavingProject ? (
+                  <CircleNotch size={16} className="animate-spin" />
+                ) : isEditingProject ? (
+                  <FloppyDiskBack size={16} weight="fill" />
+                ) : (
+                  <PencilSimple size={16} weight="bold" />
+                )}
+                <span>{isSavingProject ? tWorkspace("updating") : tWorkspace("btnEditSection1")}</span>
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={handleSaveCard1}
+              disabled={isSavingProject}
+              type="button"
+              className="px-5 py-2.5 bg-accent hover:bg-accent-hover text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50 active:scale-95"
+            >
+              {isSavingProject ? (
+                <CircleNotch size={16} className="animate-spin" />
+              ) : (
+                <FloppyDiskBack size={16} weight="fill" />
+              )}
+              <span>{isSavingProject ? tWorkspace("saving") : tWorkspace("btnSaveSection1")}</span>
+            </button>
+          )}
         </div>
       </div>
 
       {/* CARD 2: Dossier Data Configuration */}
-      <div className="bg-surface border border-border rounded-2xl p-6 shadow-sm space-y-6">
+      <div
+        className={`bg-surface border transition-all rounded-2xl p-6 shadow-sm space-y-6 ${
+          !isProjectSaved ? "opacity-90 border-border/80" : "border-border"
+        }`}
+      >
         {/* Card Header */}
         <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-border">
           <div className="flex items-center gap-2">
-            <Globe size={20} className="text-accent" />
-            <h2 className="font-lexend font-bold text-base md:text-lg text-primary">
-              Section 2: Dossier Data Configuration
+            <Globe size={20} className={isProjectSaved ? "text-accent" : "text-secondary"} />
+            <h2 className="font-lexend font-bold text-base md:text-lg text-primary flex items-center gap-2">
+              <span>{tWorkspace("section2Title")}</span>
+              {!isProjectSaved && <LockKey size={16} className="text-amber-400" />}
             </h2>
           </div>
-          <span className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 uppercase tracking-wider">
-            Regulatory Target: {configState.submissionCountry}
-          </span>
+          {!isProjectSaved ? (
+            <span className="text-xs font-bold px-3 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 uppercase tracking-wider flex items-center gap-1.5">
+              <LockKey size={14} weight="bold" />
+              {tWorkspace("lockedStatus")}
+            </span>
+          ) : isDossierSaved ? (
+            <span className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 uppercase tracking-wider flex items-center gap-1.5">
+              <CheckCircle size={14} weight="fill" />
+              {isEditingDossier ? tWorkspace("editingStatus") : tWorkspace("savedStatus")}
+            </span>
+          ) : (
+            <span className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 uppercase tracking-wider">
+              Regulatory Target: {configState.submissionCountry}
+            </span>
+          )}
         </div>
 
         {/* Form Grid (6 columns x 1 row) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          {/* Field 1: Submission Country * */}
-          <div className="space-y-1.5">
-            <label className="block text-xs font-semibold text-secondary">
-              Submission Country <span className="text-red-400">*</span>
-            </label>
-            <div className="relative flex items-center">
-              <select
-                value={configState.submissionCountry}
-                onChange={(e) => setConfigState({ ...configState, submissionCountry: e.target.value })}
-                className="w-full bg-bg border border-border focus:border-accent text-primary text-xs rounded-xl px-3 py-2.5 pr-8 appearance-none focus:outline-none transition-colors cursor-pointer"
-              >
-                <option value="KAZAKHSTAN">KAZAKHSTAN</option>
-                <option value="US">UNITED STATES (US)</option>
-                <option value="RUSSIA">RUSSIA</option>
-                <option value="BELARUS">BELARUS</option>
-                <option value="ARMENIA">ARMENIA</option>
-                <option value="KYRGYZSTAN">KYRGYZSTAN</option>
-              </select>
-              <CaretDown size={12} className="absolute right-2.5 text-secondary pointer-events-none" />
-            </div>
-          </div>
+          {renderSelectInput(
+            "Submission Country",
+            configState.submissionCountry,
+            (val) => setConfigState({ ...configState, submissionCountry: val }),
+            [
+              { label: "KAZAKHSTAN", value: "KAZAKHSTAN" },
+              { label: "UNITED STATES (US)", value: "US" },
+              { label: "RUSSIA", value: "RUSSIA" },
+              { label: "BELARUS", value: "BELARUS" },
+              { label: "ARMENIA", value: "ARMENIA" },
+              { label: "KYRGYZSTAN", value: "KYRGYZSTAN" },
+            ],
+            isDossierSaved,
+            isSection2Disabled,
+            true
+          )}
 
-          {/* Field 2: Role of Submission Country */}
-          <div className="space-y-1.5">
-            <label className="block text-xs font-semibold text-secondary">
-              Role of Submission Country
-            </label>
-            <div className="relative flex items-center">
-              <select
-                value={configState.roleOfSubmissionCountry}
-                onChange={(e) =>
-                  setConfigState({ ...configState, roleOfSubmissionCountry: e.target.value })
-                }
-                className="w-full bg-bg border border-border focus:border-accent text-primary text-xs rounded-xl px-3 py-2.5 pr-8 appearance-none focus:outline-none transition-colors cursor-pointer"
-              >
-                <option value="Reference Member State (RMS)">Reference Member State (RMS)</option>
-                <option value="Concerned Member State (CMS)">Concerned Member State (CMS)</option>
-              </select>
-              <CaretDown size={12} className="absolute right-2.5 text-secondary pointer-events-none" />
-            </div>
-          </div>
+          {renderSelectInput(
+            "Role of Submission Country",
+            configState.roleOfSubmissionCountry,
+            (val) => setConfigState({ ...configState, roleOfSubmissionCountry: val }),
+            [
+              { label: "Reference Member State (RMS)", value: "Reference Member State (RMS)" },
+              { label: "Concerned Member State (CMS)", value: "Concerned Member State (CMS)" },
+            ],
+            isDossierSaved,
+            isSection2Disabled
+          )}
 
-          {/* Field 3: Procedure Type * */}
-          <div className="space-y-1.5">
-            <label className="block text-xs font-semibold text-secondary">
-              Procedure Type <span className="text-red-400">*</span>
-            </label>
-            <div className="relative flex items-center">
-              <select
-                value={configState.procedureType}
-                onChange={(e) => setConfigState({ ...configState, procedureType: e.target.value })}
-                className="w-full bg-bg border border-border focus:border-accent text-primary text-xs rounded-xl px-3 py-2.5 pr-8 appearance-none focus:outline-none transition-colors cursor-pointer"
-              >
-                <option value="Recognition">Recognition</option>
-                <option value="Mutual Recognition (MRP)">Mutual Recognition (MRP)</option>
-                <option value="Decentralized Procedure (DCP)">Decentralized Procedure (DCP)</option>
-                <option value="National Registration">National Registration</option>
-                <option value="Variation">Variation</option>
-              </select>
-              <CaretDown size={12} className="absolute right-2.5 text-secondary pointer-events-none" />
-            </div>
-          </div>
+          {renderSelectInput(
+            "Procedure Type",
+            configState.procedureType,
+            (val) => setConfigState({ ...configState, procedureType: val }),
+            [
+              { label: "Recognition", value: "Recognition" },
+              { label: "Mutual Recognition (MRP)", value: "Mutual Recognition (MRP)" },
+              { label: "Decentralized Procedure (DCP)", value: "Decentralized Procedure (DCP)" },
+              { label: "National Registration", value: "National Registration" },
+              { label: "Variation", value: "Variation" },
+            ],
+            isDossierSaved,
+            isSection2Disabled,
+            true
+          )}
 
-          {/* Field 4: Type of Procedure */}
-          <div className="space-y-1.5">
-            <label className="block text-xs font-semibold text-secondary">Type of Procedure</label>
-            <div className="relative flex items-center">
-              <select
-                value={configState.typeOfProcedure}
-                onChange={(e) => setConfigState({ ...configState, typeOfProcedure: e.target.value })}
-                className="w-full bg-bg border border-border focus:border-accent text-primary text-xs rounded-xl px-3 py-2.5 pr-8 appearance-none focus:outline-none transition-colors cursor-pointer"
-              >
-                <option value="Bringing into conformity">Bringing into conformity</option>
-                <option value="National Registration">National Registration</option>
-                <option value="Re-registration">Re-registration</option>
-                <option value="Variation">Variation</option>
-              </select>
-              <CaretDown size={12} className="absolute right-2.5 text-secondary pointer-events-none" />
-            </div>
-          </div>
+          {renderSelectInput(
+            "Type of Procedure",
+            configState.typeOfProcedure,
+            (val) => setConfigState({ ...configState, typeOfProcedure: val }),
+            [
+              { label: "Bringing into conformity", value: "Bringing into conformity" },
+              { label: "National Registration", value: "National Registration" },
+              { label: "Re-registration", value: "Re-registration" },
+              { label: "Variation", value: "Variation" },
+            ],
+            isDossierSaved,
+            isSection2Disabled
+          )}
 
-          {/* Field 5: Application Number */}
-          <div className="space-y-1.5">
-            <label className="block text-xs font-semibold text-secondary">Application Number</label>
-            <input
-              type="text"
-              value={configState.applicationNumber}
-              onChange={(e) => setConfigState({ ...configState, applicationNumber: e.target.value })}
-              className="w-full bg-bg border border-border focus:border-accent text-primary text-xs rounded-xl px-3 py-2.5 focus:outline-none transition-colors"
-            />
-          </div>
+          {renderTextInput(
+            "Application Number",
+            configState.applicationNumber,
+            (val) => setConfigState({ ...configState, applicationNumber: val }),
+            isDossierSaved,
+            isSection2Disabled
+          )}
 
-          {/* Field 6: Dossier Sequence */}
-          <div className="space-y-1.5">
-            <label className="block text-xs font-semibold text-secondary">Dossier Sequence</label>
-            <div className="relative flex items-center">
-              <select
-                value={configState.dossierSequence}
-                onChange={(e) => setConfigState({ ...configState, dossierSequence: e.target.value })}
-                className="w-full bg-bg border border-border focus:border-accent text-primary text-xs rounded-xl px-3 py-2.5 pr-8 appearance-none focus:outline-none transition-colors cursor-pointer"
-              >
-                <option value="Sequence 0000">Sequence 0000</option>
-                <option value="Sequence 0001">Sequence 0001</option>
-                <option value="Sequence 0002">Sequence 0002</option>
-              </select>
-              <CaretDown size={12} className="absolute right-2.5 text-secondary pointer-events-none" />
-            </div>
-          </div>
+          {renderSelectInput(
+            "Dossier Sequence",
+            configState.dossierSequence,
+            (val) => setConfigState({ ...configState, dossierSequence: val }),
+            [
+              { label: "Sequence 0000", value: "Sequence 0000" },
+              { label: "Sequence 0001", value: "Sequence 0001" },
+              { label: "Sequence 0002", value: "Sequence 0002" },
+            ],
+            isDossierSaved,
+            isSection2Disabled
+          )}
         </div>
 
-        {/* Card Footer Action */}
-        <div className="flex justify-end pt-2 border-t border-border">
-          <button
-            onClick={handleSaveCard2}
-            disabled={isSaving}
-            type="button"
-            className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
-          >
-            <Check size={16} weight="bold" />
-            <span>{isSaving ? "Saving..." : "Save Data"}</span>
-          </button>
+        {/* Card 2 Footer Action */}
+        <div className="flex justify-end items-center gap-3 pt-2 border-t border-border">
+          {!isProjectSaved ? (
+            <button
+              disabled
+              type="button"
+              title="Save Project Data first to activate Dossier Data Configuration"
+              className="px-5 py-2.5 text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-2 bg-gray-800 text-gray-400 border border-gray-700/50 cursor-not-allowed opacity-60"
+            >
+              <LockKey size={16} weight="bold" />
+              <span>{tWorkspace("btnSaveSection1First")}</span>
+            </button>
+          ) : isDossierSaved ? (
+            <div className="flex items-center gap-3">
+              {isEditingDossier && (
+                <button
+                  onClick={handleCancelCard2}
+                  type="button"
+                  className="px-4 py-2.5 bg-surface-raised hover:bg-border text-secondary hover:text-primary border border-border text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 shadow-xs"
+                >
+                  <X size={15} weight="bold" />
+                  <span>{tWorkspace("cancelBtn")}</span>
+                </button>
+              )}
+              <button
+                onClick={handleEditCard2}
+                disabled={isSavingDossier}
+                type="button"
+                className="px-5 py-2.5 bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50 active:scale-95 border border-amber-400/40"
+              >
+                {isSavingDossier ? (
+                  <CircleNotch size={16} className="animate-spin" />
+                ) : isEditingDossier ? (
+                  <FloppyDiskBack size={16} weight="fill" />
+                ) : (
+                  <PencilSimple size={16} weight="bold" />
+                )}
+                <span>
+                  {isSavingDossier ? tWorkspace("updating") : tWorkspace("btnEditSection2")}
+                </span>
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={handleSaveCard2}
+              disabled={isSavingDossier}
+              type="button"
+              className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50 active:scale-95 shadow-emerald-900/20 shadow-md"
+            >
+              {isSavingDossier ? (
+                <CircleNotch size={16} className="animate-spin" />
+              ) : (
+                <Check size={16} weight="bold" />
+              )}
+              <span>{isSavingDossier ? tWorkspace("saving") : tWorkspace("btnSaveSection2")}</span>
+            </button>
+          )}
         </div>
       </div>
     </div>

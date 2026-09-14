@@ -1,4 +1,4 @@
-import { pgEnum, pgTable, serial, text, timestamp, varchar, integer } from "drizzle-orm/pg-core";
+import { pgEnum, pgTable, serial, text, timestamp, varchar, integer, boolean } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
 // ─── ENUMS ───────────────────────────────────────────────────────────────────
@@ -29,7 +29,9 @@ export const projects = pgTable("projects", {
   mahHolder: text("mah_holder"),
   responsibleUser: text("responsible_user"),
   tariff: text("tariff"),
+  additionalFeature: text("additional_feature"),
   status: text("status").default("Active").notNull(),
+  isProjectSaved: boolean("is_project_saved").default(false).notNull(),
   version: integer("version").default(1).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -46,6 +48,7 @@ export const dossierConfig = pgTable("dossier_config", {
   typeOfProcedure: text("type_of_procedure"),
   applicationNumber: text("application_number"),
   dossierSequence: text("dossier_sequence").default("Sequence 0000").notNull(),
+  isDossierSaved: boolean("is_dossier_saved").default(false).notNull(),
 });
 
 export const projectMembers = pgTable("project_members", {
@@ -74,6 +77,8 @@ export const projectDocuments = pgTable("project_documents", {
   md5Checksum: text("md5_checksum"),
   status: documentStatusEnum("status").default("active").notNull(),
   operation: text("operation").default("new").notNull(),
+  issueDate: timestamp("issue_date"),
+  expirationDate: timestamp("expiration_date"),
   uploadedAt: timestamp("uploaded_at").defaultNow().notNull(),
 });
 

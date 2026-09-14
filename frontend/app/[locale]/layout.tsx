@@ -56,8 +56,9 @@ export default async function RootLayout({
     <html
       lang={locale}
       className={`${lexend.variable} ${sourceSans3.variable} h-full antialiased scroll-smooth`}
+      suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full flex flex-col" suppressHydrationWarning>
         <NextIntlClientProvider locale={locale} messages={messages}>
           <ClientProviders>{children}</ClientProviders>
         </NextIntlClientProvider>

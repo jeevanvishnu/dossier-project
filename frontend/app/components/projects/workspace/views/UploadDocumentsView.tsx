@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from "react";
+import { useTranslations, useLocale } from "next-intl";
 import {
   Folder,
   FolderOpen,
@@ -8,16 +9,22 @@ import {
   Trash,
   List,
   LockKey,
-  FileCode,
   Package,
   CaretDown,
   CaretRight,
   MagnifyingGlass,
   CircleNotch,
+  PencilSimple,
+  Calendar,
+  X,
+  LockKeyOpen,
+  ShieldCheck,
+  Warning,
 } from "@phosphor-icons/react";
 import toast from "react-hot-toast";
 import { ECTD_FULL_TREE, CTDNode } from "@/app/constants/ctdStructure";
 import { api, handleApiError } from "@/app/lib/axios";
+import { SkeletonTableRow } from "@/app/components/ui/Skeleton";
 
 interface UploadedFile {
   id: string;
@@ -27,7 +34,76 @@ interface UploadedFile {
   completionDate: string;
   md5Hash: string;
   imageKitUrl?: string;
+  issueDate?: string;
+  expirationDate?: string;
 }
+
+const RU_NODE_TITLES: Record<string, string> = {
+  "Administrative Information & Prescribing Information": "Административная информация и информация о назначении",
+  "Cover letter": "Сопроводительное письмо",
+  "Table of contents": "Содержание",
+  "General Documentation": "Общая документация",
+  "Application for registration of a medicinal product": "Заявление о регистрации лекарственного препарата",
+  "Application for registration of a medicinal product for medical use (bringing registration dossier into compliance with EAEU requirements)": "Заявление о регистрации лекарственного препарата (приведение в соответствие с требованиями ЕАЭС)",
+  "Application for amendments to the registration dossier of a medicinal product": "Заявление о внесении изменений в регистрационное досье",
+  "Application for re-registration of a medicinal product": "Заявление о перерегистрации лекарственного препарата",
+  "Document confirming payment of expert work fees and/or registration fees (duties) in accordance with EAEU member state legislation": "Документ, подтверждающий уплату пошлины (сбора) за проведение экспертизы",
+  "Copy of certificate for medicinal product in accordance with WHO recommended format": "Копия сертификата на лекарственный препарат по форме ВОЗ",
+  "Translation into Russian and copy of expert report issued upon registration": "Перевод на русский язык и копия экспертного отчета",
+  "Conclusion (recommendation) of authorized body following preliminary scientific advice": "Заключение (рекомендация) уполномоченного органа по научным консультациям",
+  "Recommendation of Expert Committee on Medicinal Products under EEC following preliminary scientific advice": "Рекомендация Экспертного комитета по лекарственным средствам при ЕЭК",
+  "Summary of Product Characteristics (SmPC), package leaflet, package mock-ups": "Общая характеристика лекарственного препарата (ОХЛП), листок-вкладыш, макеты упаковки",
+  "Drafts of SmPC and package leaflet compiled in accordance with EAEU requirements in Russian": "Проекты ОХЛП и листка-вкладыша на русском языке",
+  "Draft summary of product characteristics (SmPC) in Russian and Kazakh": "Проект общей характеристики лекарственного препарата (ОХЛП) на русском и казахском языках",
+  "Draft package leaflet (patient information leaflet) in Russian and Kazakh": "Проект листка-вкладыша (инструкции по медицинскому применению)",
+  "Mock-ups of primary, secondary, and intermediate packaging": "Макеты первичной, вторичной и промежуточной упаковки",
+  "Draft medicinal product labeling": "Проект маркировки лекарственного препарата",
+  "Mock-up of secondary (consumer) packaging of medicinal product": "Макет вторичной (потребительской) упаковки",
+  "Mock-up of primary (inner) packaging of medicinal product": "Макет первичной (внутренней) упаковки",
+  "Mock-up of intermediate packaging of medicinal product": "Макет промежуточной упаковки",
+  "Mock-up of medicinal product label": "Макет этикетки лекарственного препарата",
+  "Mock-up of medicinal product sticker": "Макет стикера лекарственного препарата",
+  "Results of user testing of package leaflet mock-up (Annex 12 EAEU Council Decision No. 88)": "Результаты пользовательского тестирования листка-вкладыша",
+  "Copies of approved SmPC and package leaflet from manufacturing country": "Копии утвержденных ОХЛП и листка-вкладыша страны-производителя",
+  "Information on regulatory status of medicinal product in other countries": "Информация о регуляторном статусе в других странах",
+  "List of countries where medicinal product has been submitted, registered, refused, or suspended": "Перечень стран, в которых препарат заявлен, зарегистрирован или отклонен",
+  "Quality Documents": "Документы качества",
+  "Manufacturing Documents": "Производственная документация",
+  "Information on Experts": "Информация об экспертах",
+  "Specific Requirements for Different Types of Applications": "Специальные требования для различных видов заявлений",
+  "Applicant's documents on environmental risk assessment": "Документы заявителя по оценке экологического риска",
+  "Information Concerning Pharmacovigilance in EAEU Member State": "Информация по фармаконадзору в государствах-членах ЕАЭС",
+  "Copies of documents confirming trademark registration": "Копии документов, подтверждающих регистрацию товарного знака",
+  "CTD Summaries": "Резюме CTD",
+  "Table of contents of modules 2 – 5": "Содержание модулей 2 – 5",
+  "Introduction to the Common Technical Document (CTD)": "Введение в Общий технический документ (CTD)",
+  "Quality Overall Summary (QOS)": "Общее резюме качества (QOS)",
+  "Non-clinical overview": "Доклинический обзор",
+  "Clinical overview": "Клинический обзор",
+  "Non-clinical Written and Tabulated Summaries": "Доклинические письменные и табличные резюме",
+  "Clinical Summary": "Клиническое резюме",
+  "Quality (Chemical, Pharmaceutical and Biological Information)": "Качество (химическая, фармацевтическая и биологическая информация)",
+  "Table of contents of module 3": "Содержание модуля 3",
+  "Body of Data": "Основной массив данных",
+  "Active Substance (AS)": "Действующее вещество",
+  "Medicinal Product": "Лекарственный препарат",
+  "Manufacture": "Производство",
+  "Characterization": "Характеристика",
+  "Control of Active Substance": "Контроль действующего вещества",
+  "Stability": "Стабильность",
+  "Pharmaceutical Development": "Фармацевтическая разработка",
+  "Manufacture of Medicinal Product": "Производство лекарственного препарата",
+  "Control of Excipients": "Контроль вспомогательных веществ",
+  "Control of Finished Product": "Контроль готового продукта",
+  "Non-Clinical Study Reports": "Отчеты о доклинических исследованиях",
+  "Table of contents of module 4": "Содержание модуля 4",
+  "Study Reports": "Отчеты об исследованиях",
+  "Pharmacology": "Фармакология",
+  "Pharmacokinetics": "Фармакокинетика",
+  "Toxicology": "Токсикология",
+  "Clinical Study Reports": "Отчеты о клинических исследованиях",
+  "Table of contents of module 5": "Содержание модуля 5",
+};
 
 const MAIN_MODULE_TABS = [
   { id: "m1", code: "1", label: "1. Admin information" },
@@ -60,9 +136,51 @@ function countFilesForNode(node: CTDNode, filesMap: Record<string, UploadedFile[
 
 interface UploadDocumentsViewProps {
   projectId?: string;
+  isDossierComplete?: boolean;
 }
 
-export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({ projectId = "1" }) => {
+export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
+  projectId = "1",
+  isDossierComplete = true,
+}) => {
+  const tWorkspace = useTranslations("workspace");
+  const tCommon = useTranslations("common");
+  const locale = useLocale();
+
+  const getNodeTitle = (node: CTDNode) => {
+    if (locale === "ru") {
+      return RU_NODE_TITLES[node.title] || node.title;
+    }
+    return node.title;
+  };
+
+  if (!isDossierComplete) {
+    return (
+      <div className="bg-white dark:bg-slate-900 border border-amber-500/30 rounded-2xl p-8 text-center space-y-4 shadow-sm font-sans">
+        <div className="w-12 h-12 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto">
+          <LockKey size={26} weight="bold" />
+        </div>
+        <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
+          {tWorkspace("tabLocked")}
+        </h3>
+        <p className="text-xs md:text-sm text-slate-600 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
+          {tWorkspace("tabLockedToast")}
+        </p>
+      </div>
+    );
+  }
+
+  const mainModuleTabs = useMemo(
+    () => [
+      { id: "m1", code: "1", label: tWorkspace("m1Label") },
+      { id: "m2", code: "2", label: tWorkspace("m2Label") },
+      { id: "m3", code: "3", label: tWorkspace("m3Label") },
+      { id: "m4", code: "4", label: tWorkspace("m4Label") },
+      { id: "m5", code: "5", label: tWorkspace("m5Label") },
+    ],
+    [tWorkspace]
+  );
+
   const [activeMainModuleId, setActiveMainModuleId] = useState<string>("m1");
   const [selectedModuleId, setSelectedModuleId] = useState<string>("1.0");
   const [dragActive, setDragActive] = useState<boolean>(false);
@@ -70,7 +188,24 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({ projec
   const [isUploading, setIsUploading] = useState<boolean>(false);
   const [isDownloadingZip, setIsDownloadingZip] = useState<boolean>(false);
 
-  const [isSeeding, setIsSeeding] = useState<boolean>(false);
+  const [isLoadingDoc, setIsLoadingDoc] = useState<boolean>(false);
+  const [isDossierLocked, setIsDossierLocked] = useState<boolean>(false);
+  const [isLockModalOpen, setIsLockModalOpen] = useState<boolean>(false);
+
+  const handleToggleLock = () => {
+    setIsLockModalOpen(true);
+  };
+
+  const handleConfirmToggleLock = () => {
+    if (isDossierLocked) {
+      setIsDossierLocked(false);
+      toast.success("Dossier structure unlocked. Editing & deleting are now enabled.");
+    } else {
+      setIsDossierLocked(true);
+      toast.success("Dossier structure locked & MD5 checksums verified. ZIP package generation enabled.");
+    }
+    setIsLockModalOpen(false);
+  };
 
   const handleDownloadZip = async () => {
     if (isDownloadingZip) return;
@@ -89,44 +224,6 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({ projec
       handleApiError(err, "Failed to download eCTD ZIP package");
     } finally {
       setIsDownloadingZip(false);
-    }
-  };
-
-  const handleLoadRussianDossier = async () => {
-    if (isSeeding) return;
-    setIsSeeding(true);
-    toast.loading("Populating project with 11 Russian Client Dossier documents...", { id: "seed-toast" });
-    try {
-      const res = await api.post(`/projects/${projectId}/seed-sorbit`);
-      if (res.data?.success) {
-        toast.success("Loaded 11 Russian Client Dossier documents! Now click 'Download ZIP' to generate XML.", { id: "seed-toast", duration: 5000 });
-        // Refresh selected module document
-        try {
-          const response = await api.get(`/projects/${projectId}/documents/${selectedModuleId}`);
-          if (response.data?.success && response.data?.data) {
-            const doc = response.data.data;
-            const formatted: UploadedFile = {
-              id: String(doc.id),
-              name: doc.originalName,
-              sequence: doc.sequence || "0000",
-              uploadDate: doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleDateString() : "14.08.2023",
-              completionDate: doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleDateString() : "14.08.2023",
-              md5Hash: doc.md5Checksum ? doc.md5Checksum.slice(0, 10) + "..." : "MD5",
-              imageKitUrl: doc.imageKitUrl,
-            };
-            setModuleFiles((prev) => ({
-              ...prev,
-              [selectedModuleId]: [formatted],
-            }));
-          }
-        } catch (fetchErr) {
-          // ignore
-        }
-      }
-    } catch (err: any) {
-      handleApiError(err, "Failed to populate Russian Client Dossier");
-    } finally {
-      setIsSeeding(false);
     }
   };
 
@@ -184,9 +281,14 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({ projec
   useEffect(() => {
     if (!projectId || !selectedModuleId) return;
 
+    let isSubscribed = true;
+
     const fetchDocumentForNode = async () => {
+      setIsLoadingDoc(true);
       try {
         const response = await api.get(`/projects/${projectId}/documents/${selectedModuleId}`);
+        if (!isSubscribed) return;
+
         if (response.data?.success && response.data?.data) {
           const doc = response.data.data;
           const formatted: UploadedFile = {
@@ -197,6 +299,8 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({ projec
             completionDate: doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleDateString() : "14.08.2023",
             md5Hash: doc.md5Checksum ? doc.md5Checksum.slice(0, 10) + "..." : "MD5",
             imageKitUrl: doc.imageKitUrl,
+            issueDate: doc.issueDate ? new Date(doc.issueDate).toISOString() : undefined,
+            expirationDate: doc.expirationDate ? new Date(doc.expirationDate).toISOString() : undefined,
           };
           setModuleFiles((prev) => ({
             ...prev,
@@ -204,11 +308,31 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({ projec
           }));
         }
       } catch (err: any) {
-        // If 404, node doesn't have an active document yet, keep present local state
+        // If 404, node doesn't have an active document yet on backend
+        if (isSubscribed) {
+          // If no active file from backend and node is not pre-seeded, clear to empty list
+          setModuleFiles((prev) => {
+            if (prev[selectedModuleId] && prev[selectedModuleId][0]?.id?.startsWith("file-")) {
+              return prev; // keep initial mock template if present
+            }
+            return {
+              ...prev,
+              [selectedModuleId]: prev[selectedModuleId] || [],
+            };
+          });
+        }
+      } finally {
+        if (isSubscribed) {
+          setIsLoadingDoc(false);
+        }
       }
     };
 
     fetchDocumentForNode();
+
+    return () => {
+      isSubscribed = false;
+    };
   }, [projectId, selectedModuleId]);
 
   const activeRootModule = useMemo(() => {
@@ -278,6 +402,11 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({ projec
   };
 
   const uploadFileToBackend = async (file?: File) => {
+    if ((selectedOperation === "new" || selectedOperation === "replace") && !file) {
+      toast.error("Please select a file to attach before executing this operation.");
+      return;
+    }
+
     setIsUploading(true);
     try {
       const formData = new FormData();
@@ -286,9 +415,10 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({ projec
       }
       formData.append("operation", selectedOperation);
 
-      const response = await api.post(`/projects/${projectId}/documents/${selectedModuleId}`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      const response = await api.post(
+        `/projects/${projectId}/documents/${selectedModuleId}?operation=${selectedOperation}`,
+        formData
+      );
 
       if (response.data?.success && response.data?.data) {
         const doc = response.data.data;
@@ -299,14 +429,17 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({ projec
           }));
           toast.success(`Marked section as deleted (eCTD Tombstone record created).`);
         } else {
+          const uploadedAtDate = doc.uploadedAt ? new Date(doc.uploadedAt) : new Date();
           const newFileItem: UploadedFile = {
             id: String(doc.id),
             name: doc.originalName,
             sequence: doc.sequence || "0000",
-            uploadDate: new Date(doc.uploadedAt).toLocaleDateString(),
-            completionDate: new Date(doc.uploadedAt).toLocaleDateString(),
+            uploadDate: isNaN(uploadedAtDate.getTime()) ? new Date().toLocaleDateString() : uploadedAtDate.toLocaleDateString(),
+            completionDate: isNaN(uploadedAtDate.getTime()) ? new Date().toLocaleDateString() : uploadedAtDate.toLocaleDateString(),
             md5Hash: doc.md5Checksum ? doc.md5Checksum.slice(0, 10) + "..." : "MD5",
             imageKitUrl: doc.imageKitUrl,
+            issueDate: doc.issueDate ? new Date(doc.issueDate).toISOString() : undefined,
+            expirationDate: doc.expirationDate ? new Date(doc.expirationDate).toISOString() : undefined,
           };
 
           setModuleFiles((prev) => ({
@@ -328,23 +461,100 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({ projec
     uploadFileToBackend(undefined);
   };
 
-  const handleDeleteFile = async (fileId: string, fileName: string) => {
+  // Edit document dates modal state
+  const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
+  const [editingFile, setEditingFile] = useState<UploadedFile | null>(null);
+  const [editIssueDate, setEditIssueDate] = useState<string>("");
+  const [editExpirationDate, setEditExpirationDate] = useState<string>("");
+  const [isSavingDates, setIsSavingDates] = useState<boolean>(false);
+
+  // Delete document confirmation modal state
+  const [deleteConfirmFile, setDeleteConfirmFile] = useState<UploadedFile | null>(null);
+  const [isDeletingFile, setIsDeletingFile] = useState<boolean>(false);
+
+  const handleOpenDeleteModal = (file: UploadedFile) => {
+    setDeleteConfirmFile(file);
+  };
+
+  const handleOpenEditModal = (file: UploadedFile) => {
+    setEditingFile(file);
+    const formattedIssue = file.issueDate ? new Date(file.issueDate).toISOString().split("T")[0] : "";
+    const formattedExp = file.expirationDate ? new Date(file.expirationDate).toISOString().split("T")[0] : "";
+    setEditIssueDate(formattedIssue);
+    setEditExpirationDate(formattedExp);
+    setIsEditModalOpen(true);
+  };
+
+  const handleSaveDates = async () => {
+    if (!editingFile) return;
+
+    if (editIssueDate && editExpirationDate) {
+      const issue = new Date(editIssueDate);
+      const exp = new Date(editExpirationDate);
+      if (exp < issue) {
+        toast.error("Document expiration date cannot be earlier than issue date.");
+        return;
+      }
+    }
+
+    setIsSavingDates(true);
+    try {
+      const response = await api.put(`/projects/${projectId}/documents/${selectedModuleId}/dates`, {
+        docId: editingFile.id,
+        fileName: editingFile.name,
+        issueDate: editIssueDate || null,
+        expirationDate: editExpirationDate || null,
+      });
+
+      if (response.data?.success) {
+        toast.success("Document dates updated successfully!");
+        const updatedDoc = response.data.data;
+        setModuleFiles((prev) => ({
+          ...prev,
+          [selectedModuleId]: (prev[selectedModuleId] || []).map((f) =>
+            f.id === editingFile.id
+              ? {
+                ...f,
+                id: String(updatedDoc?.id || f.id),
+                issueDate: editIssueDate ? new Date(editIssueDate).toISOString() : undefined,
+                expirationDate: editExpirationDate ? new Date(editExpirationDate).toISOString() : undefined,
+              }
+              : f
+          ),
+        }));
+        setIsEditModalOpen(false);
+      }
+    } catch (err: any) {
+      handleApiError(err, "Failed to update document dates");
+    } finally {
+      setIsSavingDates(false);
+    }
+  };
+
+  const handleConfirmDeleteFile = async () => {
+    if (!deleteConfirmFile) return;
+    setIsDeletingFile(true);
     try {
       await api.delete(`/projects/${projectId}/documents/${selectedModuleId}`);
       setModuleFiles((prev) => ({
         ...prev,
-        [selectedModuleId]: prev[selectedModuleId].filter((f) => f.id !== fileId),
+        [selectedModuleId]: (prev[selectedModuleId] || []).filter((f) => f.id !== deleteConfirmFile.id),
       }));
-      toast.success(`Removed ${fileName} and created eCTD tombstone.`);
+      toast.success(`Removed ${deleteConfirmFile.name} and created eCTD tombstone.`);
+      setDeleteConfirmFile(null);
     } catch (err) {
-      handleApiError(err, `Failed to delete ${fileName}`);
+      handleApiError(err, `Failed to delete ${deleteConfirmFile.name}`);
+    } finally {
+      setIsDeletingFile(false);
     }
   };
 
   const matchesSearch = (node: CTDNode, query: string): boolean => {
     if (!query) return true;
     const q = query.toLowerCase();
+    const title = getNodeTitle(node).toLowerCase();
     const matchSelf =
+      title.includes(q) ||
       node.title.toLowerCase().includes(q) ||
       (node.code && node.code.toLowerCase().includes(q)) ||
       (node.docId && node.docId.toLowerCase().includes(q));
@@ -372,8 +582,8 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({ projec
           onClick={() => setSelectedModuleId(node.id)}
           style={{ paddingLeft: `${depth * 12 + 6}px` }}
           className={`flex items-center justify-between py-1.5 px-2 rounded text-xs font-medium cursor-pointer transition-colors ${isSelected
-              ? "bg-sky-100 dark:bg-sky-950/60 border border-sky-300 dark:border-sky-700 text-sky-900 dark:text-sky-200 font-semibold"
-              : "hover:bg-gray-100 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-300 border border-transparent"
+            ? "bg-sky-100 dark:bg-sky-950/60 border border-sky-300 dark:border-sky-700 text-sky-900 dark:text-sky-200 font-semibold"
+            : "hover:bg-gray-100 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-300 border border-transparent"
             }`}
         >
           <div className="flex items-center gap-1.5 min-w-0 pr-2">
@@ -406,7 +616,7 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({ projec
             <span className="truncate text-[11.5px] leading-snug">
               {node.code && <span className="font-semibold text-slate-900 dark:text-slate-100 mr-1">{node.code}</span>}
               {node.docId && <span className="font-bold text-slate-800 dark:text-slate-200 mr-1">- {node.docId}</span>}
-              <span>{node.title}</span>
+              <span>{getNodeTitle(node)}</span>
             </span>
           </div>
 
@@ -427,7 +637,7 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({ projec
   };
 
   const selectedNodeLabel = `${activeNode.code ? activeNode.code + " " : ""}${activeNode.docId ? "- " + activeNode.docId + " " : ""
-    }${activeNode.title}`;
+    }${getNodeTitle(activeNode)}`;
 
   return (
     <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs space-y-4 font-sans text-slate-800 dark:text-slate-200">
@@ -436,53 +646,53 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({ projec
         <div className="space-y-0.5">
           <div className="flex items-center gap-2">
             <span className="font-bold text-base text-red-700 dark:text-red-400 tracking-tight">
-              Dossier ID:
+              {tWorkspace("dossierId")}
             </span>
             <span className="font-bold text-base text-slate-900 dark:text-slate-100 font-mono">
-              {projectId ? (projectId.startsWith("PRJ-") ? projectId : `PRJ-${projectId}`) : "PRJ-1"}
+              {projectId || "1661e1dd-22db-4f57-970d-b64401c1f5a5"}
             </span>
           </div>
           <p className="text-[11px] text-slate-500 dark:text-slate-400">
-            Zero-Disk Cloud File Upload Engine • <span className="font-semibold text-slate-700 dark:text-slate-300">50MB Max</span> • Direct ImageKit Stream
+            {tWorkspace("streamInfo")}
           </p>
         </div>
 
         {/* Top Right Action Icons */}
         <div className="flex items-center gap-1.5">
+          {/* Icon 1: Lock / Unlock Toggle Button */}
           <button
             type="button"
-            onClick={handleLoadRussianDossier}
-            disabled={isSeeding}
-            className="px-2.5 py-1.5 rounded bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50 shadow-xs"
-            title="Load 11 Russian Client Dossier documents into project"
+            onClick={handleToggleLock}
+            className={`p-1.5 rounded transition-all cursor-pointer border ${isDossierLocked
+                ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20"
+                : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 hover:bg-amber-500/20"
+              }`}
+            title={
+              isDossierLocked
+                ? tWorkspace("btnUnlockStructure")
+                : tWorkspace("btnLockStructure")
+            }
           >
-            {isSeeding ? (
-              <CircleNotch size={14} className="animate-spin" weight="bold" />
-            ) : (
-              <FileCode size={14} weight="bold" />
-            )}
-            <span>Load Russian Client Dossier</span>
+            {isDossierLocked ? <LockKey size={16} weight="bold" /> : <LockKeyOpen size={16} weight="bold" />}
           </button>
+
+          {/* Icon 3: Download ZIP Package */}
           <button
             type="button"
             onClick={handleDownloadZip}
-            disabled={isDownloadingZip}
-            className="p-1.5 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 hover:text-accent transition-colors border border-slate-200 dark:border-slate-700 cursor-pointer disabled:opacity-50"
-            title="Download ZIP Package & Compiled XML"
+            disabled={!isDossierLocked || isDownloadingZip}
+            className="p-1.5 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 hover:text-accent transition-colors border border-slate-200 dark:border-slate-700 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            title={
+              !isDossierLocked
+                ? tWorkspace("uploadDropzoneLocked")
+                : tWorkspace("btnDownloadZip")
+            }
           >
             {isDownloadingZip ? (
               <CircleNotch size={16} className="animate-spin text-accent" weight="bold" />
             ) : (
               <Package size={16} weight="bold" />
             )}
-          </button>
-          <button
-            type="button"
-            onClick={() => toast.success("Dossier structure locked & MD5 checksums verified")}
-            className="p-1.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 transition-colors cursor-pointer"
-            title="Lock & Secure"
-          >
-            <LockKey size={16} weight="bold" />
           </button>
         </div>
       </div>
@@ -496,7 +706,7 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({ projec
           </div>
 
           <div className="flex flex-col divide-y divide-slate-700/60">
-            {MAIN_MODULE_TABS.map((tab) => {
+            {mainModuleTabs.map((tab) => {
               const isActive = activeMainModuleId === tab.id;
               return (
                 <button
@@ -504,8 +714,8 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({ projec
                   type="button"
                   onClick={() => handleMainModuleClick(tab.id)}
                   className={`text-left px-3.5 py-3 text-xs font-medium transition-all flex items-center justify-between cursor-pointer ${isActive
-                      ? "bg-sky-100 text-sky-800 font-bold border-l-4 border-sky-600"
-                      : "hover:bg-slate-700/50 text-slate-300"
+                    ? "bg-sky-100 text-sky-800 font-bold border-l-4 border-sky-600"
+                    : "hover:bg-slate-700/50 text-slate-300"
                     }`}
                 >
                   <span className="truncate">{tab.label}</span>
@@ -521,7 +731,7 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({ projec
             <MagnifyingGlass size={14} className="absolute left-2.5 top-2 text-slate-400" />
             <input
               type="text"
-              placeholder="Search sections or doc ID..."
+              placeholder={tWorkspace("searchPlaceholder")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-8 pr-2.5 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:border-sky-500"
@@ -539,82 +749,39 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({ projec
 
         {/* Column 3: Right Area - Upload Zone & Data Table (47% width) */}
         <div className="w-full lg:w-[47%] bg-white dark:bg-slate-900 p-4 flex flex-col space-y-4">
-          {/* Operation Selector Bar */}
-          <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-            <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-              Lifecycle Operator:
-            </span>
-            <div className="flex items-center gap-1">
-              {(["new", "replace", "delete"] as const).map((op) => (
-                <button
-                  key={op}
-                  type="button"
-                  onClick={() => setSelectedOperation(op)}
-                  className={`px-2.5 py-1 text-[11px] font-bold uppercase rounded transition-all cursor-pointer ${
-                    selectedOperation === op
-                      ? op === "delete"
-                        ? "bg-red-600 text-white shadow-xs"
-                        : op === "replace"
-                        ? "bg-amber-600 text-white shadow-xs"
-                        : "bg-sky-600 text-white shadow-xs"
-                      : "bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-300"
-                  }`}
-                >
-                  {op}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {selectedOperation === "delete" ? (
-            <div className="border-2 border-dashed border-red-300 dark:border-red-900/60 rounded-lg p-5 text-center bg-red-50/50 dark:bg-red-950/20 space-y-2">
-              <div className="w-8 h-8 rounded-full bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400 flex items-center justify-center mx-auto">
-                <Trash size={18} weight="bold" />
-              </div>
-              <p className="font-semibold text-xs text-red-700 dark:text-red-300">
-                Mark active document at this node as Deleted (Creates eCTD Tombstone Record)
-              </p>
-              <button
-                type="button"
-                disabled={isUploading}
-                onClick={handleExecuteDeleteOperation}
-                className="px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50"
-              >
-                {isUploading ? "Creating Tombstone..." : "Execute Delete Operation"}
-              </button>
-            </div>
-          ) : (
-            <div
-              onDragEnter={handleDrag}
-              onDragOver={handleDrag}
-              onDragLeave={handleDrag}
-              onDrop={handleDrop}
-              className={`border-2 border-dashed rounded-lg p-5 text-center transition-all relative ${
-                dragActive
+          <div
+            onDragEnter={isDossierLocked ? undefined : handleDrag}
+            onDragOver={isDossierLocked ? undefined : handleDrag}
+            onDragLeave={isDossierLocked ? undefined : handleDrag}
+            onDrop={isDossierLocked ? undefined : handleDrop}
+            className={`border-2 border-dashed rounded-lg p-5 text-center transition-all relative ${isDossierLocked
+                ? "border-slate-300 dark:border-slate-800 bg-slate-100/50 dark:bg-slate-800/20 opacity-60"
+                : dragActive
                   ? "border-sky-500 bg-sky-50 dark:bg-sky-950/30"
                   : "border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/30 hover:border-sky-400"
               }`}
-            >
-              <input
-                type="file"
-                disabled={isUploading}
-                onChange={handleFileInput}
-                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
-              />
-              <div className="w-8 h-8 rounded-full bg-sky-100 dark:bg-sky-900/50 text-sky-600 dark:text-sky-400 flex items-center justify-center mx-auto mb-1.5">
-                <LockKey size={18} weight="bold" />
-              </div>
-              <p className="font-semibold text-xs text-slate-700 dark:text-slate-300">
-                {isUploading
-                  ? `Uploading (${selectedOperation.toUpperCase()}) to ImageKit...`
-                  : `Drag & drop or click to upload PDF (${selectedOperation.toUpperCase()})`}
-              </p>
-              <p className="text-[10.5px] text-slate-400 mt-0.5">50MB Maximum File Limit</p>
+          >
+            <input
+              type="file"
+              disabled={isUploading || isDossierLocked}
+              onChange={handleFileInput}
+              className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10 disabled:cursor-not-allowed"
+            />
+            <div className="w-8 h-8 rounded-full bg-sky-100 dark:bg-sky-900/50 text-sky-600 dark:text-sky-400 flex items-center justify-center mx-auto mb-1.5">
+              <LockKey size={18} weight="bold" />
             </div>
-          )}
+            <p className="font-semibold text-xs text-slate-700 dark:text-slate-300">
+              {isDossierLocked
+                ? tWorkspace("uploadDropzoneLocked")
+                : isUploading
+                  ? "Uploading to ImageKit..."
+                  : tWorkspace("uploadDropzoneNew")}
+            </p>
+            <p className="text-[10.5px] text-slate-400 mt-0.5">{tWorkspace("maxFileLimit")}</p>
+          </div>
 
           <div className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5 truncate">
-            <span className="text-slate-400">Section:</span>
+            <span className="text-slate-400">{tWorkspace("sectionLabel")}</span>
             <span className="text-sky-700 dark:text-sky-300 font-mono truncate">{selectedNodeLabel}</span>
           </div>
 
@@ -623,19 +790,22 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({ projec
               <table className="w-full text-left text-xs">
                 <thead className="bg-slate-800 text-white uppercase text-[10.5px] font-bold tracking-wider">
                   <tr>
-                    <th className="py-2.5 px-3">Document name</th>
-                    <th className="py-2.5 px-3">Sequence</th>
-                    <th className="py-2.5 px-3">Upload date</th>
-                    <th className="py-2.5 px-3">Completion date</th>
-                    <th className="py-2.5 px-3">Encoding</th>
-                    <th className="py-2.5 px-3 text-center">Action</th>
+                    <th className="py-2.5 px-3">{tWorkspace("tableColDocumentName")}</th>
+                    <th className="py-2.5 px-3">{tWorkspace("tableColSequence")}</th>
+                    <th className="py-2.5 px-3">{tWorkspace("tableColUploadDate")}</th>
+                    <th className="py-2.5 px-3">{tWorkspace("tableColIssueDate")}</th>
+                    <th className="py-2.5 px-3">{tWorkspace("tableColExpirationDate")}</th>
+                    <th className="py-2.5 px-3">{tWorkspace("tableColMd5")}</th>
+                    <th className="py-2.5 px-3 text-center">{tWorkspace("tableColActions")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
-                  {currentFiles.length === 0 ? (
+                  {isLoadingDoc ? (
+                    <SkeletonTableRow columns={6} />
+                  ) : currentFiles.length === 0 ? (
                     <tr>
                       <td colSpan={6} className="py-8 text-center text-xs text-slate-400">
-                        No uploaded files in this section.
+                        {tWorkspace("noDocsFound")}
                       </td>
                     </tr>
                   ) : (
@@ -653,18 +823,37 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({ projec
                           </a>
                         </td>
                         <td className="py-2.5 px-3 font-mono font-bold text-slate-900 dark:text-slate-100">{file.sequence}</td>
-                        <td className="py-2.5 px-3 font-mono text-[11px]">{file.uploadDate}</td>
-                        <td className="py-2.5 px-3 font-mono text-[11px]">{file.completionDate}</td>
+                        <td className="py-2.5 px-3 font-mono text-[11px]">
+                          {file.uploadDate || "-"}
+                        </td>
+                        <td className="py-2.5 px-3 font-mono text-[11px]">
+                          {file.issueDate ? new Date(file.issueDate).toLocaleDateString() : "-"}
+                        </td>
+                        <td className="py-2.5 px-3 font-mono text-[11px]">
+                          {file.expirationDate ? new Date(file.expirationDate).toLocaleDateString() : "-"}
+                        </td>
                         <td className="py-2.5 px-3 font-mono font-semibold text-slate-900 dark:text-slate-100">{file.md5Hash}</td>
                         <td className="py-2.5 px-3 text-center">
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteFile(file.id, file.name)}
-                            className="p-1 rounded text-red-500 hover:bg-red-50 dark:hover:bg-red-950/50 transition-colors cursor-pointer"
-                            title="Delete file"
-                          >
-                            <Trash size={14} />
-                          </button>
+                          <div className="flex items-center justify-center gap-1">
+                            <button
+                              type="button"
+                              disabled={isDossierLocked}
+                              onClick={() => handleOpenEditModal(file)}
+                              className="p-1 rounded text-sky-600 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-950/50 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                              title={isDossierLocked ? "Unlock dossier to edit document dates" : "Edit document dates"}
+                            >
+                              <PencilSimple size={14} weight="bold" />
+                            </button>
+                            <button
+                              type="button"
+                              disabled={isDossierLocked}
+                              onClick={() => handleOpenDeleteModal(file)}
+                              className="p-1 rounded text-red-500 hover:bg-red-50 dark:hover:bg-red-950/50 transition-colors cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                              title={isDossierLocked ? "Unlock dossier to delete file" : "Delete file"}
+                            >
+                              <Trash size={14} />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))
@@ -675,6 +864,262 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({ projec
           </div>
         </div>
       </div>
+
+      {/* Edit Document Dates Modal */}
+      {isEditModalOpen && editingFile && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
+              <div className="flex items-center gap-2">
+                <Calendar size={18} className="text-sky-600 dark:text-sky-400" weight="bold" />
+                <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100">
+                  Update Document Dates
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsEditModalOpen(false)}
+                className="p-1 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+              >
+                <X size={16} weight="bold" />
+              </button>
+            </div>
+
+            {/* Modal Content */}
+            <div className="p-5 space-y-4 text-xs">
+              <div className="p-3 bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800/60 rounded-lg">
+                <p className="font-semibold text-slate-700 dark:text-slate-300 truncate">
+                  <span className="text-sky-600 dark:text-sky-400 font-bold">Document: </span>
+                  {editingFile.name}
+                </p>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 truncate">
+                  Section: <span className="font-mono">{selectedNodeLabel}</span>
+                </p>
+              </div>
+
+              {editIssueDate && editExpirationDate && new Date(editExpirationDate) < new Date(editIssueDate) && (
+                <div className="p-2.5 bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800/60 rounded-lg text-red-600 dark:text-red-400 font-semibold text-[11px]">
+                  ⚠️ Expiration date cannot be earlier than issue date.
+                </div>
+              )}
+
+              <div className="space-y-3">
+                <div>
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Date of Document Issue
+                  </label>
+                  <input
+                    type="date"
+                    value={editIssueDate}
+                    max={editExpirationDate || undefined}
+                    onChange={(e) => setEditIssueDate(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-none focus:border-sky-500 font-mono text-xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                    Document Expiration Date
+                  </label>
+                  <input
+                    type="date"
+                    value={editExpirationDate}
+                    min={editIssueDate || undefined}
+                    onChange={(e) => setEditExpirationDate(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-none focus:border-sky-500 font-mono text-xs"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
+              <button
+                type="button"
+                onClick={() => setIsEditModalOpen(false)}
+                className="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={
+                  isSavingDates ||
+                  !!(editIssueDate && editExpirationDate && new Date(editExpirationDate) < new Date(editIssueDate))
+                }
+                onClick={handleSaveDates}
+                className="px-4 py-1.5 rounded-lg text-xs font-bold bg-sky-600 hover:bg-sky-500 text-white transition-colors cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+              >
+                {isSavingDates && <CircleNotch size={14} className="animate-spin" weight="bold" />}
+                Save Changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Lock / Unlock Confirmation Alert Modal */}
+      {isLockModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
+              <div className="flex items-center gap-2">
+                {isDossierLocked ? (
+                  <LockKeyOpen size={20} className="text-amber-500" weight="bold" />
+                ) : (
+                  <ShieldCheck size={20} className="text-emerald-500" weight="bold" />
+                )}
+                <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100">
+                  {isDossierLocked ? "Unlock Dossier Structure?" : "Lock Dossier Structure?"}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsLockModalOpen(false)}
+                className="p-1 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+              >
+                <X size={16} weight="bold" />
+              </button>
+            </div>
+
+            {/* Content Body */}
+            <div className="p-5 space-y-3 text-xs text-slate-600 dark:text-slate-300">
+              {isDossierLocked ? (
+                <>
+                  <p className="leading-relaxed">
+                    Unlocking the dossier allows you to edit document details, dates, and perform replacement or deletion operations.
+                  </p>
+                  <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-lg space-y-1.5 text-amber-900 dark:text-amber-200">
+                    <p className="font-bold text-[11px] uppercase tracking-wider text-amber-700 dark:text-amber-300">
+                      When Unlocked:
+                    </p>
+                    <ul className="list-disc list-inside space-y-0.5 text-[11px]">
+                      <li>Document date editing & file deletion are enabled.</li>
+                      <li>ZIP Package generation is temporarily disabled until locked again.</li>
+                    </ul>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="leading-relaxed">
+                    Locking the dossier verifies MD5 checksums, locks document editing to ensure compliance, and enables eCTD ZIP compilation.
+                  </p>
+                  <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 rounded-lg space-y-1.5 text-emerald-900 dark:text-emerald-200">
+                    <p className="font-bold text-[11px] uppercase tracking-wider text-emerald-700 dark:text-emerald-300">
+                      When Locked:
+                    </p>
+                    <ul className="list-disc list-inside space-y-0.5 text-[11px]">
+                      <li>MD5 checksums and structure are locked & verified.</li>
+                      <li>eCTD ZIP Package & XML compilation is enabled.</li>
+                      <li>Document editing/deletion is restricted.</li>
+                    </ul>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
+              <button
+                type="button"
+                onClick={() => setIsLockModalOpen(false)}
+                className="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmToggleLock}
+                className={`px-4 py-1.5 rounded-lg text-xs font-bold text-white transition-colors cursor-pointer ${isDossierLocked
+                    ? "bg-amber-600 hover:bg-amber-500 shadow-xs"
+                    : "bg-emerald-600 hover:bg-emerald-500 shadow-xs"
+                  }`}
+              >
+                {isDossierLocked ? "Unlock Dossier for Editing" : "Lock Dossier & Enable ZIP"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Delete Document Warning Modal */}
+      {deleteConfirmFile && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-slate-800 bg-red-50/50 dark:bg-red-950/20">
+              <div className="flex items-center gap-2 text-red-600 dark:text-red-400">
+                <Warning size={22} weight="bold" />
+                <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100">
+                  {tWorkspace("deleteConfirmTitle") || "Delete Document?"}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDeleteConfirmFile(null)}
+                className="p-1 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+              >
+                <X size={16} weight="bold" />
+              </button>
+            </div>
+
+            {/* Content Body */}
+            <div className="p-5 space-y-4 text-xs">
+              <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/60 rounded-lg text-red-900 dark:text-red-200 space-y-1">
+                <p className="font-semibold text-xs leading-relaxed">
+                  {tWorkspace("deleteConfirmMsg") || "Are you sure you want to delete this document? This action will remove the document and create an eCTD tombstone record."}
+                </p>
+              </div>
+
+              <div className="p-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 rounded-lg space-y-2 text-slate-700 dark:text-slate-300">
+                <div className="flex justify-between items-center text-[11.5px]">
+                  <span className="font-medium text-slate-400">Document Name:</span>
+                  <span className="font-bold text-slate-900 dark:text-slate-100 truncate max-w-[210px]">{deleteConfirmFile.name}</span>
+                </div>
+                <div className="flex justify-between items-center text-[11.5px]">
+                  <span className="font-medium text-slate-400">Sequence:</span>
+                  <span className="font-mono font-bold text-slate-900 dark:text-slate-100">{deleteConfirmFile.sequence}</span>
+                </div>
+                <div className="flex justify-between items-center text-[11.5px]">
+                  <span className="font-medium text-slate-400">MD5 Checksum:</span>
+                  <span className="font-mono text-slate-900 dark:text-slate-100">{deleteConfirmFile.md5Hash}</span>
+                </div>
+                <div className="flex justify-between items-center text-[11.5px]">
+                  <span className="font-medium text-slate-400">Section:</span>
+                  <span className="font-mono text-sky-600 dark:text-sky-400 truncate max-w-[210px]">{selectedNodeLabel}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
+              <button
+                type="button"
+                disabled={isDeletingFile}
+                onClick={() => setDeleteConfirmFile(null)}
+                className="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer disabled:opacity-50"
+              >
+                {tCommon("cancel") || "Cancel"}
+              </button>
+              <button
+                type="button"
+                disabled={isDeletingFile}
+                onClick={handleConfirmDeleteFile}
+                className="px-4 py-1.5 rounded-lg text-xs font-bold bg-red-600 hover:bg-red-500 text-white transition-colors cursor-pointer flex items-center gap-1.5 disabled:opacity-50 shadow-xs"
+              >
+                {isDeletingFile ? (
+                  <CircleNotch size={14} className="animate-spin" weight="bold" />
+                ) : (
+                  <Trash size={14} weight="bold" />
+                )}
+                <span>{isDeletingFile ? (tWorkspace("deletingDoc") || "Deleting...") : (tWorkspace("deleteConfirmBtn") || "Delete Document")}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

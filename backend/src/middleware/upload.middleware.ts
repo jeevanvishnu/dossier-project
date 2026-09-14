@@ -1,18 +1,19 @@
 import multer from "multer";
 import { Request, Response, NextFunction } from "express";
 
-const singleUpload = multer({
+const multiOrSingleUpload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 50 * 1024 * 1024 }, // 50MB Limit
-}).single("file");
+}).any();
 
 /**
  * Multer parses file names from the HTTP Content-Disposition header as Latin-1 (ISO-8859-1).
  * This wrapper re-decodes req.file.originalname as UTF-8 so that non-ASCII names
  * (Cyrillic, Chinese, etc.) are stored correctly instead of appearing garbled.
+ * Supports any field name ('file', 'document', 'attachment', etc.).
  */
 export function uploadMiddleware(req: Request, res: Response, next: NextFunction): void {
-  singleUpload(req, res, (err: any) => {
+  multiOrSingleUpload(req, res, (err: any) => {
     if (err instanceof multer.MulterError) {
       if (err.code === "LIMIT_FILE_SIZE") {
         res.status(413).json({
@@ -32,6 +33,11 @@ export function uploadMiddleware(req: Request, res: Response, next: NextFunction
         message: `Server error processing file upload: ${err.message}`,
       });
       return;
+    }
+
+    // Normalize single file from req.files if req.file is not set directly
+    if (!req.file && req.files && Array.isArray(req.files) && req.files.length > 0) {
+      req.file = req.files[0];
     }
 
     // Re-decode filename: multer reads Content-Disposition as Latin-1; convert to UTF-8

@@ -14,6 +14,7 @@ const mockProject: Project = {
   responsibleUser: "Engineer",
   tariff: "Standard",
   status: "Active",
+  isProjectSaved: true,
   version: 1,
   createdAt: new Date(),
   updatedAt: new Date(),
@@ -28,6 +29,7 @@ const mockConfig: DossierConfig = {
   typeOfProcedure: "Registration",
   applicationNumber: "KZ-2025-001",
   dossierSequence: "Sequence 0000",
+  isDossierSaved: true,
 };
 
 export function runEaeuManifestTests() {
@@ -60,20 +62,26 @@ export function runEaeuManifestTests() {
   }
   console.log("✅ Passed Assertion 1c: RegistrationKindCode immediately follows UnifiedCountryCode");
 
-  // Assertion 2: Physical File Path Formatting (Attribute 05)
-  const expectedPathExample = "m1\\1.3\\1.3.1\\Сорбит ОХЛП ЕАЭС_18.04.2025.pdf";
+  // Assertion 2: Physical File Path Formatting (Attribute 05 uses forward slashes '/')
+  const expectedPathExample = "m1/1.3/1.3.1/Сорбит ОХЛП ЕАЭС_18.04.2025.pdf";
   const expectedPathTag = `<hcsdo:DrugAttributeEnumText DrugAttributeKindEnumCode="05">${expectedPathExample}</hcsdo:DrugAttributeEnumText>`;
 
   if (!xmlOutput.includes(expectedPathTag)) {
     throw new Error(`TEST FAILED: Missing expected Attribute 05 path:\n${expectedPathTag}`);
   }
-  console.log(`✅ Passed Assertion 2a: Example output path found: ${expectedPathExample}`);
+  console.log(`✅ Passed Assertion 2a: Example output path with forward slashes found: ${expectedPathExample}`);
+
+  // Check no backslashes in DrugAttributeKindEnumCode="05" tags
+  if (xmlOutput.match(/DrugAttributeKindEnumCode="05">[^<]*\\/)) {
+    throw new Error("TEST FAILED: Found invalid backslash '\\' in DrugAttributeKindEnumCode 05 relative file path tag!");
+  }
+  console.log("✅ Passed Assertion 2b: Relative ZIP file paths strictly use forward slashes '/' without backslashes");
 
   // Check no forward slash regional folders like /us/ or /kz/
   if (xmlOutput.includes("m1/us/") || xmlOutput.includes("m1/kz/")) {
     throw new Error("TEST FAILED: Hardcoded regional folder (/us/ or /kz/) found in output!");
   }
-  console.log("✅ Passed Assertion 2b: No hardcoded regional subdirectories (/us/, /kz/) in XML");
+  console.log("✅ Passed Assertion 2c: No hardcoded regional subdirectories (/us/, /kz/) in XML");
 
   // Assertion 3: Verify all 10 Sorbit dossier documents & 5-digit 2058 code list mapping
   const expectedEaeuCodes = ["01001", "01005", "01009", "01016", "01011", "02001", "02002", "02004", "02005", "02010", "02011"];

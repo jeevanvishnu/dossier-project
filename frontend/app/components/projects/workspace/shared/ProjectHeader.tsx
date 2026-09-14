@@ -3,6 +3,7 @@
 import React from "react";
 import { LinkIcon, X } from "@phosphor-icons/react";
 import { Link } from "../../../../../i18n/routing";
+import { useTranslations } from "next-intl";
 
 interface ProjectHeaderProps {
   projectId?: string;
@@ -10,11 +11,11 @@ interface ProjectHeaderProps {
 }
 
 export const ProjectHeader: React.FC<ProjectHeaderProps> = ({
-  projectId = "1",
+  projectId = "1661e1dd-22db-4f57-970d-b64401c1f5a5",
 }) => {
-  const formattedProjectId = projectId.startsWith("PRJ-")
-    ? projectId
-    : `PRJ-${projectId}`;
+  const tWorkspace = useTranslations("workspace");
+  const tCommon = useTranslations("common");
+  const formattedProjectId = projectId;
 
   return (
     <div className="bg-surface border border-border p-5 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
@@ -26,7 +27,7 @@ export const ProjectHeader: React.FC<ProjectHeaderProps> = ({
         <div>
           <div className="flex items-center gap-2 mb-1">
             <h1 className="font-lexend text-xl md:text-2xl font-bold text-primary tracking-tight">
-              Project {formattedProjectId}
+              {tWorkspace("projectTitle")} {formattedProjectId}
             </h1>
           </div>
           <p className="text-xs md:text-sm text-muted font-medium">
@@ -42,7 +43,7 @@ export const ProjectHeader: React.FC<ProjectHeaderProps> = ({
           className="px-4 py-2.5 bg-red-500/15 hover:bg-red-500/25 text-red-400 border border-red-500/30 font-bold text-xs md:text-sm rounded-xl transition-all flex items-center gap-2 cursor-pointer active:scale-95 shadow-xs"
         >
           <X size={16} weight="bold" />
-          <span>Cancel</span>
+          <span>{tCommon("cancel")}</span>
         </Link>
       </div>
     </div>

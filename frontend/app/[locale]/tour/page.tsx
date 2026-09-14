@@ -24,53 +24,53 @@ export default function SystemTourPage() {
 
   const faqs = [
     {
-      q: "What should I do if my contract is expiring soon?",
-      a: "Navigate to 'My Tariffs' or 'My Contracts' page. Select your active subscription plan and use the interactive lease extension counter to generate an updated KZT invoice. Payment activation automatically extends your legal terms without interrupting active dossier sequences.",
+      q: tTour("faq1Q"),
+      a: tTour("faq1A"),
     },
     {
-      q: "How do I perform a secure password reset?",
-      a: "Go to 'Account Settings' (/profile/account) and select the 'Password Update' tab. Enter your current password and your new password (must be at least 8 characters). Administrators can also reset user credentials from the User Management Table.",
+      q: tTour("faq2Q"),
+      a: tTour("faq2A"),
     },
     {
-      q: "How do I transfer existing projects between different tariff plans?",
-      a: "In 'My Projects' (/projects), open the Project Metadata Workspace for the target medicinal product. Under the Assigned Tariff dropdown, select your new available storage tier (e.g. Tariff OWN or Tariff L) and click 'Save Changes'.",
+      q: tTour("faq3Q"),
+      a: tTour("faq3A"),
     },
     {
-      q: "What happens if my payment activation is delayed?",
-      a: "If your bank transfer or wire payment takes longer than expected, contact technical support immediately via the Telegram widget with your Invoice Number and Organization User ID. Support staff can temporarily extend grace access within 2 hours.",
+      q: tTour("faq4Q"),
+      a: tTour("faq4A"),
     },
   ];
 
   const modules = [
     {
-      title: "Dashboard Overview (/dashboard)",
+      title: `${tTour("module1Title")} (/dashboard)`,
       icon: SquaresFour,
-      desc: tTour("welcomeStepDesc"),
+      desc: tTour("module1Desc"),
     },
     {
-      title: "My Contracts Register (/contracts)",
+      title: `${tTour("module2Title")} (/contracts)`,
       icon: FileText,
-      desc: "Lists all conclusion types, contract numbers, start dates, expiration end dates, and legal status indicators distinguishing active agreements from expired terms.",
+      desc: tTour("module2Desc"),
     },
     {
-      title: "My Tariffs & Pricing (/tariffs)",
+      title: `${tTour("module3Title")} (/tariffs)`,
       icon: CreditCard,
-      desc: "Header with active subscription details, interactive lease month counter with live KZT annual calculation, and payment execution audit table.",
+      desc: tTour("module3Desc"),
     },
     {
-      title: "My Projects & Dossiers (/projects)",
+      title: `${tTour("module4Title")} (/projects)`,
       icon: Folders,
-      desc: tTour("dossierStepDesc"),
+      desc: tTour("module4Desc"),
     },
     {
-      title: "Account & User Settings (/profile/account)",
+      title: `${tTour("module5Title")} (/profile/account)`,
       icon: UserGear,
-      desc: "Admin view displaying User List Management Table with role toggles, custom avatar photo upload card (max 50KB, 130x130px limit), password reset, and corporate TIN/BIN details.",
+      desc: tTour("module5Desc"),
     },
     {
-      title: "Activity Log & Audit Trail (/journal)",
+      title: `${tTour("module6Title")} (/journal)`,
       icon: ListBullets,
-      desc: tTour("securityStepDesc"),
+      desc: tTour("module6Desc"),
     },
   ];
 
@@ -79,10 +79,10 @@ export default function SystemTourPage() {
       <div className="space-y-6">
         <div className="bg-surface border border-border p-5 rounded-2xl shadow-xs">
           <span className="text-[10px] uppercase tracking-wider font-bold text-accent px-2 py-0.5 rounded bg-accent/10 border border-border">
-            Interactive Walkthrough & Regulations
+            {tTour("badgeLabel")}
           </span>
           <h1 className="font-lexend text-2xl font-bold text-primary mt-1">
-            {tTour("title")} (/tour)
+            {tTour("title")}
           </h1>
           <p className="text-xs text-secondary">
             {tTour("sub")}
@@ -94,23 +94,23 @@ export default function SystemTourPage() {
             <div className="space-y-2">
               <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-accent/15 text-accent text-xs font-bold border border-border">
                 <TelegramLogo size={16} />
-                <span>Official Technical Support Regulations</span>
+                <span>{tTour("slaBadge")}</span>
               </div>
               <h2 className="font-lexend font-bold text-lg text-primary">
-                Astana Operating Schedule & Reaction SLA
+                {tTour("slaTitle")}
               </h2>
               <div className="space-y-1 text-xs text-secondary">
                 <p className="flex items-center gap-2">
                   <Clock size={16} className="text-accent" />
-                  <span><strong>Schedule:</strong> Monday–Friday, 09:00–18:00 (Astana / KZT Time)</span>
+                  <span><strong>{tTour("scheduleLabel")}:</strong> {tTour("scheduleDetail")}</span>
                 </p>
                 <p className="flex items-center gap-2">
                   <ShieldCheck size={16} className="text-emerald-500" />
-                  <span><strong>Response Guarantee:</strong> Maximum 2-hour reaction SLA for active tickets</span>
+                  <span><strong>{tTour("responseLabel")}:</strong> {tTour("responseDetail")}</span>
                 </p>
                 <p className="flex items-center gap-2">
                   <BookOpen size={16} className="text-amber-500" />
-                  <span><strong>Rule:</strong> Always provide your Organization User ID (e.g. USR-101) when requesting support</span>
+                  <span><strong>{tTour("ruleLabel")}:</strong> {tTour("ruleDetail")}</span>
                 </p>
               </div>
             </div>
@@ -122,14 +122,14 @@ export default function SystemTourPage() {
               className="px-5 py-3 bg-accent hover:bg-accent-hover text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 shrink-0"
             >
               <TelegramLogo size={18} />
-              <span>Contact Technical Support (@ectc_support)</span>
+              <span>{tTour("telegramBtn")}</span>
             </a>
           </div>
         </div>
 
         <div className="bg-surface border border-border rounded-2xl p-6 shadow-sm space-y-4">
           <h2 className="font-lexend font-bold text-base text-primary pb-3 border-b border-border">
-            Frequently Asked Questions & Friction Resolution
+            {tTour("faqTitle")}
           </h2>
 
           <div className="space-y-3">
@@ -162,7 +162,7 @@ export default function SystemTourPage() {
 
         <div className="bg-surface border border-border rounded-2xl p-6 shadow-sm space-y-4">
           <h2 className="font-lexend font-bold text-base text-primary pb-3 border-b border-border">
-            In-Depth Module Walkthrough Descriptions
+            {tTour("modulesTitle")}
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -3,15 +3,16 @@ import { db } from "../db/db";
 import { projectDocuments, auditLogs, dossierConfig } from "../db/schema";
 import { uploadToImageKit, deleteFromImageKit } from "../services/imagekit.service";
 import { calculateMD5 } from "../utils/crypto.util";
-import { parseIdParam, getSingleParam } from "../utils/params.util";
+import { resolveProjectId, getSingleParam } from "../utils/params.util";
 import { eq, and } from "drizzle-orm";
 
 export async function uploadDocument(req: Request, res: Response): Promise<void> {
-  const projectId = parseIdParam(req.params.id);
+  const projectId = await resolveProjectId(req.params.id);
   const nodeId = getSingleParam(req.params.nodeId);
-  const operationInput = (req.body.operation || req.query.operation || "new").toString().toLowerCase();
+  const rawOp = req.query.operation || req.body?.operation || "new";
+  const operationInput = rawOp.toString().toLowerCase();
 
-  if (isNaN(projectId) || !nodeId) {
+  if (!projectId || !nodeId) {
     res.status(400).json({ success: false, message: "Invalid project ID or node ID." });
     return;
   }
@@ -105,10 +106,11 @@ export async function uploadDocument(req: Request, res: Response): Promise<void>
   }
 
   // ─── 2. OPERATION = 'new' OR 'replace' REQUIRES FILE PAYLOAD ──────────────
-  if (!req.file) {
+  const file = req.file || (req.files && Array.isArray(req.files) ? req.files[0] : undefined);
+  if (!file || !file.buffer) {
     res.status(400).json({
       success: false,
-      message: `No file attached for '${operation}' document operation.`,
+      message: `Missing 'file' parameter for '${operation}' document operation. Please attach a file.`,
     });
     return;
   }
@@ -129,7 +131,6 @@ export async function uploadDocument(req: Request, res: Response): Promise<void>
     return;
   }
 
-  const file = req.file;
   const md5Checksum = calculateMD5(file.buffer);
   let uploadedFileId: string | null = null;
 
@@ -201,10 +202,10 @@ export async function uploadDocument(req: Request, res: Response): Promise<void>
 
 export async function getDocumentByNode(req: Request, res: Response): Promise<void> {
   try {
-    const projectId = parseIdParam(req.params.id);
+    const projectId = await resolveProjectId(req.params.id);
     const nodeId = getSingleParam(req.params.nodeId);
 
-    if (isNaN(projectId) || !nodeId) {
+    if (!projectId || !nodeId) {
       res.status(400).json({ success: false, message: "Invalid project ID or node ID." });
       return;
     }
@@ -237,10 +238,10 @@ export async function getDocumentByNode(req: Request, res: Response): Promise<vo
 
 export async function deleteDocumentByNode(req: Request, res: Response): Promise<void> {
   try {
-    const projectId = parseIdParam(req.params.id);
+    const projectId = await resolveProjectId(req.params.id);
     const nodeId = getSingleParam(req.params.nodeId);
 
-    if (isNaN(projectId) || !nodeId) {
+    if (!projectId || !nodeId) {
       res.status(400).json({ success: false, message: "Invalid project ID or node ID." });
       return;
     }
@@ -316,8 +317,8 @@ export async function deleteDocumentByNode(req: Request, res: Response): Promise
 
 export async function seedSorbitDossier(req: Request, res: Response): Promise<void> {
   try {
-    const projectId = parseIdParam(req.params.id);
-    if (isNaN(projectId)) {
+    const projectId = await resolveProjectId(req.params.id);
+    if (!projectId) {
       res.status(400).json({ success: false, message: "Invalid project ID" });
       return;
     }
@@ -327,7 +328,7 @@ export async function seedSorbitDossier(req: Request, res: Response): Promise<vo
     });
     const currentSeq = config?.dossierSequence || "0000";
 
-    const { activeDocuments } = await import("../fixtures/sorbitDossier.fixture");
+    const { activeDocuments } = await import("../fixtures/sorbitDossier.fixture.js");
 
     const insertedDocs = await db.transaction(async (tx) => {
       await tx
@@ -335,7 +336,7 @@ export async function seedSorbitDossier(req: Request, res: Response): Promise<vo
         .set({ status: "superseded" })
         .where(and(eq(projectDocuments.projectId, projectId), eq(projectDocuments.status, "active")));
 
-      const docsToInsert = activeDocuments.map((item, index) => ({
+      const docsToInsert = activeDocuments.map((item: any, index: number) => ({
         projectId,
         nodeId: item.nodeId,
         originalName: item.originalName,
@@ -372,5 +373,98 @@ export async function seedSorbitDossier(req: Request, res: Response): Promise<vo
     res.status(500).json({ success: false, message: error.message || "Failed to seed Sorbit dossier" });
   }
 }
+
+export async function updateDocumentDates(req: Request, res: Response): Promise<void> {
+  try {
+    const projectId = await resolveProjectId(req.params.id);
+    const nodeId = getSingleParam(req.params.nodeId);
+    const { issueDate, expirationDate } = req.body;
+
+    if (!projectId || !nodeId) {
+      res.status(400).json({ success: false, message: "Invalid project ID or node ID." });
+      return;
+    }
+
+    if (issueDate && expirationDate) {
+      const issue = new Date(issueDate);
+      const exp = new Date(expirationDate);
+      if (exp < issue) {
+        res.status(400).json({
+          success: false,
+          message: "Document expiration date cannot be earlier than issue date.",
+        });
+        return;
+      }
+    }
+
+    let activeDoc = await db.query.projectDocuments.findFirst({
+      where: and(
+        eq(projectDocuments.projectId, projectId),
+        eq(projectDocuments.nodeId, nodeId),
+        eq(projectDocuments.status, "active")
+      ),
+    });
+
+    if (!activeDoc && req.body.docId && !isNaN(parseInt(req.body.docId, 10))) {
+      activeDoc = await db.query.projectDocuments.findFirst({
+        where: eq(projectDocuments.id, parseInt(req.body.docId, 10)),
+      });
+    }
+
+    const config = await db.query.dossierConfig.findFirst({
+      where: eq(dossierConfig.projectId, projectId),
+    });
+    const currentSeq = config?.dossierSequence || "0000";
+
+    const updatedDoc = await db.transaction(async (tx) => {
+      let doc;
+      if (activeDoc) {
+        [doc] = await tx
+          .update(projectDocuments)
+          .set({
+            issueDate: issueDate ? new Date(issueDate) : null,
+            expirationDate: expirationDate ? new Date(expirationDate) : null,
+          })
+          .where(eq(projectDocuments.id, activeDoc.id))
+          .returning();
+      } else {
+        [doc] = await tx
+          .insert(projectDocuments)
+          .values({
+            projectId,
+            nodeId,
+            originalName: req.body.fileName || `${nodeId}. Cover Letter Miconazole.pdf`,
+            sequence: currentSeq,
+            status: "active",
+            operation: "new",
+            fileSize: 0,
+            md5Checksum: "MD5",
+            issueDate: issueDate ? new Date(issueDate) : null,
+            expirationDate: expirationDate ? new Date(expirationDate) : null,
+          })
+          .returning();
+      }
+
+      await tx.insert(auditLogs).values({
+        projectId,
+        logType: "SUCCESS",
+        message: `Updated dates for document '${doc.originalName}' at node '${nodeId}' (Issue Date: ${issueDate || "N/A"}, Expiration Date: ${expirationDate || "N/A"}).`,
+        userCredentials: req.user ? `${req.user.email} (${req.user.role})` : "System",
+      });
+
+      return doc;
+    });
+
+    res.status(200).json({
+      success: true,
+      data: updatedDoc,
+      message: "Document dates updated successfully.",
+    });
+  } catch (error: any) {
+    console.error("[Update Document Dates Error]", error);
+    res.status(500).json({ success: false, message: error.message || "Failed to update document dates" });
+  }
+}
+
 
 

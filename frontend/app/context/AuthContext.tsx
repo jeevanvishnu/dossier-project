@@ -51,19 +51,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Restore session on application load
   const restoreSession = useCallback(async () => {
     setIsLoading(true);
+    // Do not call auth API on home page load
+    if (typeof window !== "undefined") {
+      const path = window.location.pathname.replace(/\/$/, "");
+      if (path === "" || path === "/en" || path === "/ru") {
+        setIsLoading(false);
+        return;
+      }
+    }
     try {
       // 1. Attempt /auth/me with existing access token or cookie
+      // (The Axios interceptor will automatically attempt a refresh if 401 occurs)
       const currentUser = await fetchMe();
       if (!currentUser) {
-        // 2. If /auth/me fails, try refresh endpoint using httpOnly refreshToken cookie
-        const refreshRes = await api.post("/auth/refresh").catch(() => null);
-        if (refreshRes?.data?.success && refreshRes.data?.data?.accessToken) {
-          updateToken(refreshRes.data.data.accessToken);
-          await fetchMe();
-        } else {
-          setUser(null);
-          updateToken(null);
-        }
+        setUser(null);
+        updateToken(null);
       }
     } catch {
       setUser(null);

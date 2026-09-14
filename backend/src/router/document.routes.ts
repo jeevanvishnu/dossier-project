@@ -7,6 +7,7 @@ import {
   getDocumentByNode,
   deleteDocumentByNode,
   seedSorbitDossier,
+  updateDocumentDates,
 } from "../controller/document.controller";
 
 const router = Router();
@@ -26,6 +27,14 @@ router.get(
   protect,
   checkProjectRole("owner", "editor", "viewer"),
   getDocumentByNode
+);
+
+// Update document issue and expiration dates (Requires owner or editor)
+router.put(
+  "/:id/documents/:nodeId/dates",
+  protect,
+  checkProjectRole("owner", "editor"),
+  updateDocumentDates
 );
 
 // Delete document at a specific nodeId (Requires owner or editor)

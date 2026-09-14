@@ -96,11 +96,11 @@ export function mapNodeIdToEaeuCode(nodeId: string): string {
 export function normalizeCountryCode(countryStr?: string | null): string {
   if (!countryStr) return "KZ";
   const cleaned = countryStr.trim().toUpperCase();
-  if (cleaned.includes("KAZAKHSTAN") || cleaned === "KZ") return "KZ";
-  if (cleaned.includes("RUSSIA") || cleaned === "RU") return "RU";
-  if (cleaned.includes("BELARUS") || cleaned === "BY") return "BY";
-  if (cleaned.includes("ARMENIA") || cleaned === "AM") return "AM";
-  if (cleaned.includes("KYRGYZSTAN") || cleaned === "KG") return "KG";
+  if (cleaned.includes("RUSSIA") || cleaned.includes("РОССИЯ") || cleaned === "RU" || cleaned === "РФ" || cleaned === "RUS") return "RU";
+  if (cleaned.includes("KAZAKHSTAN") || cleaned.includes("КАЗАХСТАН") || cleaned === "KZ" || cleaned === "РК" || cleaned === "KAZ") return "KZ";
+  if (cleaned.includes("BELARUS") || cleaned.includes("БЕЛАРУСЬ") || cleaned === "BY" || cleaned === "РБ" || cleaned === "BLR") return "BY";
+  if (cleaned.includes("ARMENIA") || cleaned.includes("АРМЕНИЯ") || cleaned === "AM" || cleaned === "ARM") return "AM";
+  if (cleaned.includes("KYRGYZSTAN") || cleaned.includes("КЫРГЫЗСТАН") || cleaned.includes("КИРГИЗИЯ") || cleaned === "KG" || cleaned === "KGZ") return "KG";
   const validEaeuCodes = ["KZ", "RU", "BY", "AM", "KG"];
   const twoChar = cleaned.slice(0, 2);
   return validEaeuCodes.includes(twoChar) ? twoChar : "KZ";
@@ -216,7 +216,7 @@ export function generateEaeuManifestXml(
     const effectiveDocName = getRussianDocName(doc.originalName, eaeuDocCode, doc.nodeId);
     const sanitizedName = helpers.sanitizeFileNameFn(effectiveDocName);
     const folderPath = helpers.getEctdFolderPathFn(doc.nodeId, countryCode);
-    const relativeZipPath = `${folderPath}${sanitizedName}`;
+    const relativeZipPath = `${folderPath}${sanitizedName}`.replace(/\\/g, "/");
     const creationDate = doc.uploadedAt
       ? new Date(doc.uploadedAt).toISOString().split("T")[0]
       : nowIso.split("T")[0];

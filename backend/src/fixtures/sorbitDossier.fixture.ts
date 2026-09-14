@@ -33,6 +33,8 @@ export const SORBIT_DOSSIER_FIXTURE: ProjectDocument[] = activeDocuments.map((it
   uploadedAt: new Date("2025-04-18T10:00:00Z"),
   status: item.status,
   operation: item.operation,
+  issueDate: null,
+  expirationDate: null,
   imageKitUrl: `https://ik.imagekit.io/ectd/test/${encodeURIComponent(item.originalName)}`,
   imageKitFileId: `file_${index + 1}`,
   fileSize: 1024567,

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import {
   Clock,
   MagnifyingGlass,
@@ -12,6 +13,7 @@ import {
 } from "@phosphor-icons/react";
 import toast from "react-hot-toast";
 import { api, handleApiError } from "@/app/lib/axios";
+import { SkeletonTableRow } from "@/app/components/ui/Skeleton";
 
 interface AuditLogRow {
   id: string;
@@ -27,6 +29,7 @@ interface DossierHistoryViewProps {
 }
 
 export const DossierHistoryView: React.FC<DossierHistoryViewProps> = ({ projectId = "1" }) => {
+  const tWorkspace = useTranslations("workspace");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [historyLogs, setHistoryLogs] = useState<AuditLogRow[]>([
     {
@@ -125,10 +128,10 @@ export const DossierHistoryView: React.FC<DossierHistoryViewProps> = ({ projectI
           </div>
           <div>
             <h2 className="font-lexend font-bold text-base md:text-lg text-primary">
-              Section 4: Dossier History & Audit Logs
+              {tWorkspace("historyTitle")}
             </h2>
             <p className="text-xs text-secondary mt-0.5">
-              Immutable timestamped trail of project data changes, validation events, and execution logs
+              {tWorkspace("historySub")}
             </p>
           </div>
         </div>
@@ -153,7 +156,7 @@ export const DossierHistoryView: React.FC<DossierHistoryViewProps> = ({ projectI
             className="px-3.5 py-2 bg-surface-raised hover:bg-border text-primary border border-border font-semibold text-xs rounded-xl transition-all flex items-center gap-2 cursor-pointer active:scale-95"
           >
             <DownloadSimple size={15} weight="bold" />
-            <span>Export CSV</span>
+            <span>{tWorkspace("btnExportCsv")}</span>
           </button>
         </div>
       </div>
@@ -163,22 +166,22 @@ export const DossierHistoryView: React.FC<DossierHistoryViewProps> = ({ projectI
         <table className="w-full text-left text-xs text-secondary">
           <thead className="bg-bg text-primary uppercase font-bold text-[10px] tracking-wider border-b border-border">
             <tr>
-              <th className="py-3.5 px-5">FORMATION DATE</th>
-              <th className="py-3.5 px-5">USER CREDENTIALS</th>
-              <th className="py-3.5 px-5">EXECUTION RESULT LOGS</th>
+              <th className="py-3.5 px-5">{tWorkspace("tableColFormationDate")}</th>
+              <th className="py-3.5 px-5">{tWorkspace("tableColUserCredentials")}</th>
+              <th className="py-3.5 px-5">{tWorkspace("tableColResultLogs")}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
             {isLoading ? (
-              <tr>
-                <td colSpan={3} className="py-8 text-center text-muted text-xs">
-                  Loading audit logs...
-                </td>
-              </tr>
+              <>
+                <SkeletonTableRow columns={3} />
+                <SkeletonTableRow columns={3} />
+                <SkeletonTableRow columns={3} />
+              </>
             ) : historyLogs.length === 0 ? (
               <tr>
                 <td colSpan={3} className="py-8 text-center text-muted text-xs">
-                  No audit logs matching your search filter.
+                  {tWorkspace("noLogsFound")}
                 </td>
               </tr>
             ) : (

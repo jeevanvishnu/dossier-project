@@ -37,6 +37,14 @@ api.interceptors.request.use(
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    // When sending FormData (file uploads), remove the default JSON Content-Type
+    // so Axios can automatically set: multipart/form-data; boundary=----WebKitFormBoundary...
+    // Without this, multer on the backend cannot parse req.file.
+    if (config.data instanceof FormData && config.headers) {
+      delete config.headers["Content-Type"];
+    }
+
     return config;
   },
   (error) => Promise.reject(error)
@@ -131,7 +139,6 @@ api.interceptors.response.use(
         window.dispatchEvent(new Event("auth:unauthorized"));
       }
 
-      toast.error("Session expired. Please sign in again.");
       return Promise.reject(refreshError);
     } finally {
       isRefreshing = false;

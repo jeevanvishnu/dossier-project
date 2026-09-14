@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import {
   FileCode,
   FileZip,
@@ -10,6 +11,7 @@ import {
 } from "@phosphor-icons/react";
 import toast from "react-hot-toast";
 import { api, handleApiError } from "@/app/lib/axios";
+import { SkeletonTableRow } from "@/app/components/ui/Skeleton";
 
 interface XmlPackageRow {
   id: string;
@@ -26,6 +28,7 @@ interface XmlCreationHistoryViewProps {
 }
 
 export const XmlCreationHistoryView: React.FC<XmlCreationHistoryViewProps> = ({ projectId = "1" }) => {
+  const tWorkspace = useTranslations("workspace");
   const [xmlPackages, setXmlPackages] = useState<XmlPackageRow[]>([
     {
       id: "pkg-1",
@@ -106,10 +109,10 @@ export const XmlCreationHistoryView: React.FC<XmlCreationHistoryViewProps> = ({ 
             </div>
             <div>
               <h2 className="font-lexend font-bold text-base md:text-lg text-primary">
-                XML & Package Archives
+                {tWorkspace("xmlTitle")}
               </h2>
               <p className="text-xs text-secondary mt-0.5">
-                Tracks generated submission ZIP archives and verified MD5 checksum hashes
+                {tWorkspace("xmlSub")}
               </p>
             </div>
           </div>
@@ -122,10 +125,10 @@ export const XmlCreationHistoryView: React.FC<XmlCreationHistoryViewProps> = ({ 
               className="px-4 py-2 bg-accent hover:bg-accent-hover text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
             >
               <Gear size={16} className={isCompiling ? "animate-spin" : ""} weight="bold" />
-              <span>{isCompiling ? "Compiling ZIP..." : "Compile eCTD Package"}</span>
+              <span>{isCompiling ? tWorkspace("compilingBtn") : tWorkspace("btnCompilePackage")}</span>
             </button>
             <span className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono">
-              Available ZIP Archives: {xmlPackages.length}
+              {tWorkspace("archivesCount")}: {xmlPackages.length}
             </span>
           </div>
         </div>
@@ -135,25 +138,24 @@ export const XmlCreationHistoryView: React.FC<XmlCreationHistoryViewProps> = ({ 
           <table className="w-full text-left text-xs text-secondary">
             <thead className="bg-bg text-primary uppercase font-bold text-[10px] tracking-wider border-b border-border">
               <tr>
-                <th className="py-3.5 px-5">FULL NAME</th>
-                <th className="py-3.5 px-5">DATE</th>
-                <th className="py-3.5 px-5">SIZE</th>
-                <th className="py-3.5 px-5">XML CHECKSUM (MD5 ALGORITHM)</th>
-                <th className="py-3.5 px-5">ZIP CHECKSUM (MD5 ALGORITHM)</th>
-                <th className="py-3.5 px-5 text-center">ACTION</th>
+                <th className="py-3.5 px-5">{tWorkspace("tableColFullName")}</th>
+                <th className="py-3.5 px-5">{tWorkspace("tableColDate")}</th>
+                <th className="py-3.5 px-5">{tWorkspace("tableColSize")}</th>
+                <th className="py-3.5 px-5">{tWorkspace("tableColXmlMd5")}</th>
+                <th className="py-3.5 px-5">{tWorkspace("tableColZipMd5")}</th>
+                <th className="py-3.5 px-5 text-center">{tWorkspace("tableColActions")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {isLoading ? (
-                <tr>
-                  <td colSpan={6} className="py-8 text-center text-muted text-xs">
-                    Loading package archives...
-                  </td>
-                </tr>
+                <>
+                  <SkeletonTableRow columns={6} />
+                  <SkeletonTableRow columns={6} />
+                </>
               ) : xmlPackages.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="py-8 text-center text-muted text-xs">
-                    No compiled packages yet. Click "Compile eCTD Package" to generate one.
+                    {tWorkspace("noPackagesYet")}
                   </td>
                 </tr>
               ) : (
@@ -203,7 +205,7 @@ export const XmlCreationHistoryView: React.FC<XmlCreationHistoryViewProps> = ({ 
                         className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-xs transition-all inline-flex items-center gap-1.5 cursor-pointer active:scale-95 whitespace-nowrap"
                       >
                         <DownloadSimple size={15} weight="bold" />
-                        <span>Download Package</span>
+                        <span>{tWorkspace("btnDownloadPackage")}</span>
                       </button>
                     </td>
                   </tr>

@@ -62,7 +62,9 @@ export async function ensureDatabaseSchema() {
       "mah_holder" text,
       "responsible_user" text,
       "tariff" text,
+      "additional_feature" text,
       "status" text DEFAULT 'Active' NOT NULL,
+      "is_project_saved" boolean DEFAULT false NOT NULL,
       "version" integer DEFAULT 1 NOT NULL,
       "created_at" timestamp DEFAULT now() NOT NULL,
       "updated_at" timestamp DEFAULT now() NOT NULL
@@ -77,7 +79,8 @@ export async function ensureDatabaseSchema() {
       "procedure_type" text,
       "type_of_procedure" text,
       "application_number" text,
-      "dossier_sequence" text DEFAULT 'Sequence 0000' NOT NULL
+      "dossier_sequence" text DEFAULT 'Sequence 0000' NOT NULL,
+      "is_dossier_saved" boolean DEFAULT false NOT NULL
     );`,
 
     // Re-create project_members
@@ -102,16 +105,24 @@ export async function ensureDatabaseSchema() {
       "md5_checksum" text,
       "status" "public"."document_status" DEFAULT 'active' NOT NULL,
       "operation" text DEFAULT 'new' NOT NULL,
+      "issue_date" timestamp,
+      "expiration_date" timestamp,
       "uploaded_at" timestamp DEFAULT now() NOT NULL
     );`,
 
     // Migration statements for existing DB instances
+    `ALTER TABLE "projects" ADD COLUMN IF NOT EXISTS "additional_feature" text;`,
+    `ALTER TABLE "projects" ADD COLUMN IF NOT EXISTS "is_project_saved" boolean DEFAULT false NOT NULL;`,
+    `ALTER TABLE "dossier_config" ADD COLUMN IF NOT EXISTS "is_dossier_saved" boolean DEFAULT false NOT NULL;`,
     `ALTER TABLE "projects" ADD COLUMN IF NOT EXISTS "version" integer DEFAULT 1 NOT NULL;`,
     `ALTER TABLE "projects" ADD COLUMN IF NOT EXISTS "updated_at" timestamp DEFAULT now() NOT NULL;`,
     `ALTER TABLE "project_documents" ADD COLUMN IF NOT EXISTS "operation" text DEFAULT 'new' NOT NULL;`,
+    `ALTER TABLE "project_documents" ADD COLUMN IF NOT EXISTS "issue_date" timestamp;`,
+    `ALTER TABLE "project_documents" ADD COLUMN IF NOT EXISTS "expiration_date" timestamp;`,
     `ALTER TABLE "project_documents" ALTER COLUMN "image_kit_url" DROP NOT NULL;`,
     `ALTER TABLE "project_documents" ALTER COLUMN "image_kit_file_id" DROP NOT NULL;`,
     `ALTER TABLE "project_documents" ALTER COLUMN "md5_checksum" DROP NOT NULL;`,
+    `ALTER TABLE "project_documents" ALTER COLUMN "file_size" SET DEFAULT 0;`,
 
     // Re-create audit_logs
     `CREATE TABLE IF NOT EXISTS "audit_logs" (

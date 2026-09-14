@@ -1,13 +1,13 @@
 import { Request, Response } from "express";
 import { db } from "../db/db";
 import { auditLogs } from "../db/schema";
-import { parseIdParam, getSingleParam } from "../utils/params.util";
+import { resolveProjectId, getSingleParam } from "../utils/params.util";
 import { eq, desc, ilike, and, or } from "drizzle-orm";
 
 export async function getAuditLogs(req: Request, res: Response): Promise<void> {
   try {
-    const projectId = parseIdParam(req.params.id);
-    if (isNaN(projectId)) {
+    const projectId = await resolveProjectId(req.params.id);
+    if (!projectId) {
       res.status(400).json({ success: false, message: "Invalid project ID" });
       return;
     }
@@ -49,8 +49,8 @@ export async function getAuditLogs(req: Request, res: Response): Promise<void> {
 
 export async function exportAuditLogsCsv(req: Request, res: Response): Promise<void> {
   try {
-    const projectId = parseIdParam(req.params.id);
-    if (isNaN(projectId)) {
+    const projectId = await resolveProjectId(req.params.id);
+    if (!projectId) {
       res.status(400).json({ success: false, message: "Invalid project ID" });
       return;
     }

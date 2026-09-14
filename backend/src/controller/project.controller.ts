@@ -2,13 +2,13 @@ import { Request, Response } from "express";
 import { db } from "../db/db";
 import { projects, dossierConfig, projectMembers, auditLogs } from "../db/schema";
 import { createProjectSchema, updateDossierDataSchema } from "../validators/project.validator";
-import { parseIdParam } from "../utils/params.util";
+import { parseIdParam, resolveProjectId } from "../utils/params.util";
 import { eq, desc } from "drizzle-orm";
 
+import crypto from "crypto";
+
 function generateProjectCode(): string {
-  const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, "");
-  const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
-  return `PRJ-${dateStr}-${randomSuffix}`;
+  return crypto.randomUUID();
 }
 
 /**
@@ -61,8 +61,10 @@ export async function createProject(req: Request, res: Response): Promise<void> 
           manufacturer: input.manufacturer,
           mahHolder: input.mahHolder,
           responsibleUser: input.responsibleUser || currentUser?.email || "System User",
-          tariff: input.tariff,
+          tariff: input.tariff || "Tariff OWN",
+          additionalFeature: input.additionalFeature || "Standard",
           status: "Active",
+          isProjectSaved: false,
         })
         .returning();
 
@@ -70,12 +72,13 @@ export async function createProject(req: Request, res: Response): Promise<void> 
         .insert(dossierConfig)
         .values({
           projectId: newProject.id,
-          submissionCountry: input.submissionCountry || "US",
+          submissionCountry: input.submissionCountry || "KAZAKHSTAN",
           role: input.role,
           procedureType: input.procedureType,
           typeOfProcedure: input.typeOfProcedure,
           applicationNumber: input.applicationNumber || projectCode,
           dossierSequence: input.dossierSequence || "Sequence 0000",
+          isDossierSaved: false,
         })
         .returning();
 
@@ -113,9 +116,9 @@ export async function createProject(req: Request, res: Response): Promise<void> 
  */
 export async function getDossierData(req: Request, res: Response): Promise<void> {
   try {
-    const projectId = parseIdParam(req.params.id);
-    if (isNaN(projectId)) {
-      res.status(400).json({ success: false, message: "Invalid project ID" });
+    const projectId = await resolveProjectId(req.params.id);
+    if (!projectId) {
+      res.status(400).json({ success: false, message: "Invalid project ID or code" });
       return;
     }
 
@@ -143,9 +146,14 @@ export async function getDossierData(req: Request, res: Response): Promise<void>
       return;
     }
 
+    const { dossierConfig: config, ...project } = projectData;
+
     res.status(200).json({
       success: true,
-      data: projectData,
+      data: {
+        project,
+        dossierConfig: config || null,
+      },
     });
   } catch (error: any) {
     console.error("[Get Dossier Data Error]", error);
@@ -154,13 +162,13 @@ export async function getDossierData(req: Request, res: Response): Promise<void>
 }
 
 /**
- * PUT /api/projects/:id/dossier-data
+ * PUT /api/projects/:id/dossier-data & PUT /api/projects/:id
  */
 export async function updateDossierData(req: Request, res: Response): Promise<void> {
   try {
-    const projectId = parseIdParam(req.params.id);
-    if (isNaN(projectId)) {
-      res.status(400).json({ success: false, message: "Invalid project ID" });
+    const projectId = await resolveProjectId(req.params.id);
+    if (!projectId) {
+      res.status(400).json({ success: false, message: "Invalid project ID or code" });
       return;
     }
 
@@ -175,6 +183,7 @@ export async function updateDossierData(req: Request, res: Response): Promise<vo
 
     const existingProject = await db.query.projects.findFirst({
       where: eq(projects.id, projectId),
+      with: { dossierConfig: true },
     });
 
     if (!existingProject) {
@@ -195,53 +204,141 @@ export async function updateDossierData(req: Request, res: Response): Promise<vo
     const nextVersion = existingProject.version + 1;
 
     const updatedData = await db.transaction(async (tx) => {
+      // Build dynamic project update payload
+      const projectPayload: Record<string, any> = {
+        version: nextVersion,
+        updatedAt: new Date(),
+      };
+      if (input.productName !== undefined) projectPayload.productName = input.productName;
+      if (input.dosageForm !== undefined) projectPayload.dosageForm = input.dosageForm;
+      if (input.productType !== undefined) projectPayload.productType = input.productType;
+      if (input.manufacturer !== undefined) projectPayload.manufacturer = input.manufacturer;
+      if (input.mahHolder !== undefined) projectPayload.mahHolder = input.mahHolder;
+      if (input.responsibleUser !== undefined) projectPayload.responsibleUser = input.responsibleUser;
+      if (input.tariff !== undefined) projectPayload.tariff = input.tariff;
+      if (input.additionalFeature !== undefined) projectPayload.additionalFeature = input.additionalFeature;
+      if (input.status !== undefined) projectPayload.status = input.status;
+
+      const hasProjectFields =
+        input.productName !== undefined ||
+        input.dosageForm !== undefined ||
+        input.productType !== undefined ||
+        input.manufacturer !== undefined ||
+        input.mahHolder !== undefined ||
+        input.responsibleUser !== undefined ||
+        input.tariff !== undefined ||
+        input.additionalFeature !== undefined;
+
+      if (hasProjectFields) {
+        projectPayload.isProjectSaved = true;
+      }
+
       const [updatedProject] = await tx
         .update(projects)
-        .set({
-          productName: input.productName,
-          dosageForm: input.dosageForm,
-          productType: input.productType,
-          manufacturer: input.manufacturer,
-          mahHolder: input.mahHolder,
-          responsibleUser: input.responsibleUser,
-          tariff: input.tariff,
-          version: nextVersion,
-          updatedAt: new Date(),
-          ...(input.status ? { status: input.status } : {}),
-        })
+        .set(projectPayload)
         .where(eq(projects.id, projectId))
         .returning();
 
-      const [updatedConfig] = await tx
-        .update(dossierConfig)
-        .set({
-          submissionCountry: input.submissionCountry,
-          role: input.role,
-          procedureType: input.procedureType,
-          typeOfProcedure: input.typeOfProcedure,
-          applicationNumber: input.applicationNumber,
-          dossierSequence: input.dossierSequence,
-        })
-        .where(eq(dossierConfig.projectId, projectId))
-        .returning();
+      // Check if dossier config fields are provided
+      const hasConfigFields =
+        input.submissionCountry !== undefined ||
+        input.role !== undefined ||
+        input.procedureType !== undefined ||
+        input.typeOfProcedure !== undefined ||
+        input.applicationNumber !== undefined ||
+        input.dossierSequence !== undefined;
+
+      let updatedConfig = existingProject.dossierConfig || null;
+
+      if (hasConfigFields) {
+        const configFields = {
+          isDossierSaved: true,
+          ...(input.submissionCountry !== undefined ? { submissionCountry: input.submissionCountry } : {}),
+          ...(input.role !== undefined ? { role: input.role } : {}),
+          ...(input.procedureType !== undefined ? { procedureType: input.procedureType } : {}),
+          ...(input.typeOfProcedure !== undefined ? { typeOfProcedure: input.typeOfProcedure } : {}),
+          ...(input.applicationNumber !== undefined ? { applicationNumber: input.applicationNumber } : {}),
+          ...(input.dossierSequence !== undefined ? { dossierSequence: input.dossierSequence } : {}),
+        };
+
+        if (existingProject.dossierConfig) {
+          const [conf] = await tx
+            .update(dossierConfig)
+            .set(configFields)
+            .where(eq(dossierConfig.projectId, projectId))
+            .returning();
+          updatedConfig = conf;
+        } else {
+          const [conf] = await tx
+            .insert(dossierConfig)
+            .values({
+              projectId,
+              submissionCountry: input.submissionCountry || "KAZAKHSTAN",
+              role: input.role,
+              procedureType: input.procedureType,
+              typeOfProcedure: input.typeOfProcedure,
+              applicationNumber: input.applicationNumber || existingProject.projectCode,
+              dossierSequence: input.dossierSequence || "Sequence 0000",
+              isDossierSaved: true,
+            })
+            .returning();
+          updatedConfig = conf;
+        }
+      }
 
       await tx.insert(auditLogs).values({
         projectId,
         logType: "SUCCESS",
-        message: `Project & Dossier metadata updated to version ${nextVersion} for project ID ${projectId}.`,
+        message: `Project & Dossier metadata updated to version ${nextVersion}.`,
         userCredentials: currentUser ? `${currentUser.email} (${currentUser.role})` : "System",
       });
 
-      return { project: updatedProject, config: updatedConfig };
+      return { project: updatedProject, dossierConfig: updatedConfig };
     });
 
     res.status(200).json({
       success: true,
       data: updatedData,
-      message: "Dossier metadata updated successfully",
+      message: "Dossier data updated successfully",
     });
   } catch (error: any) {
     console.error("[Update Dossier Data Error]", error);
-    res.status(500).json({ success: false, message: error.message || "Failed to update dossier metadata" });
+    res.status(500).json({ success: false, message: error.message || "Failed to update project" });
   }
 }
+
+export const updateProject = updateDossierData;
+
+/**
+ * DELETE /api/projects/:id
+ * Deletes a project and all associated cascade records (dossier_config, members, documents, audit_logs, package_archives).
+ */
+export async function deleteProject(req: Request, res: Response): Promise<void> {
+  try {
+    const projectId = await resolveProjectId(req.params.id);
+    if (!projectId) {
+      res.status(400).json({ success: false, message: "Invalid project ID or code" });
+      return;
+    }
+
+    const [deleted] = await db
+      .delete(projects)
+      .where(eq(projects.id, projectId))
+      .returning();
+
+    if (!deleted) {
+      res.status(404).json({ success: false, message: "Project not found" });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      data: { id: deleted.id, projectCode: deleted.projectCode, productName: deleted.productName },
+      message: `Project ${deleted.productName} (${deleted.projectCode}) deleted successfully`,
+    });
+  } catch (error: any) {
+    console.error("[Delete Project Error]", error);
+    res.status(500).json({ success: false, message: error.message || "Failed to delete project" });
+  }
+}
+

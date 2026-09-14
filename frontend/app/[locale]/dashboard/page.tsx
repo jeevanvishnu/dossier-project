@@ -115,7 +115,7 @@ export default function DashboardPage() {
                       {tDash("activeTariff")}
                     </h3>
                     <span className="text-[11px] font-semibold text-emerald-500 flex items-center gap-1">
-                      <CheckCircle size={13} weight="fill" /> {activeTariff.status}
+                      <CheckCircle size={13} weight="fill" /> {activeTariff.status === "Active Plan" ? tDash("activePlan") : activeTariff.status}
                     </span>
                   </div>
                 </div>
@@ -158,19 +158,19 @@ export default function DashboardPage() {
                   <div className="flex flex-col items-center justify-center p-3.5 rounded-2xl bg-accent/10 border border-accent/25 text-accent min-w-[125px] shrink-0 text-center shadow-xs">
                     <InfinityIcon size={38} weight="bold" />
                     <span className="text-[10px] font-semibold uppercase tracking-wider mt-1 text-accent">
-                      Infinity (∞)
+                      {tDash("infinity")}
                     </span>
                     <span className="text-[9px] text-muted font-medium">{tDash("storageUsed")}</span>
                   </div>
                 </div>
               ) : (
                 <div className="bg-bg border border-dashed border-red-500/30 rounded-xl p-5 flex flex-col items-center justify-center text-center space-y-2">
-                  <span className="text-xs font-medium text-red-400">Tariff Configuration Cleared / Inactive</span>
+                  <span className="text-xs font-medium text-red-400">{tDash("clearTariffStatus")}</span>
                   <button
                     onClick={handleResetTariff}
                     className="text-xs text-accent underline font-medium hover:text-accent-hover"
                   >
-                    Restore Tariff OWN (MUP) (Unlimited)
+                    {tDash("restoreTariff")}
                   </button>
                 </div>
               )}
@@ -192,7 +192,7 @@ export default function DashboardPage() {
                   </div>
                 </div>
                 <span className="px-2 py-0.5 rounded-full bg-accent/15 text-accent font-semibold text-[10px]">
-                  {announcements.length} New
+                  {announcements.length} {tDash("notificationsNew")}
                 </span>
               </div>
 
@@ -234,7 +234,7 @@ export default function DashboardPage() {
                     <div className="w-8 h-8 rounded-lg bg-accent text-white flex items-center justify-center shadow-xs shrink-0">
                       <PushPin size={18} weight="fill" />
                     </div>
-                    <span className="text-sm font-medium text-primary">Pinned</span>
+                    <span className="text-sm font-medium text-primary">{tDash("dossierPinned")}</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-secondary/30 font-light">|</span>
@@ -316,13 +316,13 @@ export default function DashboardPage() {
           <div className="bg-surface border border-border rounded-2xl p-6 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
             <div>
               <h3 className="font-lexend font-semibold text-base md:text-lg text-primary text-center mb-4 leading-snug">
-                Don't forget to study the manual!
+                {tDash("manualCardTitle")}
               </h3>
 
               <div className="py-2 flex items-center justify-center">
                 <img
                   src="/images/pdf-img.png"
-                  alt="Don't forget to study the manual!"
+                  alt={tDash("manualCardTitle")}
                   className="max-h-[130px] w-auto object-contain mx-auto rounded-lg shadow-xs"
                 />
               </div>
@@ -333,7 +333,7 @@ export default function DashboardPage() {
                 onClick={handleDownloadManual}
                 className="w-full py-3 bg-slate-900 hover:bg-black dark:bg-slate-800 dark:hover:bg-slate-700 text-white font-medium text-sm rounded-xl transition-all shadow-xs hover:shadow-md flex items-center justify-center text-center cursor-pointer"
               >
-                Download manual now!
+                {tDash("manualCardBtn")}
               </button>
             </div>
           </div>
@@ -349,7 +349,7 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between pb-3 border-b border-border">
               <div className="flex items-center gap-2 text-primary font-lexend font-bold">
                 <PencilSimple size={20} className="text-accent" />
-                <span>Edit Tariff Parameters</span>
+                <span>{tDash("editTariffTitle")}</span>
               </div>
               <button
                 onClick={() => setIsEditModalOpen(false)}
@@ -362,7 +362,7 @@ export default function DashboardPage() {
             <form onSubmit={handleSaveTariffEdit} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-primary mb-1">
-                  Active Subscription Plan Name
+                  {tDash("editTariffLabel")}
                 </label>
                 <input
                   type="text"
@@ -400,7 +400,7 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between pb-3 border-b border-border">
               <div className="flex items-center gap-2 text-red-500 font-lexend font-bold">
                 <Trash size={20} />
-                <span>Clear Tariff Configuration</span>
+                <span>{tDash("clearTariffTitle")}</span>
               </div>
               <button
                 onClick={() => setIsDeleteModalOpen(false)}
@@ -411,7 +411,7 @@ export default function DashboardPage() {
             </div>
 
             <p className="text-xs text-secondary leading-relaxed">
-              Are you sure you want to clear or delete the active subscription plan configuration (
+              {tDash("clearTariffConfirm")} (
               <strong className="text-primary font-semibold">{activeTariff.name}</strong>)?
             </p>
 
