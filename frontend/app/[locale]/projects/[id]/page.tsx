@@ -9,7 +9,6 @@ import { DossierDataView } from "../../../components/projects/workspace/views/Do
 import { UploadDocumentsView } from "../../../components/projects/workspace/views/UploadDocumentsView";
 import { DossierHistoryView } from "../../../components/projects/workspace/views/DossierHistoryView";
 import { XmlCreationHistoryView } from "../../../components/projects/workspace/views/XmlCreationHistoryView";
-import toast from "react-hot-toast";
 
 interface PageParams {
   params: Promise<{ id: string }>;
@@ -26,24 +25,19 @@ function ProjectWorkspaceContent({ id }: { id: string }) {
       : "dossier-data"
   );
 
-  const handleCompile = () => {
-    toast.success(`Compiling eCTD Package for project ${id || "PRJ-KZ-2026-001"}...`);
-    setActiveTab("xml-history");
-  };
-
   return (
     <div className="space-y-6 w-full pb-12">
       {/* 1. Persistent Top Header & Actions */}
-      <ProjectHeader projectId={id || "PRJ-KZ-2026-001"} />
+      <ProjectHeader projectId={id} />
 
       {/* 2. Main Tabbed Navigation Bar */}
       <ProjectTabs activeTab={activeTab} setActiveTab={setActiveTab} />
 
       {/* Dynamic Views Rendering based on active tab */}
-      {activeTab === "dossier-data" && <DossierDataView />}
-      {activeTab === "upload-docs" && <UploadDocumentsView />}
-      {activeTab === "dossier-history" && <DossierHistoryView />}
-      {activeTab === "xml-history" && <XmlCreationHistoryView />}
+      {activeTab === "dossier-data" && <DossierDataView projectId={id} />}
+      {activeTab === "upload-docs" && <UploadDocumentsView projectId={id} />}
+      {activeTab === "dossier-history" && <DossierHistoryView projectId={id} />}
+      {activeTab === "xml-history" && <XmlCreationHistoryView projectId={id} />}
     </div>
   );
 }
@@ -59,5 +53,3 @@ export default function ProjectDetailPage({ params }: PageParams) {
     </AppShell>
   );
 }
-
-

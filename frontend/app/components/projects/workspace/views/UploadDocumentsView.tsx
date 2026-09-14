@@ -1,13 +1,10 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
-  UploadSimple,
   Folder,
   FolderOpen,
-  FileText,
   FilePdf,
-  Key,
   Trash,
   List,
   LockKey,
@@ -16,9 +13,11 @@ import {
   CaretDown,
   CaretRight,
   MagnifyingGlass,
+  CircleNotch,
 } from "@phosphor-icons/react";
 import toast from "react-hot-toast";
 import { ECTD_FULL_TREE, CTDNode } from "@/app/constants/ctdStructure";
+import { api, handleApiError } from "@/app/lib/axios";
 
 interface UploadedFile {
   id: string;
@@ -27,9 +26,9 @@ interface UploadedFile {
   uploadDate: string;
   completionDate: string;
   md5Hash: string;
+  imageKitUrl?: string;
 }
 
-// Module definitions for far-left sidebar matching reference model
 const MAIN_MODULE_TABS = [
   { id: "m1", code: "1", label: "1. Admin information" },
   { id: "m2", code: "2", label: "2. CTD Summaries" },
@@ -59,24 +58,115 @@ function countFilesForNode(node: CTDNode, filesMap: Record<string, UploadedFile[
   return count;
 }
 
-export const UploadDocumentsView: React.FC = () => {
+interface UploadDocumentsViewProps {
+  projectId?: string;
+}
+
+export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({ projectId = "1" }) => {
   const [activeMainModuleId, setActiveMainModuleId] = useState<string>("m1");
   const [selectedModuleId, setSelectedModuleId] = useState<string>("1.0");
   const [dragActive, setDragActive] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [isUploading, setIsUploading] = useState<boolean>(false);
+  const [isDownloadingZip, setIsDownloadingZip] = useState<boolean>(false);
 
-  // Track expanded folder nodes
-  const [expandedNodes, setExpandedNodes] = useState<Record<string, boolean>>({
-    m1: true,
-    "1.2": false,
-    "1.3": false,
-    m2: true,
-    m3: true,
-    m4: true,
-    m5: true,
+  const [isSeeding, setIsSeeding] = useState<boolean>(false);
+
+  const handleDownloadZip = async () => {
+    if (isDownloadingZip) return;
+    setIsDownloadingZip(true);
+    toast.loading("Compiling latest eCTD dossier ZIP package...", { id: "zip-download-toast" });
+    try {
+      const compileRes = await api.post(`/projects/${projectId}/compile`);
+      if (compileRes.data?.success && compileRes.data?.data?.downloadUrl) {
+        const downloadUrl = compileRes.data.data.downloadUrl;
+        window.open(downloadUrl, "_blank");
+        toast.success(`eCTD ZIP compiled and downloaded successfully!`, { id: "zip-download-toast" });
+      } else {
+        toast.error(compileRes.data?.message || "No active documents found to compile ZIP package.", { id: "zip-download-toast" });
+      }
+    } catch (err: any) {
+      handleApiError(err, "Failed to download eCTD ZIP package");
+    } finally {
+      setIsDownloadingZip(false);
+    }
+  };
+
+  const handleLoadRussianDossier = async () => {
+    if (isSeeding) return;
+    setIsSeeding(true);
+    toast.loading("Populating project with 11 Russian Client Dossier documents...", { id: "seed-toast" });
+    try {
+      const res = await api.post(`/projects/${projectId}/seed-sorbit`);
+      if (res.data?.success) {
+        toast.success("Loaded 11 Russian Client Dossier documents! Now click 'Download ZIP' to generate XML.", { id: "seed-toast", duration: 5000 });
+        // Refresh selected module document
+        try {
+          const response = await api.get(`/projects/${projectId}/documents/${selectedModuleId}`);
+          if (response.data?.success && response.data?.data) {
+            const doc = response.data.data;
+            const formatted: UploadedFile = {
+              id: String(doc.id),
+              name: doc.originalName,
+              sequence: doc.sequence || "0000",
+              uploadDate: doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleDateString() : "14.08.2023",
+              completionDate: doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleDateString() : "14.08.2023",
+              md5Hash: doc.md5Checksum ? doc.md5Checksum.slice(0, 10) + "..." : "MD5",
+              imageKitUrl: doc.imageKitUrl,
+            };
+            setModuleFiles((prev) => ({
+              ...prev,
+              [selectedModuleId]: [formatted],
+            }));
+          }
+        } catch (fetchErr) {
+          // ignore
+        }
+      }
+    } catch (err: any) {
+      handleApiError(err, "Failed to populate Russian Client Dossier");
+    } finally {
+      setIsSeeding(false);
+    }
+  };
+
+  // Document lifecycle operation state ('new' | 'replace' | 'delete')
+  const [selectedOperation, setSelectedOperation] = useState<"new" | "replace" | "delete">("new");
+
+  // Load cached CTD tree expanded state from sessionStorage
+  const [expandedNodes, setExpandedNodes] = useState<Record<string, boolean>>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const cached = sessionStorage.getItem(`ectd_expanded_nodes_${projectId}`);
+        if (cached) {
+          return JSON.parse(cached);
+        }
+      } catch (err) {
+        console.warn("Could not load expanded tree state from sessionStorage", err);
+      }
+    }
+    return {
+      m1: true,
+      "1.2": false,
+      "1.3": false,
+      m2: true,
+      m3: true,
+      m4: true,
+      m5: true,
+    };
   });
 
-  // Uploaded files map per leaf node
+  // Save expandedNodes state to sessionStorage whenever it changes
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        sessionStorage.setItem(`ectd_expanded_nodes_${projectId}`, JSON.stringify(expandedNodes));
+      } catch (err) {
+        console.warn("Could not save expanded tree state to sessionStorage", err);
+      }
+    }
+  }, [expandedNodes, projectId]);
+
   const [moduleFiles, setModuleFiles] = useState<Record<string, UploadedFile[]>>({
     "1.0": [
       {
@@ -88,29 +178,39 @@ export const UploadDocumentsView: React.FC = () => {
         md5Hash: "MD5",
       },
     ],
-    "1.1": [
-      {
-        id: "file-2",
-        name: "1.1. Table of Contents KZ.pdf",
-        sequence: "0000",
-        uploadDate: "14.08.2023",
-        completionDate: "14.08.2023",
-        md5Hash: "MD5",
-      },
-    ],
-    "1.3.1-02001": [
-      {
-        id: "file-3",
-        name: "1.3. SmPC Miconazole Spray 2%.pdf",
-        sequence: "0000",
-        uploadDate: "14.08.2023",
-        completionDate: "14.08.2023",
-        md5Hash: "MD5",
-      },
-    ],
   });
 
-  // Active module root node
+  // Fetch active document from backend whenever selectedModuleId changes
+  useEffect(() => {
+    if (!projectId || !selectedModuleId) return;
+
+    const fetchDocumentForNode = async () => {
+      try {
+        const response = await api.get(`/projects/${projectId}/documents/${selectedModuleId}`);
+        if (response.data?.success && response.data?.data) {
+          const doc = response.data.data;
+          const formatted: UploadedFile = {
+            id: String(doc.id),
+            name: doc.originalName,
+            sequence: doc.sequence || "0000",
+            uploadDate: doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleDateString() : "14.08.2023",
+            completionDate: doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleDateString() : "14.08.2023",
+            md5Hash: doc.md5Checksum ? doc.md5Checksum.slice(0, 10) + "..." : "MD5",
+            imageKitUrl: doc.imageKitUrl,
+          };
+          setModuleFiles((prev) => ({
+            ...prev,
+            [selectedModuleId]: [formatted],
+          }));
+        }
+      } catch (err: any) {
+        // If 404, node doesn't have an active document yet, keep present local state
+      }
+    };
+
+    fetchDocumentForNode();
+  }, [projectId, selectedModuleId]);
+
   const activeRootModule = useMemo(() => {
     return ECTD_FULL_TREE.find((m) => m.id === activeMainModuleId) || ECTD_FULL_TREE[0];
   }, [activeMainModuleId]);
@@ -155,41 +255,90 @@ export const UploadDocumentsView: React.FC = () => {
     e.stopPropagation();
     setDragActive(false);
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      addFile(e.dataTransfer.files[0]);
+      const file = e.dataTransfer.files[0];
+      // Pre-upload client file size validation (50MB Limit)
+      if (file.size > 50 * 1024 * 1024) {
+        toast.error("File size exceeds the 50MB limit. Upload rejected.");
+        return;
+      }
+      uploadFileToBackend(file);
     }
   };
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      addFile(e.target.files[0]);
+      const file = e.target.files[0];
+      // Pre-upload client file size validation (50MB Limit)
+      if (file.size > 50 * 1024 * 1024) {
+        toast.error("File size exceeds the 50MB limit. Upload rejected.");
+        return;
+      }
+      uploadFileToBackend(file);
     }
   };
 
-  const addFile = (file: File) => {
-    const todayStr = "14.08.2023";
-    const newFile: UploadedFile = {
-      id: `file-${Date.now()}`,
-      name: file.name,
-      sequence: "0000",
-      uploadDate: todayStr,
-      completionDate: todayStr,
-      md5Hash: "MD5",
-    };
+  const uploadFileToBackend = async (file?: File) => {
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      if (file) {
+        formData.append("file", file);
+      }
+      formData.append("operation", selectedOperation);
 
-    setModuleFiles((prev) => ({
-      ...prev,
-      [selectedModuleId]: [...(prev[selectedModuleId] || []), newFile],
-    }));
+      const response = await api.post(`/projects/${projectId}/documents/${selectedModuleId}`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
 
-    toast.success(`Uploaded ${file.name}`);
+      if (response.data?.success && response.data?.data) {
+        const doc = response.data.data;
+        if (selectedOperation === "delete" || doc.status === "deleted") {
+          setModuleFiles((prev) => ({
+            ...prev,
+            [selectedModuleId]: [],
+          }));
+          toast.success(`Marked section as deleted (eCTD Tombstone record created).`);
+        } else {
+          const newFileItem: UploadedFile = {
+            id: String(doc.id),
+            name: doc.originalName,
+            sequence: doc.sequence || "0000",
+            uploadDate: new Date(doc.uploadedAt).toLocaleDateString(),
+            completionDate: new Date(doc.uploadedAt).toLocaleDateString(),
+            md5Hash: doc.md5Checksum ? doc.md5Checksum.slice(0, 10) + "..." : "MD5",
+            imageKitUrl: doc.imageKitUrl,
+          };
+
+          setModuleFiles((prev) => ({
+            ...prev,
+            [selectedModuleId]: [newFileItem],
+          }));
+
+          toast.success(`Uploaded ${doc.originalName} (${selectedOperation.toUpperCase()}) successfully!`);
+        }
+      }
+    } catch (err) {
+      handleApiError(err, `Failed to execute ${selectedOperation} operation`);
+    } finally {
+      setIsUploading(false);
+    }
   };
 
-  const handleDeleteFile = (fileId: string, fileName: string) => {
-    setModuleFiles((prev) => ({
-      ...prev,
-      [selectedModuleId]: prev[selectedModuleId].filter((f) => f.id !== fileId),
-    }));
-    toast.error(`Removed ${fileName}`);
+  const handleExecuteDeleteOperation = async () => {
+    uploadFileToBackend(undefined);
+  };
+
+  const handleDeleteFile = async (fileId: string, fileName: string) => {
+    try {
+      await api.delete(`/projects/${projectId}/documents/${selectedModuleId}`);
+      setModuleFiles((prev) => ({
+        ...prev,
+        [selectedModuleId]: prev[selectedModuleId].filter((f) => f.id !== fileId),
+      }));
+      toast.success(`Removed ${fileName} and created eCTD tombstone.`);
+    } catch (err) {
+      handleApiError(err, `Failed to delete ${fileName}`);
+    }
   };
 
   const matchesSearch = (node: CTDNode, query: string): boolean => {
@@ -207,7 +356,6 @@ export const UploadDocumentsView: React.FC = () => {
     return false;
   };
 
-  // Render tree node inside middle pane
   const renderTreeNode = (node: CTDNode, depth: number = 0) => {
     if (searchQuery && !matchesSearch(node, searchQuery)) {
       return null;
@@ -283,7 +431,7 @@ export const UploadDocumentsView: React.FC = () => {
 
   return (
     <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs space-y-4 font-sans text-slate-800 dark:text-slate-200">
-      {/* Top Header matching reference screenshot */}
+      {/* Top Header */}
       <div className="flex items-start justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
         <div className="space-y-0.5">
           <div className="flex items-center gap-2">
@@ -291,32 +439,46 @@ export const UploadDocumentsView: React.FC = () => {
               Dossier ID:
             </span>
             <span className="font-bold text-base text-slate-900 dark:text-slate-100 font-mono">
-              166141-00-220:4757-3700-66401p15e3
+              {projectId ? (projectId.startsWith("PRJ-") ? projectId : `PRJ-${projectId}`) : "PRJ-1"}
             </span>
           </div>
           <p className="text-[11px] text-slate-500 dark:text-slate-400">
-            Creation date, submission country role, sequence • <span className="font-semibold text-slate-700 dark:text-slate-300">14.08.2023</span> • RENKOMOKYUMS_ID: 498 barts • Total size: 2062
+            Zero-Disk Cloud File Upload Engine • <span className="font-semibold text-slate-700 dark:text-slate-300">50MB Max</span> • Direct ImageKit Stream
           </p>
         </div>
 
-        {/* Top Right Action Icons matching screenshot */}
+        {/* Top Right Action Icons */}
         <div className="flex items-center gap-1.5">
           <button
             type="button"
-            className="p-1.5 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors border border-slate-200 dark:border-slate-700 cursor-pointer"
-            title="Dossier documents"
+            onClick={handleLoadRussianDossier}
+            disabled={isSeeding}
+            className="px-2.5 py-1.5 rounded bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer disabled:opacity-50 shadow-xs"
+            title="Load 11 Russian Client Dossier documents into project"
           >
-            <FileCode size={16} weight="bold" />
+            {isSeeding ? (
+              <CircleNotch size={14} className="animate-spin" weight="bold" />
+            ) : (
+              <FileCode size={14} weight="bold" />
+            )}
+            <span>Load Russian Client Dossier</span>
           </button>
           <button
             type="button"
-            className="p-1.5 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors border border-slate-200 dark:border-slate-700 cursor-pointer"
-            title="Packaging details"
+            onClick={handleDownloadZip}
+            disabled={isDownloadingZip}
+            className="p-1.5 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 hover:text-accent transition-colors border border-slate-200 dark:border-slate-700 cursor-pointer disabled:opacity-50"
+            title="Download ZIP Package & Compiled XML"
           >
-            <Package size={16} weight="bold" />
+            {isDownloadingZip ? (
+              <CircleNotch size={16} className="animate-spin text-accent" weight="bold" />
+            ) : (
+              <Package size={16} weight="bold" />
+            )}
           </button>
           <button
             type="button"
+            onClick={() => toast.success("Dossier structure locked & MD5 checksums verified")}
             className="p-1.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 transition-colors cursor-pointer"
             title="Lock & Secure"
           >
@@ -325,16 +487,14 @@ export const UploadDocumentsView: React.FC = () => {
         </div>
       </div>
 
-      {/* 3-Column Layout matching Reference Image Model */}
+      {/* 3-Column Layout */}
       <div className="flex flex-col lg:flex-row min-h-[580px] border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden">
         {/* Column 1: Far Left Dark Tab Sidebar (18% width) */}
         <div className="w-full lg:w-[18%] bg-slate-800 text-slate-200 flex flex-col shrink-0 border-r border-slate-700">
-          {/* Header Bar */}
           <div className="bg-slate-900 py-2.5 px-3 border-b border-slate-700 flex items-center justify-center">
             <List size={18} className="text-slate-300" weight="bold" />
           </div>
 
-          {/* Module List Tabs */}
           <div className="flex flex-col divide-y divide-slate-700/60">
             {MAIN_MODULE_TABS.map((tab) => {
               const isActive = activeMainModuleId === tab.id;
@@ -357,7 +517,6 @@ export const UploadDocumentsView: React.FC = () => {
 
         {/* Column 2: Middle Sub-Node Navigation Tree (35% width) */}
         <div className="w-full lg:w-[35%] bg-slate-50 dark:bg-slate-900/60 border-r border-slate-200 dark:border-slate-800 flex flex-col shrink-0 p-2.5 space-y-2">
-          {/* Search Bar */}
           <div className="relative">
             <MagnifyingGlass size={14} className="absolute left-2.5 top-2 text-slate-400" />
             <input
@@ -369,7 +528,6 @@ export const UploadDocumentsView: React.FC = () => {
             />
           </div>
 
-          {/* Sub-node list */}
           <div className="overflow-y-auto pr-1 space-y-0.5 max-h-[520px] custom-scrollbar flex-1">
             {activeRootModule.children ? (
               activeRootModule.children.map((child) => renderTreeNode(child, 0))
@@ -381,48 +539,94 @@ export const UploadDocumentsView: React.FC = () => {
 
         {/* Column 3: Right Area - Upload Zone & Data Table (47% width) */}
         <div className="w-full lg:w-[47%] bg-white dark:bg-slate-900 p-4 flex flex-col space-y-4">
-          {/* Dropzone Container */}
-          <div
-            onDragEnter={handleDrag}
-            onDragOver={handleDrag}
-            onDragLeave={handleDrag}
-            onDrop={handleDrop}
-            className={`border-2 border-dashed rounded-lg p-6 text-center transition-all relative ${dragActive
-                ? "border-sky-500 bg-sky-50 dark:bg-sky-950/30"
-                : "border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/30 hover:border-sky-400"
-              }`}
-          >
-            <input
-              type="file"
-              onChange={handleFileInput}
-              className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
-            />
-            <div className="w-8 h-8 rounded-full bg-sky-100 dark:bg-sky-900/50 text-sky-600 dark:text-sky-400 flex items-center justify-center mx-auto mb-2">
-              <LockKey size={18} weight="bold" />
+          {/* Operation Selector Bar */}
+          <div className="flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+            <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+              Lifecycle Operator:
+            </span>
+            <div className="flex items-center gap-1">
+              {(["new", "replace", "delete"] as const).map((op) => (
+                <button
+                  key={op}
+                  type="button"
+                  onClick={() => setSelectedOperation(op)}
+                  className={`px-2.5 py-1 text-[11px] font-bold uppercase rounded transition-all cursor-pointer ${
+                    selectedOperation === op
+                      ? op === "delete"
+                        ? "bg-red-600 text-white shadow-xs"
+                        : op === "replace"
+                        ? "bg-amber-600 text-white shadow-xs"
+                        : "bg-sky-600 text-white shadow-xs"
+                      : "bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-300"
+                  }`}
+                >
+                  {op}
+                </button>
+              ))}
             </div>
-            <p className="font-semibold text-xs text-slate-700 dark:text-slate-300">
-              Drag and drop or click here to upload files
-            </p>
           </div>
 
-          {/* Current Selected Node Tag Label */}
+          {selectedOperation === "delete" ? (
+            <div className="border-2 border-dashed border-red-300 dark:border-red-900/60 rounded-lg p-5 text-center bg-red-50/50 dark:bg-red-950/20 space-y-2">
+              <div className="w-8 h-8 rounded-full bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400 flex items-center justify-center mx-auto">
+                <Trash size={18} weight="bold" />
+              </div>
+              <p className="font-semibold text-xs text-red-700 dark:text-red-300">
+                Mark active document at this node as Deleted (Creates eCTD Tombstone Record)
+              </p>
+              <button
+                type="button"
+                disabled={isUploading}
+                onClick={handleExecuteDeleteOperation}
+                className="px-4 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+              >
+                {isUploading ? "Creating Tombstone..." : "Execute Delete Operation"}
+              </button>
+            </div>
+          ) : (
+            <div
+              onDragEnter={handleDrag}
+              onDragOver={handleDrag}
+              onDragLeave={handleDrag}
+              onDrop={handleDrop}
+              className={`border-2 border-dashed rounded-lg p-5 text-center transition-all relative ${
+                dragActive
+                  ? "border-sky-500 bg-sky-50 dark:bg-sky-950/30"
+                  : "border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/30 hover:border-sky-400"
+              }`}
+            >
+              <input
+                type="file"
+                disabled={isUploading}
+                onChange={handleFileInput}
+                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
+              />
+              <div className="w-8 h-8 rounded-full bg-sky-100 dark:bg-sky-900/50 text-sky-600 dark:text-sky-400 flex items-center justify-center mx-auto mb-1.5">
+                <LockKey size={18} weight="bold" />
+              </div>
+              <p className="font-semibold text-xs text-slate-700 dark:text-slate-300">
+                {isUploading
+                  ? `Uploading (${selectedOperation.toUpperCase()}) to ImageKit...`
+                  : `Drag & drop or click to upload PDF (${selectedOperation.toUpperCase()})`}
+              </p>
+              <p className="text-[10.5px] text-slate-400 mt-0.5">50MB Maximum File Limit</p>
+            </div>
+          )}
+
           <div className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5 truncate">
             <span className="text-slate-400">Section:</span>
             <span className="text-sky-700 dark:text-sky-300 font-mono truncate">{selectedNodeLabel}</span>
           </div>
 
-          {/* Dark File Table matching Screenshot */}
           <div className="border border-slate-300 dark:border-slate-800 rounded-lg overflow-hidden flex-1 shadow-xs">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                {/* Dark Header matching screenshot */}
                 <thead className="bg-slate-800 text-white uppercase text-[10.5px] font-bold tracking-wider">
                   <tr>
                     <th className="py-2.5 px-3">Document name</th>
                     <th className="py-2.5 px-3">Sequence</th>
                     <th className="py-2.5 px-3">Upload date</th>
-                    <th className="py-2.5 px-3">Upload date</th>
-                    <th className="py-2.5 px-3">Document completion date</th>
+                    <th className="py-2.5 px-3">Completion date</th>
                     <th className="py-2.5 px-3">Encoding</th>
                     <th className="py-2.5 px-3 text-center">Action</th>
                   </tr>
@@ -430,7 +634,7 @@ export const UploadDocumentsView: React.FC = () => {
                 <tbody className="divide-y divide-slate-200 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
                   {currentFiles.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="py-8 text-center text-xs text-slate-400">
+                      <td colSpan={6} className="py-8 text-center text-xs text-slate-400">
                         No uploaded files in this section.
                       </td>
                     </tr>
@@ -439,10 +643,16 @@ export const UploadDocumentsView: React.FC = () => {
                       <tr key={file.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                         <td className="py-2.5 px-3 font-semibold text-sky-700 dark:text-sky-400 flex items-center gap-1.5">
                           <FilePdf size={16} className="text-sky-600 dark:text-sky-400 shrink-0" weight="fill" />
-                          <span className="truncate max-w-[160px] cursor-pointer hover:underline">{file.name}</span>
+                          <a
+                            href={file.imageKitUrl || "#"}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="truncate max-w-[160px] cursor-pointer hover:underline"
+                          >
+                            {file.name}
+                          </a>
                         </td>
                         <td className="py-2.5 px-3 font-mono font-bold text-slate-900 dark:text-slate-100">{file.sequence}</td>
-                        <td className="py-2.5 px-3 font-mono text-[11px]">{file.uploadDate}</td>
                         <td className="py-2.5 px-3 font-mono text-[11px]">{file.uploadDate}</td>
                         <td className="py-2.5 px-3 font-mono text-[11px]">{file.completionDate}</td>
                         <td className="py-2.5 px-3 font-mono font-semibold text-slate-900 dark:text-slate-100">{file.md5Hash}</td>

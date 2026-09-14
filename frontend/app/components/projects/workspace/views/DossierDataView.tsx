@@ -1,21 +1,17 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
-  CheckCircle,
   CaretDown,
   FloppyDiskBack,
   Globe,
-  ListChecks,
-  LockKey,
-  PencilSimple,
-  Eye,
   Check,
   Plus,
   Trash,
   Tag,
 } from "@phosphor-icons/react";
 import toast from "react-hot-toast";
+import { api, handleApiError } from "@/app/lib/axios";
 
 interface ExcipientItem {
   id: string;
@@ -24,9 +20,15 @@ interface ExcipientItem {
   category: string;
 }
 
-export const DossierDataView: React.FC = () => {
+interface DossierDataViewProps {
+  projectId?: string;
+}
+
+export const DossierDataView: React.FC<DossierDataViewProps> = ({ projectId = "1" }) => {
   // Sub-tabs state
   const [activeSubTab, setActiveSubTab] = useState<string>("Medicinal Product");
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isSaving, setIsSaving] = useState<boolean>(false);
 
   const subTabs = [
     "Medicinal Product",
@@ -47,6 +49,7 @@ export const DossierDataView: React.FC = () => {
     mah: "Medical Union Pharmaceuticals LLP",
     responsibleUser: "Dr. Alikhan Saparov",
     tariff: "Standard eCTD Submission Fee - 450,000 KZT",
+    status: "Active",
   });
 
   // 2. Active Substance Form State
@@ -129,16 +132,106 @@ export const DossierDataView: React.FC = () => {
     dossierSequence: "Sequence 0000",
   });
 
-  const handleSaveCard1 = () => {
-    toast.success(`Saved Metadata for sub-tab: ${activeSubTab}`);
+  // Concurrency version control state
+  const [projectVersion, setProjectVersion] = useState<number | undefined>(undefined);
+
+  // Load project metadata from backend API
+  useEffect(() => {
+    if (!projectId) return;
+
+    const fetchDossierData = async () => {
+      setIsLoading(true);
+      try {
+        const response = await api.get(`/projects/${projectId}/dossier-data`);
+        if (response.data?.success && response.data?.data) {
+          const { project, dossierConfig } = response.data.data;
+          if (project) {
+            if (typeof project.version === "number") {
+              setProjectVersion(project.version);
+            }
+            setMedicinalState((prev) => ({
+              ...prev,
+              productName: project.productName || prev.productName,
+              dosageForm: project.dosageForm || prev.dosageForm,
+              productType: project.productType || prev.productType,
+              manufacturer: project.manufacturer || prev.manufacturer,
+              mah: project.mahHolder || prev.mah,
+              responsibleUser: project.responsibleUser || prev.responsibleUser,
+              tariff: project.tariff || prev.tariff,
+              status: project.status || prev.status,
+            }));
+          }
+          if (dossierConfig) {
+            setConfigState((prev) => ({
+              ...prev,
+              submissionCountry: dossierConfig.submissionCountry || prev.submissionCountry,
+              roleOfSubmissionCountry: dossierConfig.role || prev.roleOfSubmissionCountry,
+              procedureType: dossierConfig.procedureType || prev.procedureType,
+              typeOfProcedure: dossierConfig.typeOfProcedure || prev.typeOfProcedure,
+              applicationNumber: dossierConfig.applicationNumber || prev.applicationNumber,
+              dossierSequence: dossierConfig.dossierSequence || prev.dossierSequence,
+            }));
+          }
+        }
+      } catch (err: any) {
+        // Fallback gracefully to default state if endpoint fails or project doesn't exist yet in DB
+        console.warn("Could not fetch project dossier data from API:", err?.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchDossierData();
+  }, [projectId]);
+
+  const saveToBackend = async () => {
+    setIsSaving(true);
+    try {
+      const payload = {
+        version: projectVersion,
+        productName: medicinalState.productName,
+        dosageForm: medicinalState.dosageForm,
+        productType: medicinalState.productType,
+        manufacturer: medicinalState.manufacturer,
+        mahHolder: medicinalState.mah,
+        responsibleUser: medicinalState.responsibleUser,
+        tariff: medicinalState.tariff,
+        status: medicinalState.status,
+        submissionCountry: configState.submissionCountry,
+        role: configState.roleOfSubmissionCountry,
+        procedureType: configState.procedureType,
+        typeOfProcedure: configState.typeOfProcedure,
+        applicationNumber: configState.applicationNumber,
+        dossierSequence: configState.dossierSequence,
+      };
+
+      const response = await api.put(`/projects/${projectId}/dossier-data`, payload);
+      if (response.data?.success) {
+        if (response.data?.data?.project?.version) {
+          setProjectVersion(response.data.data.project.version);
+        }
+        toast.success("Dossier metadata saved successfully to database!");
+      }
+    } catch (err: any) {
+      if (err?.response?.status === 409) {
+        toast.error(
+          "Conflict: Another team member has updated this dossier data. Please refresh and try again.",
+          { duration: 6000 }
+        );
+      } else {
+        handleApiError(err, "Failed to save dossier data to database");
+      }
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleClearCard1 = () => {
-    toast.success(`Cleared inputs for ${activeSubTab}`);
+  const handleSaveCard1 = () => {
+    saveToBackend();
   };
 
   const handleSaveCard2 = () => {
-    toast.success("Dossier Data Configuration saved!");
+    saveToBackend();
   };
 
   const handleAddExcipient = () => {
@@ -715,11 +808,12 @@ export const DossierDataView: React.FC = () => {
         <div className="flex justify-end items-center gap-3 pt-2 border-t border-border">
           <button
             onClick={handleSaveCard1}
+            disabled={isSaving}
             type="button"
-            className="px-4 py-2 bg-accent hover:bg-accent-hover text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer"
+            className="px-4 py-2 bg-accent hover:bg-accent-hover text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
           >
             <FloppyDiskBack size={16} weight="fill" />
-            <span>Save Data</span>
+            <span>{isSaving ? "Saving..." : "Save Data"}</span>
           </button>
         </div>
       </div>
@@ -735,7 +829,7 @@ export const DossierDataView: React.FC = () => {
             </h2>
           </div>
           <span className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 uppercase tracking-wider">
-            Regulatory Target: KAZAKHSTAN
+            Regulatory Target: {configState.submissionCountry}
           </span>
         </div>
 
@@ -753,6 +847,7 @@ export const DossierDataView: React.FC = () => {
                 className="w-full bg-bg border border-border focus:border-accent text-primary text-xs rounded-xl px-3 py-2.5 pr-8 appearance-none focus:outline-none transition-colors cursor-pointer"
               >
                 <option value="KAZAKHSTAN">KAZAKHSTAN</option>
+                <option value="US">UNITED STATES (US)</option>
                 <option value="RUSSIA">RUSSIA</option>
                 <option value="BELARUS">BELARUS</option>
                 <option value="ARMENIA">ARMENIA</option>
@@ -854,11 +949,12 @@ export const DossierDataView: React.FC = () => {
         <div className="flex justify-end pt-2 border-t border-border">
           <button
             onClick={handleSaveCard2}
+            disabled={isSaving}
             type="button"
-            className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer"
+            className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
           >
             <Check size={16} weight="bold" />
-            <span>Save Data</span>
+            <span>{isSaving ? "Saving..." : "Save Data"}</span>
           </button>
         </div>
       </div>

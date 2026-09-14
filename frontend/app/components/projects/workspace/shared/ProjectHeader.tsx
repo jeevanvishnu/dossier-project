@@ -10,8 +10,12 @@ interface ProjectHeaderProps {
 }
 
 export const ProjectHeader: React.FC<ProjectHeaderProps> = ({
-  projectId = "PRJ-KZ-2026-001",
+  projectId = "1",
 }) => {
+  const formattedProjectId = projectId.startsWith("PRJ-")
+    ? projectId
+    : `PRJ-${projectId}`;
+
   return (
     <div className="bg-surface border border-border p-5 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
       {/* Left Content: Link icon followed by dynamic Project ID title and subtitle */}
@@ -22,7 +26,7 @@ export const ProjectHeader: React.FC<ProjectHeaderProps> = ({
         <div>
           <div className="flex items-center gap-2 mb-1">
             <h1 className="font-lexend text-xl md:text-2xl font-bold text-primary tracking-tight">
-              Project {projectId}
+              Project {formattedProjectId}
             </h1>
           </div>
           <p className="text-xs md:text-sm text-muted font-medium">

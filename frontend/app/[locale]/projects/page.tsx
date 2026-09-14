@@ -27,6 +27,8 @@ import {
 import toast from "react-hot-toast";
 import { useTranslations } from "next-intl";
 
+import { api, handleApiError } from "@/app/lib/axios";
+
 interface ProjectItem {
   id: string;
   productName: string;
@@ -56,102 +58,106 @@ export default function ProjectsPage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("list");
 
   const [newProject, setNewProject] = useState({
-    productName: "Paracetamol Extra KZ",
-    manufacturer: "PharmKazakhstan Manufacturing JSC",
-    dosageForm: "Tablets 500mg",
-    drugType: "Generics / Small Molecule",
-    additionalFeature: "EAEU Mutual Recognition Procedure, Fast-Track Review",
-    mah: "MedTech Alliance LLP",
-    responsiblePerson: "Dr. Alikhan Saparov",
-    assignedTariff: "Tariff OWN",
-    tariffComment: "Unlimited annual regulatory submission license",
+    productName: "",
+    manufacturer: "",
+    dosageForm: "",
+    drugType: "",
+    additionalFeature: "",
+    mah: "",
+    responsiblePerson: "",
+    assignedTariff: "",
+    tariffComment: "",
     date: new Date().toISOString().split("T")[0],
-    projectVolume: "150,000 Packs / Year",
-    submissionCountry: "Kazakhstan (Astana)",
-    submissionRole: "Reference Member State (RMS)",
-    initialSequence: "0000",
+    projectVolume: "",
+    submissionCountry: "",
+    submissionRole: "",
+    initialSequence: "Sequence 0000",
   });
 
-  const [projects, setProjects] = useState<ProjectItem[]>([
-    {
-      id: "PRJ-KZ-2026-001",
-      productName: "Paracetamol Extra KZ",
-      manufacturer: "PharmKazakhstan JSC",
-      dosageForm: "Tablets 500mg",
-      drugType: "Generics / Small Molecule",
-      additionalFeature: "EAEU Mutual Recognition Procedure, Fast-Track Review",
-      mah: "MedTech Alliance LLP",
-      responsiblePerson: "Dr. Alikhan Saparov",
-      assignedTariff: "Tariff OWN",
-      tariffComment: "Unlimited annual regulatory submission license",
-      date: "2026-09-11",
-      projectVolume: "150,000 Packs / Year",
-      status: "In Progress",
-      country: "Kazakhstan",
-      role: "Reference Member State (RMS)",
-      sequence: "0004",
-    },
-    {
-      id: "PRJ-KZ-2026-002",
-      productName: "Amoxicillin Forte",
-      manufacturer: "BioMed Almaty",
-      dosageForm: "Capsules 250mg",
-      drugType: "Antibiotic / Prescription",
-      additionalFeature: "Cold-Chain Storage 2-8°C, Bioequivalence Validated",
-      mah: "BioMed Eurasia Pharma",
-      responsiblePerson: "Aisha Nurbekova",
-      assignedTariff: "Tariff M",
-      tariffComment: "Standard M-Tier Review & Expedited Processing",
-      date: "2026-09-05",
-      projectVolume: "50,000 Packs / Year",
-      status: "Submitted / Approved",
-      country: "Kazakhstan",
-      role: "Concerned Member State (CMS)",
-      sequence: "0002",
-    },
-    {
-      id: "PRJ-KZ-2026-003",
-      productName: "Ibuprofen Oral Solution",
-      manufacturer: "KazPharma Synthetics",
-      dosageForm: "Syrup 100mg/5ml",
-      drugType: "OTC / Analgesic",
-      additionalFeature: "Pediatric Formulation, Sugar-Free Flavoring",
-      mah: "KazPharma Global Holdco",
-      responsiblePerson: "Murat Yertayev",
-      assignedTariff: "Tariff L",
-      tariffComment: "Fast-track national filing & batch release",
-      date: "2026-09-01",
-      projectVolume: "80,000 Bottles / Year",
-      status: "In Progress",
-      country: "Kazakhstan",
-      role: "National Submission",
-      sequence: "0001",
-    },
-  ]);
+  const [projects, setProjects] = useState<ProjectItem[]>([]);
 
-  const handleCreateProject = (e: React.FormEvent) => {
-    e.preventDefault();
-    const created: ProjectItem = {
-      id: `PRJ-KZ-2026-00${projects.length + 1}`,
-      productName: newProject.productName,
-      manufacturer: newProject.manufacturer,
-      dosageForm: newProject.dosageForm,
-      drugType: newProject.drugType,
-      additionalFeature: newProject.additionalFeature,
-      mah: newProject.mah,
-      responsiblePerson: newProject.responsiblePerson,
-      assignedTariff: newProject.assignedTariff,
-      tariffComment: newProject.tariffComment,
-      date: newProject.date,
-      projectVolume: newProject.projectVolume,
-      status: "In Progress",
-      country: newProject.submissionCountry,
-      role: newProject.submissionRole,
-      sequence: newProject.initialSequence,
+  // Fetch real projects from backend database
+  React.useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        const response = await api.get("/projects");
+        if (response.data?.success && Array.isArray(response.data?.data)) {
+          const dbProjects: ProjectItem[] = response.data.data.map((p: any) => ({
+            id: String(p.id),
+            productName: p.productName,
+            manufacturer: p.manufacturer || "-",
+            dosageForm: p.dosageForm || "-",
+            drugType: p.productType || "-",
+            additionalFeature: p.projectCode || "eCTD Dossier",
+            mah: p.mahHolder || "-",
+            responsiblePerson: p.responsibleUser || "-",
+            assignedTariff: p.tariff || "-",
+            tariffComment: "eCTD Regulatory Submission License",
+            date: p.createdAt ? p.createdAt.split("T")[0] : new Date().toISOString().split("T")[0],
+            projectVolume: "-",
+            status: p.status || "In Progress",
+            country: p.dossierConfig?.submissionCountry || "-",
+            role: p.dossierConfig?.role || "-",
+            sequence: p.dossierConfig?.dossierSequence || "0000",
+          }));
+          setProjects(dbProjects);
+        }
+      } catch (err: any) {
+        console.warn("Could not fetch projects from backend API:", err?.message);
+      }
     };
-    setProjects([created, ...projects]);
-    setShowCreateModal(false);
-    toast.success(`Project ${created.id} created successfully!`);
+
+    fetchProjects();
+  }, []);
+
+  const handleCreateProject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const payload = {
+        productName: newProject.productName,
+        dosageForm: newProject.dosageForm,
+        productType: newProject.drugType,
+        manufacturer: newProject.manufacturer,
+        mahHolder: newProject.mah,
+        responsibleUser: newProject.responsiblePerson,
+        tariff: newProject.assignedTariff,
+        submissionCountry: newProject.submissionCountry,
+        role: newProject.submissionRole,
+        dossierSequence: newProject.initialSequence,
+      };
+
+      const response = await api.post("/projects", payload);
+      if (response.data?.success) {
+        const createdData = response.data.data;
+        const createdProjectObj = createdData.project;
+        const createdConfigObj = createdData.config;
+
+        const created: ProjectItem = {
+          id: String(createdProjectObj.id),
+          productName: createdProjectObj.productName,
+          manufacturer: createdProjectObj.manufacturer || newProject.manufacturer,
+          dosageForm: createdProjectObj.dosageForm || newProject.dosageForm,
+          drugType: createdProjectObj.productType || newProject.drugType,
+          additionalFeature: newProject.additionalFeature,
+          mah: createdProjectObj.mahHolder || newProject.mah,
+          responsiblePerson: createdProjectObj.responsibleUser || newProject.responsiblePerson,
+          assignedTariff: createdProjectObj.tariff || newProject.assignedTariff,
+          tariffComment: newProject.tariffComment,
+          date: createdProjectObj.createdAt ? createdProjectObj.createdAt.split("T")[0] : newProject.date,
+          projectVolume: newProject.projectVolume,
+          status: createdProjectObj.status || "In Progress",
+          country: createdConfigObj?.submissionCountry || newProject.submissionCountry,
+          role: createdConfigObj?.role || newProject.submissionRole,
+          sequence: createdConfigObj?.dossierSequence || newProject.initialSequence,
+        };
+
+        setProjects([created, ...projects]);
+        setShowCreateModal(false);
+        toast.success(`Project ${created.productName} created successfully in database!`);
+      }
+    } catch (err) {
+      handleApiError(err, "Failed to create project in database");
+    }
   };
 
   const handleDeleteProject = (id: string) => {
@@ -228,11 +234,10 @@ export default function ProjectsPage() {
               <button
                 onClick={() => setViewMode("grid")}
                 title="Grid View"
-                className={`p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
-                  viewMode === "grid"
+                className={`p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${viewMode === "grid"
                     ? "bg-accent text-white shadow-xs"
                     : "text-secondary hover:text-primary hover:bg-surface"
-                }`}
+                  }`}
               >
                 <SquaresFour size={16} />
                 <span className="hidden md:inline text-[11px]">Grid</span>
@@ -241,11 +246,10 @@ export default function ProjectsPage() {
               <button
                 onClick={() => setViewMode("list")}
                 title="List View"
-                className={`p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
-                  viewMode === "list"
+                className={`p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${viewMode === "list"
                     ? "bg-accent text-white shadow-xs"
                     : "text-secondary hover:text-primary hover:bg-surface"
-                }`}
+                  }`}
               >
                 <List size={16} />
                 <span className="hidden md:inline text-[11px]">List</span>
@@ -278,13 +282,14 @@ export default function ProjectsPage() {
                 <div>
                   <div className="flex items-center justify-between pb-3 border-b border-border mb-3">
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs font-bold text-accent">{prj.id}</span>
+                      <span className="font-mono text-xs font-bold text-accent">
+                        {prj.id.startsWith("PRJ-") ? prj.id : `PRJ-${prj.id}`}
+                      </span>
                       <span
-                        className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                          prj.status.includes("Approved")
+                        className={`text-[10px] font-bold px-2 py-0.5 rounded ${prj.status.includes("Approved")
                             ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
                             : "bg-accent/10 text-accent border border-accent/20"
-                        }`}
+                          }`}
                       >
                         {prj.status}
                       </span>
@@ -369,7 +374,9 @@ export default function ProjectsPage() {
                       {/* 1. Product Name */}
                       <td className="py-3.5 px-4">
                         <div className="flex flex-col min-w-[140px]">
-                          <span className="font-mono text-[10px] font-bold text-accent">{prj.id}</span>
+                          <span className="font-mono text-[10px] font-bold text-accent">
+                            {prj.id.startsWith("PRJ-") ? prj.id : `PRJ-${prj.id}`}
+                          </span>
                           <span className="font-lexend font-bold text-primary group-hover:text-accent transition-colors text-xs">
                             {prj.productName}
                           </span>
@@ -418,11 +425,10 @@ export default function ProjectsPage() {
                       {/* 9. Status */}
                       <td className="py-3.5 px-4 whitespace-nowrap">
                         <span
-                          className={`text-[10px] font-bold px-2 py-0.5 rounded inline-block ${
-                            prj.status.includes("Approved")
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded inline-block ${prj.status.includes("Approved")
                               ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
                               : "bg-accent/10 text-accent border border-accent/20"
-                          }`}
+                            }`}
                         >
                           {prj.status}
                         </span>
@@ -603,7 +609,7 @@ export default function ProjectsPage() {
                   <SlidersHorizontal size={22} className="text-accent" />
                   <div>
                     <h2 className="font-lexend font-bold text-base text-primary">
-                      Project Configuration ({activeSettingsProject.id})
+                      Project Configuration ({activeSettingsProject.id.startsWith("PRJ-") ? activeSettingsProject.id : `PRJ-${activeSettingsProject.id}`})
                     </h2>
                     <p className="text-[11px] text-secondary">{activeSettingsProject.productName}</p>
                   </div>

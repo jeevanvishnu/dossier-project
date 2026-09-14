@@ -1,17 +1,17 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Clock,
   MagnifyingGlass,
   DownloadSimple,
   User,
-  TerminalWindow,
   CheckCircle,
   WarningCircle,
   XCircle,
 } from "@phosphor-icons/react";
 import toast from "react-hot-toast";
+import { api, handleApiError } from "@/app/lib/axios";
 
 interface AuditLogRow {
   id: string;
@@ -22,10 +22,13 @@ interface AuditLogRow {
   resultLog: string;
 }
 
-export const DossierHistoryView: React.FC = () => {
-  const [searchQuery, setSearchQuery] = useState<string>("");
+interface DossierHistoryViewProps {
+  projectId?: string;
+}
 
-  const historyLogs: AuditLogRow[] = [
+export const DossierHistoryView: React.FC<DossierHistoryViewProps> = ({ projectId = "1" }) => {
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [historyLogs, setHistoryLogs] = useState<AuditLogRow[]>([
     {
       id: "log-1",
       formationDate: "2026-09-13 11:20:14",
@@ -42,50 +45,54 @@ export const DossierHistoryView: React.FC = () => {
       status: "WARNING",
       resultLog: "WARNING: Module 1.3 SmPC document checksum validated with non-critical encoding warning.",
     },
-    {
-      id: "log-3",
-      formationDate: "2026-09-12 16:45:02",
-      userCredentials: "Dr. Alikhan Saparov",
-      userId: "USR-902",
-      status: "SUCCESS",
-      resultLog: "SUCCESS: Cover Letter PDF uploaded into Module 1.0 with computed MD5 checksum.",
-    },
-    {
-      id: "log-4",
-      formationDate: "2026-09-12 12:00:19",
-      userCredentials: "System Validator",
-      userId: "SYS-001",
-      status: "ERROR",
-      resultLog: "ERROR: DTD validation failed for index.xml draft in Sequence 0001 (Schema schema-kz-v1.2 failed).",
-    },
-    {
-      id: "log-5",
-      formationDate: "2026-09-11 14:02:59",
-      userCredentials: "Elena Vance",
-      userId: "USR-405",
-      status: "SUCCESS",
-      resultLog: "SUCCESS: Initial XML structure generated for Sequence 0000.",
-    },
-    {
-      id: "log-6",
-      formationDate: "2026-09-10 09:15:33",
-      userCredentials: "Dr. Alikhan Saparov",
-      userId: "USR-902",
-      status: "SUCCESS",
-      resultLog: "SUCCESS: Project PRJ-KZ-2026-001 initialized for Kazakhstan submission.",
-    },
-  ];
+  ]);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
-  const filteredLogs = historyLogs.filter(
-    (log) =>
-      log.resultLog.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      log.userCredentials.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      log.formationDate.includes(searchQuery) ||
-      log.status.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Fetch real audit logs from backend API
+  useEffect(() => {
+    if (!projectId) return;
 
-  const handleExportCSV = () => {
-    toast.success("Exporting Dossier History audit trail as CSV...");
+    const fetchAuditLogs = async () => {
+      setIsLoading(true);
+      try {
+        const response = await api.get(`/projects/${projectId}/audit-logs`, {
+          params: { search: searchQuery },
+        });
+
+        if (response.data?.success && Array.isArray(response.data?.data)) {
+          const apiLogs: AuditLogRow[] = response.data.data.map((log: any) => ({
+            id: `log-${log.id}`,
+            formationDate: log.formationDate ? new Date(log.formationDate).toLocaleString() : new Date().toLocaleString(),
+            userCredentials: log.userCredentials || "System",
+            userId: `LOG-${log.id}`,
+            status: log.logType as "SUCCESS" | "WARNING" | "ERROR",
+            resultLog: `${log.logType}: ${log.message}`,
+          }));
+
+          setHistoryLogs(apiLogs);
+        }
+      } catch (err: any) {
+        console.warn("Could not fetch audit logs from API:", err?.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    const timeoutId = setTimeout(() => {
+      fetchAuditLogs();
+    }, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [projectId, searchQuery]);
+
+  const handleExportCSV = async () => {
+    try {
+      const exportUrl = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/projects/${projectId}/audit-logs/export`;
+      window.open(exportUrl, "_blank");
+      toast.success("Downloading audit logs CSV...");
+    } catch (err) {
+      handleApiError(err, "Failed to export audit logs CSV");
+    }
   };
 
   const getLogStyle = (status: "SUCCESS" | "WARNING" | "ERROR") => {
@@ -162,14 +169,20 @@ export const DossierHistoryView: React.FC = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {filteredLogs.length === 0 ? (
+            {isLoading ? (
+              <tr>
+                <td colSpan={3} className="py-8 text-center text-muted text-xs">
+                  Loading audit logs...
+                </td>
+              </tr>
+            ) : historyLogs.length === 0 ? (
               <tr>
                 <td colSpan={3} className="py-8 text-center text-muted text-xs">
                   No audit logs matching your search filter.
                 </td>
               </tr>
             ) : (
-              filteredLogs.map((log) => {
+              historyLogs.map((log) => {
                 const style = getLogStyle(log.status);
                 return (
                   <tr key={log.id} className="hover:bg-surface-raised transition-colors">
@@ -184,7 +197,7 @@ export const DossierHistoryView: React.FC = () => {
                         <User size={13} className="text-accent" weight="bold" />
                         <span>{log.userCredentials}</span>
                         <span className="font-mono text-[10px] text-muted font-bold">
-                          (ID: {log.userId})
+                          ({log.userId})
                         </span>
                       </div>
                     </td>
@@ -206,4 +219,3 @@ export const DossierHistoryView: React.FC = () => {
     </div>
   );
 };
-

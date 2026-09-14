@@ -1,13 +1,18 @@
+import dotenv from "dotenv";
+dotenv.config();
+
 import express, { Request, Response } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import dotenv from "dotenv";
 import { db } from "./db/db";
 import { sql } from "drizzle-orm";
 import authRouter from "./router/auth.router";
-import projectRouter from "./router/project.router";
+import projectRoutes from "./router/project.routes";
+import memberRoutes from "./router/member.routes";
+import documentRoutes from "./router/document.routes";
+import auditRoutes from "./router/audit.routes";
+import compilationRoutes from "./router/compilation.routes";
 
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -20,10 +25,16 @@ app.use(cookieParser());
 
 // ─── API Routes ──────────────────────────────────────────────────────────────
 app.use("/api/auth", authRouter);
-app.use("/api/projects", projectRouter);
+
+// eCTD Project & Dossier Management Routes
+app.use("/api/projects", projectRoutes);
+app.use("/api/projects", memberRoutes);
+app.use("/api/projects", documentRoutes);
+app.use("/api/projects", auditRoutes);
+app.use("/api/projects", compilationRoutes);
 
 app.get("/", (req: Request, res: Response) => {
-  res.json({ message: "ECTC-XML Backend API is running." });
+  res.json({ message: "eCTD Regulatory Dossier Management API is running." });
 });
 
 // Database Health Check Route
@@ -48,8 +59,15 @@ app.get("/health", async (req: Request, res: Response) => {
   }
 });
 
+import { ensureDatabaseSchema } from "./db/sync_schema";
+
 // Start Server
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
   console.log(`📊 Health check available at http://localhost:${PORT}/health`);
+  try {
+    await ensureDatabaseSchema();
+  } catch (err: any) {
+    console.error("Warning: Automatic DB schema sync on startup encountered an issue:", err?.message);
+  }
 });
