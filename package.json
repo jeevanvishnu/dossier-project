@@ -1,9 +1,0 @@
-{
-  "name": "ectc-xml-root",
-  "private": true,
-  "scripts": {
-    "build": "npm --prefix backend run build",
-    "start": "npm --prefix backend start",
-    "render-build": "npm --prefix backend install && npm --prefix backend run build"
-  }
-}
