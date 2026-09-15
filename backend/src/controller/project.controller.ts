@@ -17,15 +17,31 @@ function generateProjectCode(): string {
  */
 export async function getProjects(req: Request, res: Response): Promise<void> {
   try {
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.max(1, parseInt(req.query.limit as string) || 10);
+    const offset = (page - 1) * limit;
+
     const projectsList = await db.query.projects.findMany({
       with: { dossierConfig: true },
       orderBy: [desc(projects.createdAt)],
+      limit,
+      offset,
     });
+    
+    // Fallback count query since count() can be tricky across different drizzle versions
+    const allProjects = await db.query.projects.findMany({ columns: { id: true } });
+    const totalCount = allProjects.length;
 
     res.status(200).json({
       success: true,
       count: projectsList.length,
       data: projectsList,
+      pagination: {
+        total: totalCount,
+        page,
+        limit,
+        totalPages: Math.ceil(totalCount / limit)
+      }
     });
   } catch (error: any) {
     console.error("[Get Projects Error]", error);

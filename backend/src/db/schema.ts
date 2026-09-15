@@ -1,4 +1,4 @@
-import { pgEnum, pgTable, serial, text, timestamp, varchar, integer, boolean } from "drizzle-orm/pg-core";
+import { pgEnum, pgTable, serial, text, timestamp, varchar, integer, boolean, index } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
 // ─── ENUMS ───────────────────────────────────────────────────────────────────
@@ -14,10 +14,30 @@ export const users = pgTable("users", {
   email: varchar("email", { length: 255 }).notNull().unique(),
   password: text("password").notNull(),
   role: roleEnum("role").default("user").notNull(),
-  refreshToken: text("refresh_token"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("idx_users_email").on(table.email),
+]);
+
+export const refreshSessions = pgTable("refresh_sessions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull(),
+  tokenHash: text("token_hash").notNull(),
+  familyId: varchar("family_id", { length: 36 }).notNull(),
+  familyCreatedAt: timestamp("family_created_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  revokedAt: timestamp("revoked_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_refresh_sessions_user_id").on(table.userId),
+  index("idx_refresh_sessions_token_hash").on(table.tokenHash),
+  index("idx_refresh_sessions_family_id").on(table.familyId),
+  index("idx_refresh_sessions_expires_at").on(table.expiresAt),
+]);
 
 export const projects = pgTable("projects", {
   id: serial("id").primaryKey(),
@@ -107,6 +127,18 @@ export const packageArchives = pgTable("package_archives", {
 });
 
 // ─── RELATIONS ───────────────────────────────────────────────────────────────
+export const usersRelations = relations(users, ({ many }) => ({
+  refreshSessions: many(refreshSessions),
+  projectMembers: many(projectMembers),
+}));
+
+export const refreshSessionsRelations = relations(refreshSessions, ({ one }) => ({
+  user: one(users, {
+    fields: [refreshSessions.userId],
+    references: [users.id],
+  }),
+}));
+
 export const projectsRelations = relations(projects, ({ one, many }) => ({
   dossierConfig: one(dossierConfig, {
     fields: [projects.id],
@@ -161,6 +193,9 @@ export const packageArchivesRelations = relations(packageArchives, ({ one }) => 
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 
+export type RefreshSession = typeof refreshSessions.$inferSelect;
+export type NewRefreshSession = typeof refreshSessions.$inferInsert;
+
 export type Project = typeof projects.$inferSelect;
 export type NewProject = typeof projects.$inferInsert;
 
@@ -178,3 +213,4 @@ export type NewAuditLog = typeof auditLogs.$inferInsert;
 
 export type PackageArchive = typeof packageArchives.$inferSelect;
 export type NewPackageArchive = typeof packageArchives.$inferInsert;
+

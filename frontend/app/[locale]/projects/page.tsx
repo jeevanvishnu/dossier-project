@@ -83,12 +83,16 @@ export default function ProjectsPage() {
   const [isUpdatingProject, setIsUpdatingProject] = useState<boolean>(false);
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
 
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [totalPages, setTotalPages] = useState<number>(1);
+  const itemsPerPage = 10;
+
   // Fetch real projects from backend database
   React.useEffect(() => {
     const fetchProjects = async () => {
       setIsLoadingProjects(true);
       try {
-        const response = await api.get("/projects");
+        const response = await api.get(`/projects?page=${currentPage}&limit=${itemsPerPage}`);
         if (response.data?.success && Array.isArray(response.data?.data)) {
           const dbProjects: ProjectItem[] = response.data.data.map((p: any) => ({
             id: p.projectCode || String(p.id),
@@ -109,6 +113,9 @@ export default function ProjectsPage() {
             sequence: p.dossierConfig?.dossierSequence || "0000",
           }));
           setProjects(dbProjects);
+          if (response.data.pagination) {
+            setTotalPages(response.data.pagination.totalPages || 1);
+          }
         }
       } catch (err: any) {
         console.warn("Could not fetch projects from backend API:", err?.message);
@@ -118,7 +125,7 @@ export default function ProjectsPage() {
     };
 
     fetchProjects();
-  }, []);
+  }, [currentPage]);
 
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -585,6 +592,29 @@ export default function ProjectsPage() {
           </div>
         )}
 
+        {/* Pagination Controls */}
+        {!isLoadingProjects && projects.length > 0 && totalPages > 1 && (
+          <div className="flex items-center justify-center gap-2 mt-6">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="px-3 py-1.5 bg-bg border border-border rounded-lg text-xs font-semibold text-secondary hover:text-primary hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Previous
+            </button>
+            <span className="text-xs text-secondary font-mono">
+              Page {currentPage} of {totalPages}
+            </span>
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1.5 bg-bg border border-border rounded-lg text-xs font-semibold text-secondary hover:text-primary hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
+          </div>
+        )}
+
         {/* Create Project Modal */}
         {showCreateModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
@@ -674,7 +704,7 @@ export default function ProjectsPage() {
                         onChange={(e) => setNewProject({ ...newProject, drugType: e.target.value })}
                         className="w-full bg-bg border border-border rounded-lg p-2.5 pr-8 text-primary outline-none focus:border-accent appearance-none cursor-pointer"
                       >
-                        <option value="" disabled>Select product type...</option>
+                        <option value="" disabled>Select type of medicinal product...</option>
                         <option value="Reproduced (Generic)">Reproduced (Generic)</option>
                         <option value="Original">Original</option>
                         <option value="Biosimilar">Biosimilar</option>
@@ -890,7 +920,7 @@ export default function ProjectsPage() {
                           }
                           className="w-full bg-surface border border-border rounded p-2 pr-8 text-primary text-xs outline-none focus:border-accent appearance-none cursor-pointer"
                         >
-                          <option value="" disabled>Select product type...</option>
+                          <option value="" disabled>Select type of medicinal product...</option>
                           <option value="Reproduced (Generic)">Reproduced (Generic)</option>
                           <option value="Original">Original</option>
                           <option value="Biosimilar">Biosimilar</option>

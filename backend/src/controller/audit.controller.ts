@@ -15,31 +15,53 @@ export async function getAuditLogs(req: Request, res: Response): Promise<void> {
     const searchRaw = req.query.search;
     const searchQuery = typeof searchRaw === "string" ? searchRaw : getSingleParam(searchRaw as any);
 
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.max(1, parseInt(req.query.limit as string) || 10);
+    const offset = (page - 1) * limit;
+
     let logs;
+    let totalCount = 0;
+    
     if (searchQuery && searchQuery.trim().length > 0) {
       const pattern = `%${searchQuery.trim()}%`;
+      const whereClause = and(
+        eq(auditLogs.projectId, projectId),
+        or(
+          ilike(auditLogs.message, pattern),
+          ilike(auditLogs.userCredentials, pattern),
+          ilike(auditLogs.logType, pattern)
+        )
+      );
+      
       logs = await db.query.auditLogs.findMany({
-        where: and(
-          eq(auditLogs.projectId, projectId),
-          or(
-            ilike(auditLogs.message, pattern),
-            ilike(auditLogs.userCredentials, pattern),
-            ilike(auditLogs.logType, pattern)
-          )
-        ),
+        where: whereClause,
         orderBy: [desc(auditLogs.formationDate)],
+        limit,
+        offset,
       });
+      const allMatching = await db.query.auditLogs.findMany({ where: whereClause, columns: { id: true } });
+      totalCount = allMatching.length;
     } else {
       logs = await db.query.auditLogs.findMany({
         where: eq(auditLogs.projectId, projectId),
         orderBy: [desc(auditLogs.formationDate)],
+        limit,
+        offset,
       });
+      const allMatching = await db.query.auditLogs.findMany({ where: eq(auditLogs.projectId, projectId), columns: { id: true } });
+      totalCount = allMatching.length;
     }
 
     res.status(200).json({
       success: true,
       count: logs.length,
       data: logs,
+      pagination: {
+        total: totalCount,
+        page,
+        limit,
+        totalPages: Math.ceil(totalCount / limit)
+      }
     });
   } catch (error: any) {
     console.error("[Get Audit Logs Error]", error);

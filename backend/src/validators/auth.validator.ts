@@ -15,7 +15,19 @@ export const signInSchema = z.object({
     .min(1, "Password is required"),
 });
 
+export const changePasswordSchema = z.object({
+  oldPassword: z
+    .string()
+    .min(1, "Current password is required"),
+
+  newPassword: z
+    .string()
+    .min(8, "New password must be at least 8 characters long"),
+});
+
 // ─────────────────────────────────────────────
 //  Inferred TypeScript Types
 // ─────────────────────────────────────────────
 export type SignInInput = z.infer<typeof signInSchema>;
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>;
+

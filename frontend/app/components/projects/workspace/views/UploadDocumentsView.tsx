@@ -20,8 +20,10 @@ import {
   LockKeyOpen,
   ShieldCheck,
   Warning,
+  UploadSimple,
 } from "@phosphor-icons/react";
 import toast from "react-hot-toast";
+import { Virtuoso } from "react-virtuoso";
 import { ECTD_FULL_TREE, CTDNode } from "@/app/constants/ctdStructure";
 import { api, handleApiError } from "@/app/lib/axios";
 import { SkeletonTableRow } from "@/app/components/ui/Skeleton";
@@ -124,14 +126,17 @@ function findNodeById(nodes: CTDNode[], id: string): CTDNode | null {
   return null;
 }
 
-function countFilesForNode(node: CTDNode, filesMap: Record<string, UploadedFile[]>): number {
-  let count = (filesMap[node.id] || []).length;
-  if (node.children) {
-    for (const child of node.children) {
-      count += countFilesForNode(child, filesMap);
+function getAncestorNodeIds(nodes: CTDNode[], targetId: string, currentPath: string[] = []): string[] | null {
+  for (const node of nodes) {
+    if (node.id === targetId) {
+      return currentPath;
+    }
+    if (node.children) {
+      const found = getAncestorNodeIds(node.children, targetId, [...currentPath, node.id]);
+      if (found) return found;
     }
   }
-  return count;
+  return null;
 }
 
 interface UploadDocumentsViewProps {
@@ -277,63 +282,64 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
     ],
   });
 
-  // Fetch active document from backend whenever selectedModuleId changes
-  useEffect(() => {
-    if (!projectId || !selectedModuleId) return;
+  const expandAncestors = (nodeId: string) => {
+    const ancestors = getAncestorNodeIds(ECTD_FULL_TREE, nodeId);
+    if (ancestors && ancestors.length > 0) {
+      setExpandedNodes((prev) => {
+        const next = { ...prev };
+        ancestors.forEach((ancId) => {
+          next[ancId] = true;
+        });
+        next[nodeId] = true;
+        return next;
+      });
 
-    let isSubscribed = true;
+      const mainModuleId = ancestors[0];
+      if (mainModuleId && mainModuleTabs.some((t) => t.id === mainModuleId)) {
+        setActiveMainModuleId(mainModuleId);
+      }
+    }
+  };
 
-    const fetchDocumentForNode = async () => {
-      setIsLoadingDoc(true);
-      try {
-        const response = await api.get(`/projects/${projectId}/documents/${selectedModuleId}`);
-        if (!isSubscribed) return;
-
-        if (response.data?.success && response.data?.data) {
-          const doc = response.data.data;
-          const formatted: UploadedFile = {
+  const fetchAllDocuments = async () => {
+    if (!projectId) return;
+    try {
+      const response = await api.get(`/projects/${projectId}/documents`);
+      if (response.data?.success && Array.isArray(response.data?.data)) {
+        const docs = response.data.data;
+        const newMap: Record<string, UploadedFile[]> = {};
+        docs.forEach((doc: any) => {
+          const uploadedAtDate = doc.uploadedAt ? new Date(doc.uploadedAt) : new Date();
+          const item: UploadedFile = {
             id: String(doc.id),
             name: doc.originalName,
             sequence: doc.sequence || "0000",
-            uploadDate: doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleDateString() : "14.08.2023",
-            completionDate: doc.uploadedAt ? new Date(doc.uploadedAt).toLocaleDateString() : "14.08.2023",
-            md5Hash: doc.md5Checksum ? doc.md5Checksum.slice(0, 10) + "..." : "MD5",
+            uploadDate: isNaN(uploadedAtDate.getTime()) ? new Date().toLocaleDateString() : uploadedAtDate.toLocaleDateString(),
+            completionDate: isNaN(uploadedAtDate.getTime()) ? new Date().toLocaleDateString() : uploadedAtDate.toLocaleDateString(),
+            md5Hash: doc.md5Checksum ? (doc.md5Checksum.length > 15 ? doc.md5Checksum.slice(0, 10) + "..." : doc.md5Checksum) : "MD5",
             imageKitUrl: doc.imageKitUrl,
             issueDate: doc.issueDate ? new Date(doc.issueDate).toISOString() : undefined,
             expirationDate: doc.expirationDate ? new Date(doc.expirationDate).toISOString() : undefined,
           };
-          setModuleFiles((prev) => ({
-            ...prev,
-            [selectedModuleId]: [formatted],
-          }));
-        }
-      } catch (err: any) {
-        // If 404, node doesn't have an active document yet on backend
-        if (isSubscribed) {
-          // If no active file from backend and node is not pre-seeded, clear to empty list
-          setModuleFiles((prev) => {
-            if (prev[selectedModuleId] && prev[selectedModuleId][0]?.id?.startsWith("file-")) {
-              return prev; // keep initial mock template if present
-            }
-            return {
-              ...prev,
-              [selectedModuleId]: prev[selectedModuleId] || [],
-            };
-          });
-        }
-      } finally {
-        if (isSubscribed) {
-          setIsLoadingDoc(false);
-        }
+          if (!newMap[doc.nodeId]) {
+            newMap[doc.nodeId] = [];
+          }
+          newMap[doc.nodeId].push(item);
+        });
+        setModuleFiles((prev) => ({
+          ...prev,
+          ...newMap,
+        }));
       }
-    };
+    } catch (err: any) {
+      console.warn("Could not fetch all project documents", err);
+    }
+  };
 
-    fetchDocumentForNode();
-
-    return () => {
-      isSubscribed = false;
-    };
-  }, [projectId, selectedModuleId]);
+  // Fetch all project documents on initial mount & whenever projectId changes
+  useEffect(() => {
+    fetchAllDocuments();
+  }, [projectId]);
 
   const activeRootModule = useMemo(() => {
     return ECTD_FULL_TREE.find((m) => m.id === activeMainModuleId) || ECTD_FULL_TREE[0];
@@ -447,6 +453,9 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
             [selectedModuleId]: [newFileItem],
           }));
 
+          expandAncestors(selectedModuleId);
+          fetchAllDocuments();
+
           toast.success(`Uploaded ${doc.originalName} (${selectedOperation.toUpperCase()}) successfully!`);
         }
       }
@@ -531,6 +540,51 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
     }
   };
 
+  const countFilesForNode = (node: CTDNode, filesMap: Record<string, UploadedFile[]>): number => {
+    let count = filesMap[node.id] ? filesMap[node.id].length : 0;
+    if (node.children) {
+      for (const child of node.children) {
+        count += countFilesForNode(child, filesMap);
+      }
+    }
+    return count;
+  };
+
+  interface FlatNode {
+    node: CTDNode;
+    depth: number;
+  }
+
+  const getFlattenedTree = (
+    nodes: CTDNode[],
+    depth: number,
+    expanded: Record<string, boolean>,
+    searchQ: string
+  ): FlatNode[] => {
+    let result: FlatNode[] = [];
+    for (const node of nodes) {
+      if (searchQ && !matchesSearch(node, searchQ)) {
+        continue;
+      }
+      result.push({ node, depth });
+      const isExpanded = searchQ ? true : !!expanded[node.id];
+      if (isExpanded && node.children) {
+        result = result.concat(getFlattenedTree(node.children, depth + 1, expanded, searchQ));
+      }
+    }
+    return result;
+  };
+
+  const flatTree = useMemo(() => {
+    if (activeRootModule.children) {
+      return getFlattenedTree(activeRootModule.children, 0, expandedNodes, searchQuery);
+    }
+    return getFlattenedTree([activeRootModule], 0, expandedNodes, searchQuery);
+  }, [activeRootModule, expandedNodes, searchQuery]);
+
+  const selectedNodeLabel = `${activeNode.code ? activeNode.code + " " : ""}${activeNode.docId ? "- " + activeNode.docId + " " : ""
+    }${getNodeTitle(activeNode)}`;
+
   const handleConfirmDeleteFile = async () => {
     if (!deleteConfirmFile) return;
     setIsDeletingFile(true);
@@ -540,6 +594,7 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
         ...prev,
         [selectedModuleId]: (prev[selectedModuleId] || []).filter((f) => f.id !== deleteConfirmFile.id),
       }));
+      fetchAllDocuments();
       toast.success(`Removed ${deleteConfirmFile.name} and created eCTD tombstone.`);
       setDeleteConfirmFile(null);
     } catch (err) {
@@ -565,79 +620,6 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
     }
     return false;
   };
-
-  const renderTreeNode = (node: CTDNode, depth: number = 0) => {
-    if (searchQuery && !matchesSearch(node, searchQuery)) {
-      return null;
-    }
-
-    const isSelected = selectedModuleId === node.id;
-    const isFolder = node.isFolder || (node.children && node.children.length > 0);
-    const isExpanded = searchQuery ? true : !!expandedNodes[node.id];
-    const fileCount = countFilesForNode(node, moduleFiles);
-
-    return (
-      <div key={node.id} className="space-y-0.5">
-        <div
-          onClick={() => setSelectedModuleId(node.id)}
-          style={{ paddingLeft: `${depth * 12 + 6}px` }}
-          className={`flex items-center justify-between py-1.5 px-2 rounded text-xs font-medium cursor-pointer transition-colors ${isSelected
-            ? "bg-sky-100 dark:bg-sky-950/60 border border-sky-300 dark:border-sky-700 text-sky-900 dark:text-sky-200 font-semibold"
-            : "hover:bg-gray-100 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-300 border border-transparent"
-            }`}
-        >
-          <div className="flex items-center gap-1.5 min-w-0 pr-2">
-            {isFolder ? (
-              <button
-                type="button"
-                onClick={(e) => toggleExpand(node.id, e)}
-                className="p-0.5 hover:bg-gray-200 dark:hover:bg-slate-700 rounded text-slate-500 shrink-0 cursor-pointer"
-              >
-                {isExpanded ? <CaretDown size={12} weight="bold" /> : <CaretRight size={12} weight="bold" />}
-              </button>
-            ) : (
-              <span className="w-3 shrink-0" />
-            )}
-
-            {isFolder ? (
-              isExpanded ? (
-                <FolderOpen size={16} weight="fill" className="text-amber-500 shrink-0" />
-              ) : (
-                <Folder size={16} weight="regular" className="text-amber-500 shrink-0" />
-              )
-            ) : (
-              <FilePdf
-                size={16}
-                weight="fill"
-                className={isSelected ? "text-emerald-600 dark:text-emerald-400 shrink-0" : "text-red-500/80 shrink-0"}
-              />
-            )}
-
-            <span className="truncate text-[11.5px] leading-snug">
-              {node.code && <span className="font-semibold text-slate-900 dark:text-slate-100 mr-1">{node.code}</span>}
-              {node.docId && <span className="font-bold text-slate-800 dark:text-slate-200 mr-1">- {node.docId}</span>}
-              <span>{getNodeTitle(node)}</span>
-            </span>
-          </div>
-
-          {fileCount > 0 && (
-            <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-sky-600 text-white font-mono shrink-0">
-              {fileCount}
-            </span>
-          )}
-        </div>
-
-        {isFolder && isExpanded && node.children && (
-          <div className="space-y-0.5">
-            {node.children.map((child) => renderTreeNode(child, depth + 1))}
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const selectedNodeLabel = `${activeNode.code ? activeNode.code + " " : ""}${activeNode.docId ? "- " + activeNode.docId + " " : ""
-    }${getNodeTitle(activeNode)}`;
 
   return (
     <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs space-y-4 font-sans text-slate-800 dark:text-slate-200">
@@ -738,12 +720,71 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
             />
           </div>
 
-          <div className="overflow-y-auto pr-1 space-y-0.5 max-h-[520px] custom-scrollbar flex-1">
-            {activeRootModule.children ? (
-              activeRootModule.children.map((child) => renderTreeNode(child, 0))
-            ) : (
-              renderTreeNode(activeRootModule, 0)
-            )}
+          <div className="flex-1 h-[520px]">
+            <Virtuoso
+              style={{ height: '100%', width: '100%' }}
+              data={flatTree}
+              itemContent={(_index, flatNode) => {
+                const { node, depth } = flatNode;
+                const isSelected = selectedModuleId === node.id;
+                const isFolder = node.isFolder || (node.children && node.children.length > 0);
+                const isExpanded = searchQuery ? true : !!expandedNodes[node.id];
+                const fileCount = countFilesForNode(node, moduleFiles);
+
+                return (
+                  <div key={node.id} className="pb-0.5 pr-1">
+                    <div
+                      onClick={() => setSelectedModuleId(node.id)}
+                      style={{ paddingLeft: `${depth * 12 + 6}px` }}
+                      className={`flex items-center justify-between py-1.5 px-2 rounded text-xs font-medium cursor-pointer transition-colors ${isSelected
+                        ? "bg-sky-100 dark:bg-sky-950/60 border border-sky-300 dark:border-sky-700 text-sky-900 dark:text-sky-200 font-semibold"
+                        : "hover:bg-gray-100 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-300 border border-transparent"
+                        }`}
+                    >
+                      <div className="flex items-center gap-1.5 min-w-0 pr-2">
+                        {isFolder ? (
+                          <button
+                            type="button"
+                            onClick={(e) => toggleExpand(node.id, e)}
+                            className="p-0.5 hover:bg-gray-200 dark:hover:bg-slate-700 rounded text-slate-500 shrink-0 cursor-pointer"
+                          >
+                            {isExpanded ? <CaretDown size={12} weight="bold" /> : <CaretRight size={12} weight="bold" />}
+                          </button>
+                        ) : (
+                          <span className="w-3 shrink-0" />
+                        )}
+
+                        {isFolder ? (
+                          isExpanded ? (
+                            <FolderOpen size={16} weight="fill" className="text-amber-500 shrink-0" />
+                          ) : (
+                            <Folder size={16} weight="regular" className="text-amber-500 shrink-0" />
+                          )
+                        ) : (
+                          <FilePdf
+                            size={16}
+                            weight="fill"
+                            className={isSelected ? "text-emerald-600 dark:text-emerald-400 shrink-0" : "text-red-500/80 shrink-0"}
+                          />
+                        )}
+
+                        <span className="truncate text-[11.5px] leading-snug">
+                          {node.code && <span className="font-semibold text-slate-900 dark:text-slate-100 mr-1">{node.code}</span>}
+                          {node.docId && <span className="font-bold text-slate-800 dark:text-slate-200 mr-1">- {node.docId}</span>}
+                          <span>{getNodeTitle(node)}</span>
+                        </span>
+                      </div>
+
+                      {fileCount > 0 && (
+                        <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-sky-600 text-white font-mono shrink-0">
+                          {fileCount}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                );
+              }}
+            />
           </div>
         </div>
 

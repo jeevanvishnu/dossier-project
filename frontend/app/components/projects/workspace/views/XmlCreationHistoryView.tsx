@@ -7,10 +7,9 @@ import {
   FileZip,
   DownloadSimple,
   Key,
-  Gear,
 } from "@phosphor-icons/react";
 import toast from "react-hot-toast";
-import { api, handleApiError } from "@/app/lib/axios";
+import { api } from "@/app/lib/axios";
 import { SkeletonTableRow } from "@/app/components/ui/Skeleton";
 
 interface XmlPackageRow {
@@ -41,7 +40,6 @@ export const XmlCreationHistoryView: React.FC<XmlCreationHistoryViewProps> = ({ 
     },
   ]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [isCompiling, setIsCompiling] = useState<boolean>(false);
 
   const fetchPackages = async () => {
     if (!projectId) return;
@@ -70,23 +68,6 @@ export const XmlCreationHistoryView: React.FC<XmlCreationHistoryViewProps> = ({ 
   useEffect(() => {
     fetchPackages();
   }, [projectId]);
-
-  const handleCompilePackage = async () => {
-    setIsCompiling(true);
-    toast.loading("Compiling in-memory eCTD XML backbone & ZIP archive...", { id: "compile-toast" });
-    try {
-      const response = await api.post(`/projects/${projectId}/compile`);
-      if (response.data?.success) {
-        toast.success("eCTD Package compiled and uploaded to ImageKit!", { id: "compile-toast" });
-        await fetchPackages();
-      }
-    } catch (err) {
-      toast.dismiss("compile-toast");
-      handleApiError(err, "Failed to compile eCTD dossier package");
-    } finally {
-      setIsCompiling(false);
-    }
-  };
 
   const handleDownload = (packageName: string, downloadUrl: string) => {
     if (downloadUrl && downloadUrl !== "#") {
@@ -118,15 +99,6 @@ export const XmlCreationHistoryView: React.FC<XmlCreationHistoryViewProps> = ({ 
           </div>
 
           <div className="flex items-center gap-3">
-            <button
-              onClick={handleCompilePackage}
-              disabled={isCompiling}
-              type="button"
-              className="px-4 py-2 bg-accent hover:bg-accent-hover text-white font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
-            >
-              <Gear size={16} className={isCompiling ? "animate-spin" : ""} weight="bold" />
-              <span>{isCompiling ? tWorkspace("compilingBtn") : tWorkspace("btnCompilePackage")}</span>
-            </button>
             <span className="text-xs font-bold px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono">
               {tWorkspace("archivesCount")}: {xmlPackages.length}
             </span>

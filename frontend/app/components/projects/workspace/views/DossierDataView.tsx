@@ -243,7 +243,7 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
   // Section 1: Save Project Data
   const handleSaveCard1 = async () => {
     if (!medicinalState.productName.trim()) {
-      toast.error("Product Name is required.");
+      toast.error("Dossier Name is required.");
       return;
     }
     setIsSavingProject(true);
@@ -314,7 +314,7 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
       return;
     }
     if (!configState.submissionCountry || !configState.procedureType) {
-      toast.error("Submission Country and Procedure Type are required.");
+      toast.error("Submission Country and Procedure Sub-type are required.");
       return;
     }
     setIsSavingDossier(true);
@@ -617,7 +617,7 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
         {activeSubTab === "Medicinal Product" && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {renderTextInput(
-              "Product Name",
+              "Dossier Name",
               medicinalState.productName,
               (val) => setMedicinalState({ ...medicinalState, productName: val }),
               isProjectSaved,
@@ -637,7 +637,7 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
               isSection1Disabled
             )}
             {renderSelectInput(
-              "Product Type",
+              "Type of Medicinal Product",
               medicinalState.productType,
               (val) => setMedicinalState({ ...medicinalState, productType: val }),
               [
@@ -1100,7 +1100,7 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
           )}
 
           {renderSelectInput(
-            "Procedure Type",
+            "Procedure Sub-type",
             configState.procedureType,
             (val) => setConfigState({ ...configState, procedureType: val }),
             [

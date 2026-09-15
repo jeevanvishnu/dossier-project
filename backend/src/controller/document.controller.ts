@@ -236,6 +236,31 @@ export async function getDocumentByNode(req: Request, res: Response): Promise<vo
   }
 }
 
+export async function getAllProjectDocuments(req: Request, res: Response): Promise<void> {
+  try {
+    const projectId = await resolveProjectId(req.params.id);
+    if (!projectId) {
+      res.status(400).json({ success: false, message: "Invalid project ID." });
+      return;
+    }
+
+    const documents = await db.query.projectDocuments.findMany({
+      where: and(
+        eq(projectDocuments.projectId, projectId),
+        eq(projectDocuments.status, "active")
+      ),
+    });
+
+    res.status(200).json({
+      success: true,
+      data: documents,
+    });
+  } catch (error: any) {
+    console.error("[Get All Project Documents Error]", error);
+    res.status(500).json({ success: false, message: "Failed to fetch project documents" });
+  }
+}
+
 export async function deleteDocumentByNode(req: Request, res: Response): Promise<void> {
   try {
     const projectId = await resolveProjectId(req.params.id);

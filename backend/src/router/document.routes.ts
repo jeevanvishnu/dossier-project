@@ -5,12 +5,21 @@ import { uploadMiddleware } from "../middleware/upload.middleware";
 import {
   uploadDocument,
   getDocumentByNode,
+  getAllProjectDocuments,
   deleteDocumentByNode,
   seedSorbitDossier,
   updateDocumentDates,
 } from "../controller/document.controller";
 
 const router = Router();
+
+// View all active documents for a project (Requires owner, editor, or viewer)
+router.get(
+  "/:id/documents",
+  protect,
+  checkProjectRole("owner", "editor", "viewer"),
+  getAllProjectDocuments
+);
 
 // Upload document for a specific nodeId (Requires owner or editor)
 router.post(

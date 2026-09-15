@@ -71,7 +71,7 @@ export default function StartPage() {
               {tCommon("signIn")}
             </button>
             <button
-              onClick={() => openAuthModal("signup")}
+              onClick={() => openAuthModal("signin")}
               className="px-4 py-2 text-xs font-bold bg-accent hover:bg-accent-hover text-white rounded-lg transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
             >
               <span>{tHero("startProject")}</span>
@@ -101,7 +101,7 @@ export default function StartPage() {
 
           <div className="flex flex-wrap items-center justify-center gap-4">
             <button
-              onClick={() => openAuthModal("signup")}
+              onClick={() => openAuthModal("signin")}
               className="px-6 py-3 bg-accent hover:bg-accent-hover text-white font-bold text-sm rounded-xl shadow-sm transition-all flex items-center gap-2 cursor-pointer"
             >
               <span>{tHero("startProject")}</span>

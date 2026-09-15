@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import { AppShell } from "../../components/AppShell";
-import { ComingSoon } from "../../components/ComingSoon";
 import { FileText, CheckCircle, WarningOctagon, Plus, DownloadSimple, MagnifyingGlass } from "@phosphor-icons/react";
 import toast from "react-hot-toast";
 import { useTranslations } from "next-intl";
@@ -17,7 +16,8 @@ export default function ContractsPage() {
   const [contracts] = useState([
     {
       id: "ECTC-KZ-2026-8812",
-      type: "Annual Storage Lease (Tariff OWN)",
+      typeKey: "typeAnnualLease",
+      typeDefault: "Annual Storage Lease (Tariff OWN)",
       startDate: "2026-01-15",
       endDate: "2027-01-14",
       status: "Active Legal",
@@ -25,7 +25,8 @@ export default function ContractsPage() {
     },
     {
       id: "ECTC-KZ-2025-4102",
-      type: "Monthly Record Tier M",
+      typeKey: "typeMonthlyTierM",
+      typeDefault: "Monthly Record Tier M",
       startDate: "2025-06-01",
       endDate: "2026-05-31",
       status: "Active Legal",
@@ -33,7 +34,8 @@ export default function ContractsPage() {
     },
     {
       id: "ECTC-KZ-2024-1109",
-      type: "Initial Registration Agreement",
+      typeKey: "typeInitialReg",
+      typeDefault: "Initial Registration Agreement",
       startDate: "2024-03-10",
       endDate: "2025-03-09",
       status: "Expired Terms",
@@ -41,7 +43,8 @@ export default function ContractsPage() {
     },
     {
       id: "ECTC-KZ-2023-0045",
-      type: "Pilot Dossier Processing Contract",
+      typeKey: "typePilotDossier",
+      typeDefault: "Pilot Dossier Processing Contract",
       startDate: "2023-01-01",
       endDate: "2023-12-31",
       status: "Expired Terms",
@@ -50,32 +53,23 @@ export default function ContractsPage() {
   ]);
 
   const filteredContracts = contracts.filter((c) => {
-    const matchesSearch = c.id.toLowerCase().includes(searchTerm.toLowerCase()) || c.type.toLowerCase().includes(searchTerm.toLowerCase());
+    const typeLabel = tContracts.has(c.typeKey as any) ? tContracts(c.typeKey as any) : c.typeDefault;
+    const matchesSearch = c.id.toLowerCase().includes(searchTerm.toLowerCase()) || typeLabel.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = filterType === "all" || (filterType === "active" && c.status === "Active Legal") || (filterType === "expired" && c.status === "Expired Terms");
     return matchesSearch && matchesStatus;
   });
 
   const handleDownloadPdf = (contractId: string) => {
-    toast.success(`Downloading signed PDF document for ${contractId}...`);
+    toast.success(tContracts("downloadPdfToast", { id: contractId }));
   };
 
   return (
     <AppShell>
-      {/* Active Coming Soon View */}
-      <ComingSoon
-        title={tContracts("title")}
-        description={tContracts("sub")}
-      />
-
-      {/* 
-      ========================================================================
-      ORIGINAL CONTRACTS PAGE DESIGN CODE (COMMENTED OUT FOR PRESERVATION)
-      ========================================================================
       <div className="space-y-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-surface border border-border p-5 rounded-2xl shadow-xs">
           <div>
             <span className="text-[10px] uppercase tracking-wider font-medium text-accent px-2 py-0.5 rounded bg-accent/10 border border-accent/20">
-              Contract Lifecycle Management
+              {tContracts("badgeLabel")}
             </span>
             <h1 className="font-lexend text-2xl font-bold text-primary mt-1">
               {tContracts("title")}
@@ -86,7 +80,7 @@ export default function ContractsPage() {
           </div>
 
           <button
-            onClick={() => toast.success("Contract Request form initiated.")}
+            onClick={() => toast.success(tContracts("requestInitiatedToast"))}
             className="px-4 py-2 bg-accent hover:bg-accent-hover text-white font-medium text-xs rounded-xl shadow-sm transition-all flex items-center gap-1.5 shrink-0 cursor-pointer"
           >
             <Plus size={16} />
@@ -149,7 +143,7 @@ export default function ContractsPage() {
                   <th className="py-3.5 px-4">{tContracts("colNumber")}</th>
                   <th className="py-3.5 px-4">{tContracts("colType")}</th>
                   <th className="py-3.5 px-4">{tContracts("colPartner")}</th>
-                  <th className="py-3.5 px-4">Start Date</th>
+                  <th className="py-3.5 px-4">{tContracts("colStartDate")}</th>
                   <th className="py-3.5 px-4">{tContracts("colValidUntil")}</th>
                   <th className="py-3.5 px-4">{tContracts("colStatus")}</th>
                   <th className="py-3.5 px-4 text-right">{tContracts("colActions")}</th>
@@ -159,7 +153,9 @@ export default function ContractsPage() {
                 {filteredContracts.map((c) => (
                   <tr key={c.id} className="hover:bg-surface-raised transition-colors">
                     <td className="py-3.5 px-4 font-mono font-bold text-primary">{c.id}</td>
-                    <td className="py-3.5 px-4 font-medium text-primary">{c.type}</td>
+                    <td className="py-3.5 px-4 font-medium text-primary">
+                      {tContracts.has(c.typeKey as any) ? tContracts(c.typeKey as any) : c.typeDefault}
+                    </td>
                     <td className="py-3.5 px-4 text-secondary">{c.parties}</td>
                     <td className="py-3.5 px-4 font-medium">{c.startDate}</td>
                     <td className="py-3.5 px-4 font-medium">{c.endDate}</td>
@@ -192,7 +188,6 @@ export default function ContractsPage() {
           </div>
         </div>
       </div>
-      */}
     </AppShell>
   );
 }

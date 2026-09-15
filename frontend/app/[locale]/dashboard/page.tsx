@@ -43,16 +43,20 @@ export default function DashboardPage() {
   const [announcements] = useState([
     {
       id: "REF-KZ-2026-091",
-      title: "Tax-Regime Classification Notice (2026-Q3)",
-      content:
+      titleKey: "taxAlertTitle",
+      titleDefault: "Tax-Regime Classification Notice (2026-Q3)",
+      contentKey: "taxAlertBody",
+      contentDefault:
         "Official announcement: Value-added tax exemptions for Kazakhstan electronic regulatory submission services have been updated under Tax Code Clause 394.",
       date: "2026-09-10 09:30 AM",
       category: "Tax & Legal",
     },
     {
       id: "REF-KZ-2026-088",
-      title: "eCTD Validation Engine Upgrade v4.2",
-      content:
+      titleKey: "contractAlertTitle",
+      titleDefault: "eCTD Validation Engine Upgrade v4.2",
+      contentKey: "contractAlertBody",
+      contentDefault:
         "Module 1 XML validation rules for Concerned Member State (CMS) sequences updated to strictly align with Astana Ministry of Health guidelines.",
       date: "2026-09-08 14:15 PM",
       category: "System Update",
@@ -60,14 +64,14 @@ export default function DashboardPage() {
   ]);
 
   const handleDownloadManual = () => {
-    toast.success("Downloading official ECTC PDF User Manual...");
+    toast.success(tDash("manualCardBtn"));
   };
 
   const handleSaveTariffEdit = (e: React.FormEvent) => {
     e.preventDefault();
     setActiveTariff((prev) => ({ ...prev, name: editTariffName }));
     setIsEditModalOpen(false);
-    toast.success("Tariff parameters updated successfully!");
+    toast.success(tCommon("save"));
   };
 
   const handleConfirmDeleteTariff = () => {
@@ -79,7 +83,7 @@ export default function DashboardPage() {
       status: "Inactive",
     });
     setIsDeleteModalOpen(false);
-    toast.error("Tariff configuration cleared.");
+    toast.error(tDash("clearTariffStatus"));
   };
 
   const handleResetTariff = () => {
@@ -91,7 +95,7 @@ export default function DashboardPage() {
       status: "Active Plan",
     });
     setEditTariffName("Tariff OWN (MUP) (Unlimited)");
-    toast.success("Reset to default Tariff OWN (MUP) (Unlimited)!");
+    toast.success(tDash("restoreTariff"));
   };
 
   return (
@@ -196,23 +200,25 @@ export default function DashboardPage() {
                 </span>
               </div>
 
-              <div className="space-y-3">
-                {announcements.map((item) => (
-                  <div key={item.id} className="bg-bg border border-border p-3.5 rounded-xl hover:border-accent/30 transition-colors">
-                    <div className="flex items-center justify-between gap-2 mb-1">
-                      <span className="text-xs font-semibold text-primary truncate max-w-[200px]">{item.title}</span>
-                      <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-accent/15 text-accent shrink-0">
-                        {item.category}
-                      </span>
+                {announcements.map((item) => {
+                  const titleLabel = tDash.has(item.titleKey as any) ? tDash(item.titleKey as any) : item.titleDefault;
+                  const contentLabel = tDash.has(item.contentKey as any) ? tDash(item.contentKey as any) : item.contentDefault;
+                  return (
+                    <div key={item.id} className="bg-bg border border-border p-3.5 rounded-xl hover:border-accent/30 transition-colors">
+                      <div className="flex items-center justify-between gap-2 mb-1">
+                        <span className="text-xs font-semibold text-primary truncate max-w-[200px]">{titleLabel}</span>
+                        <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-accent/15 text-accent shrink-0">
+                          {item.category}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-secondary leading-snug line-clamp-2 font-normal">{contentLabel}</p>
+                      <div className="mt-2 text-[9px] text-muted font-medium flex items-center justify-between border-t border-border/40 pt-1.5">
+                        <span>Ref ID: {item.id}</span>
+                        <span>{item.date}</span>
+                      </div>
                     </div>
-                    <p className="text-[11px] text-secondary leading-snug line-clamp-2 font-normal">{item.content}</p>
-                    <div className="mt-2 text-[9px] text-muted font-medium flex items-center justify-between border-t border-border/40 pt-1.5">
-                      <span>Ref ID: {item.id}</span>
-                      <span>{item.date}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  );
+                })}
             </div>
           </div>
 

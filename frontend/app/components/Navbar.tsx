@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Link, usePathname } from "@/i18n/routing";
 import { List, X } from "@phosphor-icons/react";
 import { useAuthModal } from "./AuthModalContext";
+import { useAuth } from "../context/AuthContext";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { useTranslations } from "next-intl";
 
@@ -13,6 +14,7 @@ export function Navbar() {
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { openAuthModal } = useAuthModal();
+  const { isAuthenticated, user } = useAuth();
   const pathname = usePathname();
 
   const navLinks = [
@@ -64,15 +66,24 @@ export function Navbar() {
           ))}
         </nav>
 
-        {/* Desktop Controls (Language + Sign In) */}
+        {/* Desktop Controls (Language + Sign In / Dashboard) */}
         <div className="hidden sm:flex items-center ml-auto lg:ml-0 gap-3">
           <LanguageSwitcher />
-          <button
-            onClick={() => openAuthModal("signin")}
-            className="btn btn-primary rounded-lg px-5 min-h-[38px] h-[38px] text-white bg-accent hover:bg-accent-hover border-none font-semibold text-sm shadow-sm cursor-pointer"
-          >
-            {tCommon("signIn")}
-          </button>
+          {isAuthenticated ? (
+            <Link
+              href="/dashboard"
+              className="btn btn-primary rounded-lg px-5 min-h-[38px] h-[38px] text-white bg-accent hover:bg-accent-hover border-none font-semibold text-sm shadow-sm flex items-center justify-center"
+            >
+              {tNav("dashboard")}
+            </Link>
+          ) : (
+            <button
+              onClick={() => openAuthModal("signin")}
+              className="btn btn-primary rounded-lg px-5 min-h-[38px] h-[38px] text-white bg-accent hover:bg-accent-hover border-none font-semibold text-sm shadow-sm cursor-pointer"
+            >
+              {tCommon("signIn")}
+            </button>
+          )}
         </div>
 
         {/* Mobile Controls */}
@@ -124,15 +135,25 @@ export function Navbar() {
             </nav>
 
             <div className="mt-auto pt-4 space-y-4">
-              <button
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  openAuthModal("signin");
-                }}
-                className="btn btn-primary w-full rounded-lg min-h-[40px] h-[40px] text-white bg-accent hover:bg-accent-hover border-none font-semibold text-sm cursor-pointer"
-              >
-                {tCommon("signIn")}
-              </button>
+              {isAuthenticated ? (
+                <Link
+                  href="/dashboard"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="btn btn-primary w-full rounded-lg min-h-[40px] h-[40px] text-white bg-accent hover:bg-accent-hover border-none font-semibold text-sm flex items-center justify-center"
+                >
+                  {tNav("dashboard")}
+                </Link>
+              ) : (
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    openAuthModal("signin");
+                  }}
+                  className="btn btn-primary w-full rounded-lg min-h-[40px] h-[40px] text-white bg-accent hover:bg-accent-hover border-none font-semibold text-sm cursor-pointer"
+                >
+                  {tCommon("signIn")}
+                </button>
+              )}
             </div>
           </div>
         </div>

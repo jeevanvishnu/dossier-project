@@ -15,12 +15,32 @@ import { Section } from "../components/Section";
 import { PricingSection } from "../components/PricingSection";
 import { ProcessSection } from "../components/ProcessSection";
 import { ContactSection } from "../components/ContactSection";
+import { useEffect } from "react";
+import { useAuth } from "../context/AuthContext";
+import { useRouter } from "@/i18n/routing";
 import { useTranslations } from "next-intl";
 
 export default function Home() {
   const tHero = useTranslations("hero");
   const tFeat = useTranslations("features");
   const tAbout = useTranslations("about");
+
+  const { isAuthenticated, isLoading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      router.replace("/dashboard");
+    }
+  }, [isLoading, isAuthenticated, router]);
+
+  if (isLoading || isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-bg flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-accent border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <>

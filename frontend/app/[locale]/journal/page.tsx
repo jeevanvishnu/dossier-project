@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import { AppShell } from "../../components/AppShell";
-import { ComingSoon } from "../../components/ComingSoon";
 import { useTranslations } from "next-intl";
 import {
   ListBullets,
@@ -27,7 +26,8 @@ export default function AuditJournalPage() {
       txHash: "HASH-77a89102b182",
       timestamp: "2026-09-12 09:14:22",
       userId: "USR-101 (Dr. Alikhan Saparov)",
-      eventType: "Successful Login",
+      eventTypeKey: "eventLogin",
+      eventTypeDefault: "Successful Login",
       eventCategory: "AUTH",
       details: "Authenticated via unified single route with Admin Role.",
     },
@@ -35,7 +35,8 @@ export default function AuditJournalPage() {
       txHash: "HASH-66f91021c991",
       timestamp: "2026-09-11 18:30:10",
       userId: "USR-102 (Daniya Zhumagaliyeva)",
-      eventType: "File Upload",
+      eventTypeKey: "eventUpload",
+      eventTypeDefault: "File Upload",
       eventCategory: "DOSSIER",
       details: "Uploaded Module1_AdminInformation_KZ.pdf (Seq #0004). MD5 calculated.",
     },
@@ -43,7 +44,8 @@ export default function AuditJournalPage() {
       txHash: "HASH-55e10291a882",
       timestamp: "2026-09-11 17:05:44",
       userId: "USR-102 (Daniya Zhumagaliyeva)",
-      eventType: "File Deletion",
+      eventTypeKey: "eventDeletion",
+      eventTypeDefault: "File Deletion",
       eventCategory: "DOSSIER",
       details: "Removed outdated Draft_Specification_v1.docx from Minonazare tree.",
     },
@@ -51,17 +53,19 @@ export default function AuditJournalPage() {
       txHash: "HASH-44d01928b771",
       timestamp: "2026-09-11 12:00:00",
       userId: "USR-101 (Dr. Alikhan Saparov)",
-      eventType: "Session Exit",
+      eventTypeKey: "eventExit",
+      eventTypeDefault: "Session Exit",
       eventCategory: "AUTH",
       details: "User initiated sign out from client portal.",
     },
   ]);
 
   const filteredLogs = logs.filter((l) => {
+    const eventLabel = tJournal.has(l.eventTypeKey as any) ? tJournal(l.eventTypeKey as any) : l.eventTypeDefault;
     const matchesSearch =
       l.txHash.toLowerCase().includes(searchTerm.toLowerCase()) ||
       l.userId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      l.eventType.toLowerCase().includes(searchTerm.toLowerCase());
+      eventLabel.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory =
       filterType === "all" ||
       (filterType === "auth" && l.eventCategory === "AUTH") ||
@@ -69,36 +73,26 @@ export default function AuditJournalPage() {
     return matchesSearch && matchesCategory;
   });
 
-  const getEventIcon = (type: string) => {
-    if (type.includes("Login")) return <SignIn className="text-emerald-500" size={16} />;
-    if (type.includes("Exit")) return <SignOut className="text-amber-500" size={16} />;
-    if (type.includes("Upload")) return <UploadSimple className="text-accent" size={16} />;
-    if (type.includes("Deletion")) return <Trash className="text-red-500" size={16} />;
+  const getEventIcon = (typeKey: string) => {
+    if (typeKey === "eventLogin") return <SignIn className="text-emerald-500" size={16} />;
+    if (typeKey === "eventExit") return <SignOut className="text-amber-500" size={16} />;
+    if (typeKey === "eventUpload") return <UploadSimple className="text-accent" size={16} />;
+    if (typeKey === "eventDeletion") return <Trash className="text-red-500" size={16} />;
     return <ShieldCheck className="text-accent" size={16} />;
   };
 
   return (
     <AppShell>
-      {/* Active Coming Soon View */}
-      <ComingSoon
-        title={tJournal("title")}
-        description={tJournal("sub")}
-      />
-
-      {/* 
-      ========================================================================
-      ORIGINAL JOURNAL PAGE DESIGN CODE (COMMENTED OUT FOR PRESERVATION)
-      ========================================================================
       <div className="space-y-6">
         <div className="bg-surface border border-border p-5 rounded-2xl shadow-xs">
           <span className="text-[10px] uppercase tracking-wider font-bold text-accent px-2 py-0.5 rounded bg-accent/10 border border-accent/20">
-            Tamper-Evident System Audit Trail
+            {tJournal("badgeLabel")}
           </span>
           <h1 className="font-lexend text-2xl font-bold text-primary mt-1">
-            Activity Log & Audit Trail (/journal)
+            {tJournal("title")}
           </h1>
           <p className="text-xs text-secondary">
-            Chronological system events (successful logins, session exits, file uploads, file deletions) with precise timestamps, user IDs, and unique transaction hashes.
+            {tJournal("sub")}
           </p>
         </div>
 
@@ -107,7 +101,7 @@ export default function AuditJournalPage() {
             <MagnifyingGlass size={16} className="text-muted shrink-0" />
             <input
               type="text"
-              placeholder="Search hash, user ID, event type..."
+              placeholder={tJournal("searchPlaceholder")}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="bg-transparent text-primary outline-none w-full text-xs"
@@ -117,34 +111,34 @@ export default function AuditJournalPage() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setFilterType("all")}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
                 filterType === "all" ? "bg-accent text-white" : "bg-bg text-secondary border border-border"
               }`}
             >
-              All Events ({logs.length})
+              {tJournal("filterAll")} ({logs.length})
             </button>
             <button
               onClick={() => setFilterType("auth")}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
                 filterType === "auth" ? "bg-emerald-500 text-white" : "bg-bg text-secondary border border-border"
               }`}
             >
-              Auth Events
+              {tJournal("filterAuth")}
             </button>
             <button
               onClick={() => setFilterType("dossier")}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
                 filterType === "dossier" ? "bg-amber-500 text-white" : "bg-bg text-secondary border border-border"
               }`}
             >
-              Dossier Operations
+              {tJournal("filterDossier")}
             </button>
             <button
-              onClick={() => toast.success("Exported tamper-evident Audit Log to CSV")}
-              className="px-3 py-1.5 bg-bg hover:bg-surface-raised text-primary border border-border font-semibold text-xs rounded-lg transition-colors flex items-center gap-1"
+              onClick={() => toast.success(tJournal("exportedToast"))}
+              className="px-3 py-1.5 bg-bg hover:bg-surface-raised text-primary border border-border font-semibold text-xs rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
             >
               <DownloadSimple size={14} className="text-accent" />
-              <span>Export</span>
+              <span>{tJournal("exportCsv")}</span>
             </button>
           </div>
         </div>
@@ -153,7 +147,7 @@ export default function AuditJournalPage() {
           <div className="p-5 border-b border-border flex items-center gap-2">
             <ListBullets size={20} className="text-accent" />
             <h2 className="font-lexend font-bold text-base text-primary">
-              Audit Trail Chronological Event Table
+              {tJournal("tableTitle")}
             </h2>
           </div>
 
@@ -161,11 +155,11 @@ export default function AuditJournalPage() {
             <table className="w-full text-left text-xs text-secondary">
               <thead className="bg-bg text-primary uppercase font-bold text-[10px] tracking-wider border-b border-border">
                 <tr>
-                  <th className="py-3.5 px-4">Transaction Hash (ID)</th>
-                  <th className="py-3.5 px-4">Timestamp</th>
-                  <th className="py-3.5 px-4">Acting User ID</th>
-                  <th className="py-3.5 px-4">System Event</th>
-                  <th className="py-3.5 px-4">Event Details</th>
+                  <th className="py-3.5 px-4">{tJournal("colTxHash")}</th>
+                  <th className="py-3.5 px-4">{tJournal("colTimestamp")}</th>
+                  <th className="py-3.5 px-4">{tJournal("colUser")}</th>
+                  <th className="py-3.5 px-4">{tJournal("colEvent")}</th>
+                  <th className="py-3.5 px-4">{tJournal("colDetails")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -179,8 +173,10 @@ export default function AuditJournalPage() {
                     <td className="py-3.5 px-4 text-primary font-semibold">{log.userId}</td>
                     <td className="py-3.5 px-4">
                       <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-bg border border-border">
-                        {getEventIcon(log.eventType)}
-                        <span className="text-primary">{log.eventType}</span>
+                        {getEventIcon(log.eventTypeKey)}
+                        <span className="text-primary">
+                          {tJournal.has(log.eventTypeKey as any) ? tJournal(log.eventTypeKey as any) : log.eventTypeDefault}
+                        </span>
                       </span>
                     </td>
                     <td className="py-3.5 px-4 text-secondary leading-relaxed">{log.details}</td>
@@ -191,7 +187,6 @@ export default function AuditJournalPage() {
           </div>
         </div>
       </div>
-      */}
     </AppShell>
   );
 }

@@ -51,6 +51,10 @@ export const DossierHistoryView: React.FC<DossierHistoryViewProps> = ({ projectI
   ]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [totalPages, setTotalPages] = useState<number>(1);
+  const itemsPerPage = 10;
+
   // Fetch real audit logs from backend API
   useEffect(() => {
     if (!projectId) return;
@@ -59,7 +63,7 @@ export const DossierHistoryView: React.FC<DossierHistoryViewProps> = ({ projectI
       setIsLoading(true);
       try {
         const response = await api.get(`/projects/${projectId}/audit-logs`, {
-          params: { search: searchQuery },
+          params: { search: searchQuery, page: currentPage, limit: itemsPerPage },
         });
 
         if (response.data?.success && Array.isArray(response.data?.data)) {
@@ -73,6 +77,9 @@ export const DossierHistoryView: React.FC<DossierHistoryViewProps> = ({ projectI
           }));
 
           setHistoryLogs(apiLogs);
+          if (response.data.pagination) {
+            setTotalPages(response.data.pagination.totalPages || 1);
+          }
         }
       } catch (err: any) {
         console.warn("Could not fetch audit logs from API:", err?.message);
@@ -86,7 +93,7 @@ export const DossierHistoryView: React.FC<DossierHistoryViewProps> = ({ projectI
     }, 300);
 
     return () => clearTimeout(timeoutId);
-  }, [projectId, searchQuery]);
+  }, [projectId, searchQuery, currentPage]);
 
   const handleExportCSV = async () => {
     try {
@@ -219,6 +226,29 @@ export const DossierHistoryView: React.FC<DossierHistoryViewProps> = ({ projectI
           </tbody>
         </table>
       </div>
+
+      {/* Pagination Controls */}
+      {!isLoading && historyLogs.length > 0 && totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 p-4 border-t border-border bg-surface">
+          <button
+            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+            className="px-3 py-1.5 bg-bg border border-border rounded-lg text-xs font-semibold text-secondary hover:text-primary hover:bg-surface-raised disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Previous
+          </button>
+          <span className="text-xs text-secondary font-mono">
+            Page {currentPage} of {totalPages}
+          </span>
+          <button
+            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+            className="px-3 py-1.5 bg-bg border border-border rounded-lg text-xs font-semibold text-secondary hover:text-primary hover:bg-surface-raised disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Next
+          </button>
+        </div>
+      )}
     </div>
   );
 };
