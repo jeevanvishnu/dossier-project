@@ -13,6 +13,7 @@ const mockProject: Project = {
   mahHolder: "MAH Co",
   responsibleUser: "Engineer",
   tariff: "Standard",
+  additionalFeature: null,
   status: "Active",
   isProjectSaved: true,
   version: 1,
@@ -30,6 +31,7 @@ const mockConfig: DossierConfig = {
   applicationNumber: "KZ-2025-001",
   dossierSequence: "Sequence 0000",
   isDossierSaved: true,
+  dossierDetails: null,
 };
 
 export function runEaeuManifestTests() {

@@ -1,4 +1,4 @@
-import { pgEnum, pgTable, serial, text, timestamp, varchar, integer, boolean, index } from "drizzle-orm/pg-core";
+import { pgEnum, pgTable, serial, text, timestamp, varchar, integer, boolean, index, jsonb } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
 // ─── ENUMS ───────────────────────────────────────────────────────────────────
@@ -69,6 +69,7 @@ export const dossierConfig = pgTable("dossier_config", {
   applicationNumber: text("application_number"),
   dossierSequence: text("dossier_sequence").default("Sequence 0000").notNull(),
   isDossierSaved: boolean("is_dossier_saved").default(false).notNull(),
+  dossierDetails: jsonb("dossier_details"),
 });
 
 export const projectMembers = pgTable("project_members", {

@@ -4,7 +4,7 @@ import { projects, projectDocuments, packageArchives, auditLogs } from "../db/sc
 import { compileEctdPackage, sanitizeSequence } from "../services/compilation.service";
 import { uploadToImageKit } from "../services/imagekit.service";
 import { resolveProjectId } from "../utils/params.util";
-import { eq, and, desc, inArray } from "drizzle-orm";
+import { eq, and, desc, inArray, ne, or } from "drizzle-orm";
 
 export async function getPackageArchives(req: Request, res: Response): Promise<void> {
   try {
@@ -50,32 +50,39 @@ export async function compileProjectPackage(req: Request, res: Response): Promis
 
     const targetSequence = sanitizeSequence(project.dossierConfig?.dossierSequence);
 
-    const docWhereClause =
-      targetSequence === "0000"
-        ? and(
-          eq(projectDocuments.projectId, projectId),
-          eq(projectDocuments.status, "active")
-        )
-        : and(
-          eq(projectDocuments.projectId, projectId),
-          eq(projectDocuments.sequence, targetSequence),
-          inArray(projectDocuments.status, ["active", "deleted"])
-        );
-
-    const activeDocs = await db.query.projectDocuments.findMany({
-      where: docWhereClause,
+    // For sequence 0000 (initial registration submission), compile ONLY active documents.
+    // Draft deletes during sequence 0000 do not create tombstones in initial sequence XML.
+    // For subsequent sequences (> 0000), compile active documents and valid sequence tombstones.
+    const docsToCompile = await db.query.projectDocuments.findMany({
+      where:
+        targetSequence === "0000"
+          ? and(
+              eq(projectDocuments.projectId, projectId),
+              eq(projectDocuments.status, "active")
+            )
+          : and(
+              eq(projectDocuments.projectId, projectId),
+              or(
+                eq(projectDocuments.status, "active"),
+                and(
+                  eq(projectDocuments.status, "deleted"),
+                  eq(projectDocuments.sequence, targetSequence),
+                  ne(projectDocuments.sequence, "0000")
+                )
+              )
+            ),
     });
 
-    if (activeDocs.length === 0) {
+    if (docsToCompile.length === 0) {
       res.status(400).json({
         success: false,
-        message: "Cannot compile dossier: No active or deleted tombstone documents found for this project.",
+        message: "Cannot compile dossier: No active documents found for this project.",
       });
       return;
     }
 
-    console.log(`[eCTD Compiler] Compiling ${activeDocs.length} active documents for Project ${projectId}...`);
-    const compilation = await compileEctdPackage(project, project.dossierConfig, activeDocs);
+    console.log(`[eCTD Compiler] Compiling ${docsToCompile.length} active documents for Project ${projectId}...`);
+    const compilation = await compileEctdPackage(project, project.dossierConfig, docsToCompile);
 
     const ikResult = await uploadToImageKit(
       compilation.zipBuffer,

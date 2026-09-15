@@ -109,18 +109,18 @@ export const DossierHistoryView: React.FC<DossierHistoryViewProps> = ({ projectI
     switch (status) {
       case "SUCCESS":
         return {
-          bg: "bg-slate-950/80 border-emerald-500/30 text-emerald-400",
-          icon: <CheckCircle size={15} className="text-emerald-400 shrink-0 mt-0.5" weight="fill" />,
+          bg: "bg-emerald-50 border-emerald-200 text-emerald-900 dark:bg-slate-950/80 dark:border-emerald-500/30 dark:text-emerald-400",
+          icon: <CheckCircle size={15} className="text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" weight="fill" />,
         };
       case "WARNING":
         return {
-          bg: "bg-slate-950/80 border-amber-500/30 text-amber-300",
-          icon: <WarningCircle size={15} className="text-amber-400 shrink-0 mt-0.5" weight="fill" />,
+          bg: "bg-amber-50 border-amber-200 text-amber-900 dark:bg-slate-950/80 dark:border-amber-500/30 dark:text-amber-300",
+          icon: <WarningCircle size={15} className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" weight="fill" />,
         };
       case "ERROR":
         return {
-          bg: "bg-slate-950/80 border-rose-500/30 text-rose-300",
-          icon: <XCircle size={15} className="text-rose-400 shrink-0 mt-0.5" weight="fill" />,
+          bg: "bg-rose-50 border-rose-200 text-rose-900 dark:bg-slate-950/80 dark:border-rose-500/30 dark:text-rose-300",
+          icon: <XCircle size={15} className="text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" weight="fill" />,
         };
     }
   };

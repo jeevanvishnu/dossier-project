@@ -92,7 +92,7 @@ export async function createProject(req: Request, res: Response): Promise<void> 
           role: input.role,
           procedureType: input.procedureType,
           typeOfProcedure: input.typeOfProcedure,
-          applicationNumber: input.applicationNumber || projectCode,
+          applicationNumber: input.applicationNumber || "",
           dossierSequence: input.dossierSequence || "Sequence 0000",
           isDossierSaved: false,
         })
@@ -262,12 +262,20 @@ export async function updateDossierData(req: Request, res: Response): Promise<vo
         input.procedureType !== undefined ||
         input.typeOfProcedure !== undefined ||
         input.applicationNumber !== undefined ||
-        input.dossierSequence !== undefined;
+        input.dossierSequence !== undefined ||
+        input.dossierDetails !== undefined;
 
       let updatedConfig = existingProject.dossierConfig || null;
 
       if (hasConfigFields) {
-        const configFields = {
+        const mergedDetails = input.dossierDetails !== undefined
+          ? {
+              ...((existingProject.dossierConfig?.dossierDetails as Record<string, any>) || {}),
+              ...input.dossierDetails,
+            }
+          : undefined;
+
+        const configFields: Record<string, any> = {
           isDossierSaved: true,
           ...(input.submissionCountry !== undefined ? { submissionCountry: input.submissionCountry } : {}),
           ...(input.role !== undefined ? { role: input.role } : {}),
@@ -275,6 +283,7 @@ export async function updateDossierData(req: Request, res: Response): Promise<vo
           ...(input.typeOfProcedure !== undefined ? { typeOfProcedure: input.typeOfProcedure } : {}),
           ...(input.applicationNumber !== undefined ? { applicationNumber: input.applicationNumber } : {}),
           ...(input.dossierSequence !== undefined ? { dossierSequence: input.dossierSequence } : {}),
+          ...(mergedDetails !== undefined ? { dossierDetails: mergedDetails } : {}),
         };
 
         if (existingProject.dossierConfig) {
@@ -293,9 +302,10 @@ export async function updateDossierData(req: Request, res: Response): Promise<vo
               role: input.role,
               procedureType: input.procedureType,
               typeOfProcedure: input.typeOfProcedure,
-              applicationNumber: input.applicationNumber || existingProject.projectCode,
+              applicationNumber: input.applicationNumber || "",
               dossierSequence: input.dossierSequence || "Sequence 0000",
               isDossierSaved: true,
+              dossierDetails: mergedDetails || null,
             })
             .returning();
           updatedConfig = conf;

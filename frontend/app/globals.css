@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@variant dark (&:where(.dark, [data-theme="dark"], .dark *));
+
 @plugin "daisyui" {
   themes: dark, light;
 }
@@ -40,9 +42,7 @@ html[data-theme="dark"] {
 
 /* 2. Light (White Theme) Overrides */
 html[data-theme="light"],
-html.light,
-[data-theme="light"],
-.light {
+html.light {
   --color-bg: #F8FAFC !important;
   --color-surface: #FFFFFF !important;
   --color-surface-raised: #F1F5F9 !important;
@@ -59,7 +59,7 @@ html.light,
   --color-accent-border: #BAE6FD !important;
   --color-text-on-accent: #FFFFFF !important;
   --color-success: #10B981 !important;
-  --color-error: #EF4444 !important;
+  --color-error: #DC2626 !important;
   --color-warning: #F59E0B !important;
 
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
@@ -67,6 +67,35 @@ html.light,
   --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
   --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
   --shadow-focus: 0 0 0 3px rgba(2, 132, 199, 0.25);
+}
+
+/* 3. Scoped Dark Theme (Enforces Dark Navy on Home page & Auth Modal) */
+[data-theme="dark"],
+.dark {
+  --color-bg: #121824 !important;
+  --color-surface: #192131 !important;
+  --color-surface-raised: #202A3E !important;
+  --color-border: #243045 !important;
+  --color-border-strong: #33435C !important;
+  --color-primary: #E2E8F0 !important;
+  --color-primary-dark: #0F1318 !important;
+  --color-primary-mid: #253246 !important;
+  --color-secondary: #94A3B8 !important;
+  --color-muted: #64748B !important;
+  --color-accent: #0284C7 !important;
+  --color-accent-hover: #0369A1 !important;
+  --color-accent-light: #16263D !important;
+  --color-accent-border: #1E3A5F !important;
+  --color-text-on-accent: #FFFFFF !important;
+  --color-success: #10B981 !important;
+  --color-error: #EF4444 !important;
+  --color-warning: #F59E0B !important;
+
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.2) !important;
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5) !important;
+  --shadow-focus: 0 0 0 3px rgba(2, 132, 199, 0.3) !important;
 }
 
 @theme {

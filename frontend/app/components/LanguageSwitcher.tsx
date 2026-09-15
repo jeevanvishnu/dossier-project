@@ -2,7 +2,7 @@
 
 import { useLocale } from "next-intl";
 import { useRouter, usePathname } from "@/i18n/routing";
-import { Globe, Check } from "@phosphor-icons/react";
+import { Globe, Check, CaretDown } from "@phosphor-icons/react";
 import { useState, useRef, useEffect, useTransition } from "react";
 
 export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
@@ -14,8 +14,8 @@ export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const languages = [
-    { code: "en", name: "English", short: "EN" },
-    { code: "ru", name: "Russian", short: "RU" },
+    { code: "en", label: "EN", name: "English" },
+    { code: "ru", label: "RU", name: "Русский" },
   ];
 
   const handleLanguageChange = (newLocale: string) => {
@@ -54,17 +54,18 @@ export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
           setIsOpen((prev) => !prev);
         }}
         disabled={isPending}
-        className={`flex items-center gap-1.5 rounded-lg border border-border bg-bg hover:bg-surface-raised transition-colors text-xs font-semibold text-primary px-2.5 py-1.5 shadow-xs cursor-pointer disabled:opacity-60 ${
-          compact ? "py-1 px-2" : ""
+        className={`flex items-center gap-1.5 rounded-xl border border-border/80 bg-bg hover:bg-surface-raised transition-all text-xs font-bold text-primary px-3 py-1.5 shadow-xs cursor-pointer disabled:opacity-60 select-none ${
+          compact ? "px-2.5 py-1" : ""
         }`}
         aria-label="Select language"
       >
-        <Globe size={16} className="text-accent shrink-0" />
-        <span>{compact ? currentLang.short : currentLang.name}</span>
+        <Globe size={15} className="text-accent shrink-0" />
+        <span className="tracking-wide uppercase text-xs font-bold">{currentLang.label}</span>
+        <CaretDown size={12} className={`text-secondary transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-36 rounded-xl border border-border bg-surface shadow-2xl z-50 p-1 font-sans text-xs">
+        <div className="absolute right-0 mt-1.5 w-32 rounded-xl border border-border/80 bg-surface shadow-xl z-50 p-1 font-sans text-xs animate-in fade-in zoom-in-95 duration-150 backdrop-blur-md">
           {languages.map((lang) => {
             const isSelected = lang.code === locale;
             return (
@@ -75,14 +76,17 @@ export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
                   e.stopPropagation();
                   handleLanguageChange(lang.code);
                 }}
-                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-left font-medium transition-colors cursor-pointer ${
+                className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-left font-semibold transition-colors cursor-pointer ${
                   isSelected
                     ? "bg-accent/15 text-accent font-bold"
                     : "text-secondary hover:text-primary hover:bg-surface-raised"
                 }`}
               >
-                <span>{lang.name}</span>
-                {isSelected && <Check size={14} className="text-accent" />}
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-xs uppercase tracking-wide w-5">{lang.label}</span>
+                  <span className="text-[11px] font-medium opacity-80">{lang.name}</span>
+                </div>
+                {isSelected && <Check size={14} className="text-accent shrink-0" weight="bold" />}
               </button>
             );
           })}

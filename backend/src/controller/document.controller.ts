@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { db } from "../db/db";
 import { projectDocuments, auditLogs, dossierConfig } from "../db/schema";
 import { uploadToImageKit, deleteFromImageKit } from "../services/imagekit.service";
+import { compileEctdPackage, sanitizeSequence } from "../services/compilation.service";
 import { calculateMD5 } from "../utils/crypto.util";
 import { resolveProjectId, getSingleParam } from "../utils/params.util";
 import { eq, and } from "drizzle-orm";
@@ -23,7 +24,7 @@ export async function uploadDocument(req: Request, res: Response): Promise<void>
   const config = await db.query.dossierConfig.findFirst({
     where: eq(dossierConfig.projectId, projectId),
   });
-  const currentSeq = config?.dossierSequence || "0000";
+  const currentSeq = sanitizeSequence(config?.dossierSequence);
 
   // Check for pre-existing active document at this nodeId
   const existingActive = await db.query.projectDocuments.findFirst({
@@ -287,7 +288,7 @@ export async function deleteDocumentByNode(req: Request, res: Response): Promise
     const config = await db.query.dossierConfig.findFirst({
       where: eq(dossierConfig.projectId, projectId),
     });
-    const currentSeq = config?.dossierSequence || "0000";
+    const currentSeq = sanitizeSequence(config?.dossierSequence);
 
     const tombstoneRecord = await db.transaction(async (tx) => {
       await tx
@@ -351,7 +352,7 @@ export async function seedSorbitDossier(req: Request, res: Response): Promise<vo
     const config = await db.query.dossierConfig.findFirst({
       where: eq(dossierConfig.projectId, projectId),
     });
-    const currentSeq = config?.dossierSequence || "0000";
+    const currentSeq = sanitizeSequence(config?.dossierSequence);
 
     const { activeDocuments } = await import("../fixtures/sorbitDossier.fixture.js");
 
@@ -439,7 +440,7 @@ export async function updateDocumentDates(req: Request, res: Response): Promise<
     const config = await db.query.dossierConfig.findFirst({
       where: eq(dossierConfig.projectId, projectId),
     });
-    const currentSeq = config?.dossierSequence || "0000";
+    const currentSeq = sanitizeSequence(config?.dossierSequence);
 
     const updatedDoc = await db.transaction(async (tx) => {
       let doc;

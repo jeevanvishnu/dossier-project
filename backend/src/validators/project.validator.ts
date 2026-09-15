@@ -36,6 +36,7 @@ export const updateDossierDataSchema = z.object({
   typeOfProcedure: z.string().optional(),
   applicationNumber: z.string().optional(),
   dossierSequence: z.string().optional(),
+  dossierDetails: z.any().optional(),
 });
 
 export const addMemberSchema = z.object({

@@ -78,52 +78,27 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
 
   // 1. Medicinal Product Form State
   const [medicinalState, setMedicinalState] = useState({
-    productName: "Miconazole",
-    dosageForm: "External spray",
-    productType: "Reproduced (Generic)",
-    additionalFeature: "Prescription / Topical antifungal",
-    manufacturer: "Medical Union Pharmaceuticals",
-    mah: "Medical Union Pharmaceuticals LLP",
-    responsibleUser: "Dr. Alikhan Saparov",
-    tariff: "Standard eCTD Submission Fee - 450,000 KZT",
+    productName: "",
+    dosageForm: "",
+    productType: "",
+    additionalFeature: "",
+    manufacturer: "",
+    mah: "",
+    responsibleUser: "",
+    tariff: "",
     status: "Active",
   });
 
   // 2. Active Substance Form State
   const [activeSubstanceState, setActiveSubstanceState] = useState({
-    inn: "Miconazole Nitrate",
-    casNumber: "22839-47-0",
-    activeManufacturer: "Zhejiang Chemical Co., Ltd.",
-    qualityStandard: "Ph. Eur. 10.0 / USP 43",
+    inn: "",
+    casNumber: "",
+    activeManufacturer: "",
+    qualityStandard: "",
   });
 
   // 3. Excipients Form State
-  const [excipientsList, setExcipientsList] = useState<ExcipientItem[]>([
-    {
-      id: "exc-1",
-      name: "Ethanol 96%",
-      concentration: "55.0 % v/v",
-      category: "Solvent / Vehicle",
-    },
-    {
-      id: "exc-2",
-      name: "Propylene Glycol",
-      concentration: "10.0 % w/v",
-      category: "Humectant / Solvent",
-    },
-    {
-      id: "exc-3",
-      name: "Macrogolcetostearyl Ether",
-      concentration: "2.5 % w/v",
-      category: "Surfactant / Emulsifier",
-    },
-    {
-      id: "exc-4",
-      name: "Purified Water",
-      concentration: "q.s. to 100%",
-      category: "Vehicle",
-    },
-  ]);
+  const [excipientsList, setExcipientsList] = useState<ExcipientItem[]>([]);
 
   const [newExcipient, setNewExcipient] = useState({
     name: "",
@@ -133,30 +108,27 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
 
   // 4. Pharmaceutical Product Form State
   const [pharmaceuticalState, setPharmaceuticalState] = useState({
-    shelfLife: "24 Months",
-    storageConditions:
-      "Do not store above 25°C. Keep container tightly closed and protect from direct sunlight.",
-    containerClosure:
-      "HDPE spray bottle equipped with a mechanical metering pump and protective cap.",
-    packagingSizes: "30 ml spray bottle, 50 ml spray bottle",
+    shelfLife: "",
+    storageConditions: "",
+    containerClosure: "",
+    packagingSizes: "",
   });
 
   // 5. Indications Form State
   const [indicationsState, setIndicationsState] = useState({
-    therapeuticIndications:
-      "Treatment of topical dermatomycoses caused by dermatophytes, yeasts, and other fungi sensitive to Miconazole (e.g. tinea pedis, tinea corporis, tinea cruris).",
-    icd10Tags: ["B35.3 (Tinea pedis)", "B35.4 (Tinea corporis)", "B35.6 (Tinea cruris)"],
-    targetPopulation: "Adults & Adolescents > 12 yrs",
+    therapeuticIndications: "",
+    icd10Tags: [] as string[],
+    targetPopulation: "",
   });
 
   const [newIcd10Tag, setNewIcd10Tag] = useState("");
 
   // 6. Manufacturer Form State
   const [manufacturerState, setManufacturerState] = useState({
-    primarySite: "Plant No. 2, MUP Almaty, Kazakhstan",
-    secondaryPackaging: "PackLogistics KZ Ltd., Almaty",
-    batchReleaseLocation: "Quality Control Lab MUP Almaty",
-    gmpCertificate: "GMP-KZ-2025-08912",
+    primarySite: "",
+    secondaryPackaging: "",
+    batchReleaseLocation: "",
+    gmpCertificate: "",
   });
 
   // Card 2 Configuration Form State
@@ -165,7 +137,7 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
     roleOfSubmissionCountry: "Reference Member State (RMS)",
     procedureType: "Mutual Recognition (MRP)",
     typeOfProcedure: "Bringing into conformity",
-    applicationNumber: "KZ-MOH-2026-88192",
+    applicationNumber: "",
     dossierSequence: "Sequence 0000",
   });
 
@@ -175,6 +147,11 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
   // Snapshots for cancel functionality
   const [savedMedicinalState, setSavedMedicinalState] = useState<typeof medicinalState | null>(null);
   const [savedConfigState, setSavedConfigState] = useState<typeof configState | null>(null);
+  const [savedActiveSubstanceState, setSavedActiveSubstanceState] = useState<typeof activeSubstanceState | null>(null);
+  const [savedExcipientsList, setSavedExcipientsList] = useState<typeof excipientsList | null>(null);
+  const [savedPharmaceuticalState, setSavedPharmaceuticalState] = useState<typeof pharmaceuticalState | null>(null);
+  const [savedIndicationsState, setSavedIndicationsState] = useState<typeof indicationsState | null>(null);
+  const [savedManufacturerState, setSavedManufacturerState] = useState<typeof manufacturerState | null>(null);
 
   // Load project metadata from backend API
   useEffect(() => {
@@ -195,13 +172,13 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
               }
               const fetchedMedicinal = {
                 productName: project.productName || "",
-                dosageForm: project.dosageForm || "External spray",
-                productType: project.productType || "Reproduced (Generic)",
-                additionalFeature: "Prescription / Topical antifungal",
+                dosageForm: project.dosageForm || "",
+                productType: project.productType || "",
+                additionalFeature: project.additionalFeature || "",
                 manufacturer: project.manufacturer || "",
                 mah: project.mahHolder || "",
-                responsibleUser: project.responsibleUser || "Dr. Alikhan Saparov",
-                tariff: project.tariff || "Standard eCTD Submission Fee - 450,000 KZT",
+                responsibleUser: project.responsibleUser || "",
+                tariff: project.tariff || "",
                 status: project.status || "Active",
               };
               setMedicinalState(fetchedMedicinal);
@@ -212,16 +189,47 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
             if (dossierConfig) {
               const rawCountry = dossierConfig.submissionCountry;
               const normalizedCountry = (!rawCountry || rawCountry === "US" || rawCountry === "KZ") ? "KAZAKHSTAN" : rawCountry;
+              const rawAppNum = dossierConfig.applicationNumber || "";
+              const isAppNumDefaultOrId =
+                !rawAppNum ||
+                rawAppNum === "KZ-MOH-2026-88192" ||
+                (project && (rawAppNum === project.projectCode || rawAppNum === String(project.id)));
+              const cleanedAppNum = isAppNumDefaultOrId ? "" : rawAppNum;
               const fetchedConfig = {
                 submissionCountry: normalizedCountry,
                 roleOfSubmissionCountry: dossierConfig.role || "Reference Member State (RMS)",
                 procedureType: dossierConfig.procedureType || "Mutual Recognition (MRP)",
                 typeOfProcedure: dossierConfig.typeOfProcedure || "Bringing into conformity",
-                applicationNumber: dossierConfig.applicationNumber || "KZ-MOH-2026-88192",
+                applicationNumber: cleanedAppNum,
                 dossierSequence: dossierConfig.dossierSequence || "Sequence 0000",
               };
               setConfigState(fetchedConfig);
               setSavedConfigState(fetchedConfig);
+
+              if (dossierConfig.dossierDetails) {
+                const details = dossierConfig.dossierDetails;
+                if (details.activeSubstance) {
+                  setActiveSubstanceState(details.activeSubstance);
+                  setSavedActiveSubstanceState(details.activeSubstance);
+                }
+                if (details.excipients && Array.isArray(details.excipients)) {
+                  setExcipientsList(details.excipients);
+                  setSavedExcipientsList(details.excipients);
+                }
+                if (details.pharmaceutical) {
+                  setPharmaceuticalState(details.pharmaceutical);
+                  setSavedPharmaceuticalState(details.pharmaceutical);
+                }
+                if (details.indications) {
+                  setIndicationsState(details.indications);
+                  setSavedIndicationsState(details.indications);
+                }
+                if (details.manufacturer) {
+                  setManufacturerState(details.manufacturer);
+                  setSavedManufacturerState(details.manufacturer);
+                }
+              }
+
               dosSaved = Boolean(dossierConfig.isDossierSaved);
               setIsDossierSaved(dosSaved);
             }
@@ -319,6 +327,14 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
     }
     setIsSavingDossier(true);
     try {
+      const dossierDetailsPayload = {
+        activeSubstance: activeSubstanceState,
+        excipients: excipientsList,
+        pharmaceutical: pharmaceuticalState,
+        indications: indicationsState,
+        manufacturer: manufacturerState,
+      };
+
       const payload = {
         version: projectVersion,
         submissionCountry: configState.submissionCountry,
@@ -327,6 +343,7 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
         typeOfProcedure: configState.typeOfProcedure,
         applicationNumber: configState.applicationNumber,
         dossierSequence: configState.dossierSequence,
+        dossierDetails: dossierDetailsPayload,
       };
 
       const response = await api.put(`/projects/${projectId}/dossier-data`, payload);
@@ -335,12 +352,17 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
           setProjectVersion(response.data.data.project.version);
         }
         setSavedConfigState(configState);
+        setSavedActiveSubstanceState(activeSubstanceState);
+        setSavedExcipientsList(excipientsList);
+        setSavedPharmaceuticalState(pharmaceuticalState);
+        setSavedIndicationsState(indicationsState);
+        setSavedManufacturerState(manufacturerState);
         setIsDossierSaved(true);
         setIsEditingDossier(false);
         if (onStatusChange) {
           onStatusChange({ isProjectSaved: true, isDossierSaved: true });
         }
-        toast.success("Dossier data configuration saved successfully!");
+        toast.success("Dossier data configuration & sub-tab metadata saved successfully!");
       }
     } catch (err: any) {
       if (err?.response?.status === 409) {
@@ -358,9 +380,12 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
 
   // Section 2: Cancel Handler
   const handleCancelCard2 = () => {
-    if (savedConfigState) {
-      setConfigState(savedConfigState);
-    }
+    if (savedConfigState) setConfigState(savedConfigState);
+    if (savedActiveSubstanceState) setActiveSubstanceState(savedActiveSubstanceState);
+    if (savedExcipientsList) setExcipientsList(savedExcipientsList);
+    if (savedPharmaceuticalState) setPharmaceuticalState(savedPharmaceuticalState);
+    if (savedIndicationsState) setIndicationsState(savedIndicationsState);
+    if (savedManufacturerState) setManufacturerState(savedManufacturerState);
     setIsEditingDossier(false);
     toast("Editing dossier configuration cancelled.");
   };
@@ -371,8 +396,13 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
       await handleSaveCard2();
     } else {
       setSavedConfigState(configState);
+      setSavedActiveSubstanceState(activeSubstanceState);
+      setSavedExcipientsList(excipientsList);
+      setSavedPharmaceuticalState(pharmaceuticalState);
+      setSavedIndicationsState(indicationsState);
+      setSavedManufacturerState(manufacturerState);
       setIsEditingDossier(true);
-      toast.success("Dossier Configuration enabled for editing. Modify fields and click 'Update Configuration'.");
+      toast.success("Dossier Data enabled for editing. Modify fields and click 'Save Dossier Data'.");
     }
   };
 
@@ -1158,7 +1188,7 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
               disabled
               type="button"
               title="Save Project Data first to activate Dossier Data Configuration"
-              className="px-5 py-2.5 text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-2 bg-gray-800 text-gray-400 border border-gray-700/50 cursor-not-allowed opacity-60"
+              className="px-5 py-2.5 text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-2 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-300 dark:border-gray-700/50 cursor-not-allowed opacity-60"
             >
               <LockKey size={16} weight="bold" />
               <span>{tWorkspace("btnSaveSection1First")}</span>

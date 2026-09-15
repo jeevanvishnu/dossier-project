@@ -43,7 +43,7 @@ export default function Home() {
   }
 
   return (
-    <>
+    <div data-theme="dark" className="dark bg-bg text-secondary min-h-screen flex flex-col">
       <Navbar />
       <main className="flex-1 flex flex-col">
 
@@ -189,6 +189,6 @@ export default function Home() {
 
       </main>
       <Footer />
-    </>
+    </div>
   );
 }

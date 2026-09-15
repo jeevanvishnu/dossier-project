@@ -40,7 +40,7 @@ export const ProjectHeader: React.FC<ProjectHeaderProps> = ({
       <div className="flex items-center gap-3 shrink-0">
         <Link
           href="/projects"
-          className="px-4 py-2.5 bg-red-500/15 hover:bg-red-500/25 text-red-400 border border-red-500/30 font-bold text-xs md:text-sm rounded-xl transition-all flex items-center gap-2 cursor-pointer active:scale-95 shadow-xs"
+          className="px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold text-xs md:text-sm rounded-xl transition-all flex items-center gap-2 cursor-pointer active:scale-95 shadow-sm"
         >
           <X size={16} weight="bold" />
           <span>{tCommon("cancel")}</span>

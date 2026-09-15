@@ -108,7 +108,7 @@ export function AuthModal() {
         onClick={closeAuthModal}
       />
 
-      <div className="relative w-full max-w-md bg-surface border border-border rounded-3xl shadow-2xl overflow-hidden z-10 my-auto animate-in zoom-in-95 duration-200">
+      <div data-theme="dark" className="dark relative w-full max-w-md bg-surface border border-border rounded-3xl shadow-2xl overflow-hidden z-10 my-auto animate-in zoom-in-95 duration-200">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-72 h-36 bg-accent/15 blur-3xl pointer-events-none rounded-full" />
 
         <button

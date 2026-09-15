@@ -126,9 +126,15 @@ export async function compileEctdPackage(
   documents: ProjectDocument[]
 ): Promise<CompilationResult> {
   const country = (config?.submissionCountry || "KZ").toUpperCase();
+  const sequenceStr = sanitizeSequence(config?.dossierSequence);
+
+  // Filter valid documents (sequence 0000 only includes active documents)
+  const validDocs = sequenceStr === "0000"
+    ? documents.filter((d) => d.status === "active")
+    : documents.filter((d) => d.status === "active" || (d.status === "deleted" && d.sequence !== "0000"));
 
   // 1. Concurrently download physical document buffers (filtering out 'delete' tombstones)
-  const docsToDownload = documents.filter(
+  const docsToDownload = validDocs.filter(
     (d) => d.status !== "deleted" && d.operation !== "delete" && !!d.imageKitUrl
   );
 
@@ -143,7 +149,7 @@ export async function compileEctdPackage(
   });
 
   // Map updated documents with their real computed MD5 checksums
-  const updatedDocuments = documents.map((d) => {
+  const updatedDocuments = validDocs.map((d) => {
     const downloaded = downloadedDocs.find((item) => item.doc.id === d.id);
     return downloaded ? downloaded.doc : d;
   });
@@ -175,7 +181,6 @@ export async function compileEctdPackage(
   // Pipe zip archive stream into buffer stream
   archive.pipe(bufferStream);
 
-  const sequenceStr = sanitizeSequence(config?.dossierSequence);
   const cleanProduct = (project.productName || project.projectCode)
     .toLowerCase()
     .trim()

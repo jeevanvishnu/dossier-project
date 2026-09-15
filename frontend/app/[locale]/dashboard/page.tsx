@@ -169,7 +169,7 @@ export default function DashboardPage() {
                 </div>
               ) : (
                 <div className="bg-bg border border-dashed border-red-500/30 rounded-xl p-5 flex flex-col items-center justify-center text-center space-y-2">
-                  <span className="text-xs font-medium text-red-400">{tDash("clearTariffStatus")}</span>
+                  <span className="text-xs font-medium text-red-600 dark:text-red-400">{tDash("clearTariffStatus")}</span>
                   <button
                     onClick={handleResetTariff}
                     className="text-xs text-accent underline font-medium hover:text-accent-hover"

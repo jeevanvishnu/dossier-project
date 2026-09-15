@@ -214,6 +214,16 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
 
   const handleDownloadZip = async () => {
     if (isDownloadingZip) return;
+
+    const hasUploadedFiles = Object.values(moduleFiles).some(
+      (files) => files && files.length > 0
+    );
+
+    if (!hasUploadedFiles) {
+      toast.error(tWorkspace("pleaseAddFile"));
+      return;
+    }
+
     setIsDownloadingZip(true);
     toast.loading("Compiling latest eCTD dossier ZIP package...", { id: "zip-download-toast" });
     try {
@@ -226,7 +236,7 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
         toast.error(compileRes.data?.message || "No active documents found to compile ZIP package.", { id: "zip-download-toast" });
       }
     } catch (err: any) {
-      handleApiError(err, "Failed to download eCTD ZIP package");
+      handleApiError(err, "Failed to download eCTD ZIP package", { id: "zip-download-toast" });
     } finally {
       setIsDownloadingZip(false);
     }
@@ -269,18 +279,7 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
     }
   }, [expandedNodes, projectId]);
 
-  const [moduleFiles, setModuleFiles] = useState<Record<string, UploadedFile[]>>({
-    "1.0": [
-      {
-        id: "file-1",
-        name: "1.0. Cover Letter Miconazole.pdf",
-        sequence: "0000",
-        uploadDate: "14.08.2023",
-        completionDate: "14.08.2023",
-        md5Hash: "MD5",
-      },
-    ],
-  });
+  const [moduleFiles, setModuleFiles] = useState<Record<string, UploadedFile[]>>({});
 
   const expandAncestors = (nodeId: string) => {
     const ancestors = getAncestorNodeIds(ECTD_FULL_TREE, nodeId);
@@ -326,10 +325,7 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
           }
           newMap[doc.nodeId].push(item);
         });
-        setModuleFiles((prev) => ({
-          ...prev,
-          ...newMap,
-        }));
+        setModuleFiles(newMap);
       }
     } catch (err: any) {
       console.warn("Could not fetch all project documents", err);
@@ -622,19 +618,19 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
   };
 
   return (
-    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 shadow-xs space-y-4 font-sans text-slate-800 dark:text-slate-200">
+    <div className="bg-surface border border-border rounded-xl p-4 shadow-xs space-y-4 font-sans text-primary">
       {/* Top Header */}
-      <div className="flex items-start justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+      <div className="flex items-start justify-between border-b border-border pb-3">
         <div className="space-y-0.5">
           <div className="flex items-center gap-2">
             <span className="font-bold text-base text-red-700 dark:text-red-400 tracking-tight">
               {tWorkspace("dossierId")}
             </span>
-            <span className="font-bold text-base text-slate-900 dark:text-slate-100 font-mono">
+            <span className="font-bold text-base text-primary font-mono">
               {projectId || "1661e1dd-22db-4f57-970d-b64401c1f5a5"}
             </span>
           </div>
-          <p className="text-[11px] text-slate-500 dark:text-slate-400">
+          <p className="text-[11px] text-muted">
             {tWorkspace("streamInfo")}
           </p>
         </div>
@@ -663,7 +659,7 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
             type="button"
             onClick={handleDownloadZip}
             disabled={!isDossierLocked || isDownloadingZip}
-            className="p-1.5 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 hover:text-accent transition-colors border border-slate-200 dark:border-slate-700 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            className="p-1.5 rounded bg-surface-raised hover:bg-border text-primary hover:text-accent transition-colors border border-border cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
             title={
               !isDossierLocked
                 ? tWorkspace("uploadDropzoneLocked")
@@ -680,14 +676,14 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
       </div>
 
       {/* 3-Column Layout */}
-      <div className="flex flex-col lg:flex-row min-h-[580px] border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden">
-        {/* Column 1: Far Left Dark Tab Sidebar (18% width) */}
-        <div className="w-full lg:w-[18%] bg-slate-800 text-slate-200 flex flex-col shrink-0 border-r border-slate-700">
-          <div className="bg-slate-900 py-2.5 px-3 border-b border-slate-700 flex items-center justify-center">
-            <List size={18} className="text-slate-300" weight="bold" />
+      <div className="flex flex-col lg:flex-row min-h-[580px] border border-border rounded-lg overflow-hidden">
+        {/* Column 1: Far Left Tab Sidebar (18% width) */}
+        <div className="w-full lg:w-[18%] bg-surface-raised text-primary flex flex-col shrink-0 border-r border-border">
+          <div className="bg-bg py-2.5 px-3 border-b border-border flex items-center justify-center">
+            <List size={18} className="text-secondary" weight="bold" />
           </div>
 
-          <div className="flex flex-col divide-y divide-slate-700/60">
+          <div className="flex flex-col divide-y divide-border">
             {mainModuleTabs.map((tab) => {
               const isActive = activeMainModuleId === tab.id;
               return (
@@ -696,8 +692,8 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
                   type="button"
                   onClick={() => handleMainModuleClick(tab.id)}
                   className={`text-left px-3.5 py-3 text-xs font-medium transition-all flex items-center justify-between cursor-pointer ${isActive
-                    ? "bg-sky-100 text-sky-800 font-bold border-l-4 border-sky-600"
-                    : "hover:bg-slate-700/50 text-slate-300"
+                    ? "bg-accent/15 text-accent font-bold border-l-4 border-accent"
+                    : "hover:bg-bg/60 text-secondary"
                     }`}
                 >
                   <span className="truncate">{tab.label}</span>
@@ -708,15 +704,15 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
         </div>
 
         {/* Column 2: Middle Sub-Node Navigation Tree (35% width) */}
-        <div className="w-full lg:w-[35%] bg-slate-50 dark:bg-slate-900/60 border-r border-slate-200 dark:border-slate-800 flex flex-col shrink-0 p-2.5 space-y-2">
+        <div className="w-full lg:w-[35%] bg-bg border-r border-border flex flex-col shrink-0 p-2.5 space-y-2">
           <div className="relative">
-            <MagnifyingGlass size={14} className="absolute left-2.5 top-2 text-slate-400" />
+            <MagnifyingGlass size={14} className="absolute left-2.5 top-2 text-muted" />
             <input
               type="text"
               placeholder={tWorkspace("searchPlaceholder")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-8 pr-2.5 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:border-sky-500"
+              className="w-full pl-8 pr-2.5 py-1 bg-surface border border-border rounded text-xs text-primary focus:outline-none focus:border-accent"
             />
           </div>
 
@@ -737,8 +733,8 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
                       onClick={() => setSelectedModuleId(node.id)}
                       style={{ paddingLeft: `${depth * 12 + 6}px` }}
                       className={`flex items-center justify-between py-1.5 px-2 rounded text-xs font-medium cursor-pointer transition-colors ${isSelected
-                        ? "bg-sky-100 dark:bg-sky-950/60 border border-sky-300 dark:border-sky-700 text-sky-900 dark:text-sky-200 font-semibold"
-                        : "hover:bg-gray-100 dark:hover:bg-slate-800/60 text-slate-700 dark:text-slate-300 border border-transparent"
+                        ? "bg-accent/15 border border-accent/40 text-accent font-semibold"
+                        : "hover:bg-surface-raised text-secondary border border-transparent"
                         }`}
                     >
                       <div className="flex items-center gap-1.5 min-w-0 pr-2">
@@ -746,7 +742,7 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
                           <button
                             type="button"
                             onClick={(e) => toggleExpand(node.id, e)}
-                            className="p-0.5 hover:bg-gray-200 dark:hover:bg-slate-700 rounded text-slate-500 shrink-0 cursor-pointer"
+                            className="p-0.5 hover:bg-surface-raised rounded text-muted shrink-0 cursor-pointer"
                           >
                             {isExpanded ? <CaretDown size={12} weight="bold" /> : <CaretRight size={12} weight="bold" />}
                           </button>
@@ -769,14 +765,14 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
                         )}
 
                         <span className="truncate text-[11.5px] leading-snug">
-                          {node.code && <span className="font-semibold text-slate-900 dark:text-slate-100 mr-1">{node.code}</span>}
-                          {node.docId && <span className="font-bold text-slate-800 dark:text-slate-200 mr-1">- {node.docId}</span>}
+                          {node.code && <span className="font-semibold text-primary mr-1">{node.code}</span>}
+                          {node.docId && <span className="font-bold text-primary mr-1">- {node.docId}</span>}
                           <span>{getNodeTitle(node)}</span>
                         </span>
                       </div>
 
                       {fileCount > 0 && (
-                        <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-sky-600 text-white font-mono shrink-0">
+                        <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-accent text-white font-mono shrink-0">
                           {fileCount}
                         </span>
                       )}
@@ -789,17 +785,17 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
         </div>
 
         {/* Column 3: Right Area - Upload Zone & Data Table (47% width) */}
-        <div className="w-full lg:w-[47%] bg-white dark:bg-slate-900 p-4 flex flex-col space-y-4">
+        <div className="w-full lg:w-[47%] bg-surface p-4 flex flex-col space-y-4">
           <div
             onDragEnter={isDossierLocked ? undefined : handleDrag}
             onDragOver={isDossierLocked ? undefined : handleDrag}
             onDragLeave={isDossierLocked ? undefined : handleDrag}
             onDrop={isDossierLocked ? undefined : handleDrop}
             className={`border-2 border-dashed rounded-lg p-5 text-center transition-all relative ${isDossierLocked
-                ? "border-slate-300 dark:border-slate-800 bg-slate-100/50 dark:bg-slate-800/20 opacity-60"
+                ? "border-border bg-surface-raised/40 opacity-60"
                 : dragActive
-                  ? "border-sky-500 bg-sky-50 dark:bg-sky-950/30"
-                  : "border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/30 hover:border-sky-400"
+                  ? "border-accent bg-accent/10"
+                  : "border-border bg-bg/50 hover:border-accent"
               }`}
           >
             <input
@@ -808,28 +804,32 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
               onChange={handleFileInput}
               className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10 disabled:cursor-not-allowed"
             />
-            <div className="w-8 h-8 rounded-full bg-sky-100 dark:bg-sky-900/50 text-sky-600 dark:text-sky-400 flex items-center justify-center mx-auto mb-1.5">
-              <LockKey size={18} weight="bold" />
+            <div className="w-8 h-8 rounded-full bg-accent/15 text-accent flex items-center justify-center mx-auto mb-1.5">
+              {isDossierLocked ? (
+                <LockKey size={18} weight="bold" />
+              ) : (
+                <UploadSimple size={18} weight="bold" />
+              )}
             </div>
-            <p className="font-semibold text-xs text-slate-700 dark:text-slate-300">
+            <p className="font-semibold text-xs text-primary">
               {isDossierLocked
                 ? tWorkspace("uploadDropzoneLocked")
                 : isUploading
                   ? "Uploading to ImageKit..."
                   : tWorkspace("uploadDropzoneNew")}
             </p>
-            <p className="text-[10.5px] text-slate-400 mt-0.5">{tWorkspace("maxFileLimit")}</p>
+            <p className="text-[10.5px] text-muted mt-0.5">{tWorkspace("maxFileLimit")}</p>
           </div>
 
-          <div className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5 truncate">
-            <span className="text-slate-400">{tWorkspace("sectionLabel")}</span>
-            <span className="text-sky-700 dark:text-sky-300 font-mono truncate">{selectedNodeLabel}</span>
+          <div className="text-xs font-semibold text-primary flex items-center gap-1.5 truncate">
+            <span className="text-muted">{tWorkspace("sectionLabel")}</span>
+            <span className="text-accent font-mono truncate">{selectedNodeLabel}</span>
           </div>
 
-          <div className="border border-slate-300 dark:border-slate-800 rounded-lg overflow-hidden flex-1 shadow-xs">
+          <div className="border border-border rounded-lg overflow-hidden flex-1 shadow-xs">
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
-                <thead className="bg-slate-800 text-white uppercase text-[10.5px] font-bold tracking-wider">
+                <thead className="bg-surface-raised text-primary uppercase text-[10.5px] font-bold tracking-wider border-b border-border">
                   <tr>
                     <th className="py-2.5 px-3">{tWorkspace("tableColDocumentName")}</th>
                     <th className="py-2.5 px-3">{tWorkspace("tableColSequence")}</th>

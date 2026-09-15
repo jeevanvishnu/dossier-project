@@ -388,9 +388,6 @@ export default function ProjectsPage() {
                 <div>
                   <div className="flex items-center justify-between pb-3 border-b border-border mb-3">
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs font-bold text-accent">
-                        {prj.id}
-                      </span>
                       <span
                         className={`text-[10px] font-bold px-2 py-0.5 rounded ${
                           prj.status.includes("Approved")
@@ -497,9 +494,6 @@ export default function ProjectsPage() {
                       {/* 1. Product Name */}
                       <td className="py-3.5 px-4">
                         <div className="flex flex-col min-w-[140px]">
-                          <span className="font-mono text-[10px] font-bold text-accent">
-                            {prj.id}
-                          </span>
                           <span className="font-lexend font-bold text-primary group-hover:text-accent transition-colors text-xs">
                             {prj.productName}
                           </span>

@@ -151,7 +151,8 @@ api.interceptors.response.use(
 // ─────────────────────────────────────────────────────────────────────────────
 export function handleApiError(
   error: unknown,
-  fallbackMessage: string = "An error occurred. Please try again."
+  fallbackMessage: string = "An error occurred. Please try again.",
+  options?: Record<string, any>
 ): string {
   let message = fallbackMessage;
 
@@ -176,6 +177,6 @@ export function handleApiError(
     message = error.message;
   }
 
-  toast.error(message);
+  toast.error(message, options);
   return message;
 }
