@@ -227,7 +227,16 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
     setIsDownloadingZip(true);
     toast.loading("Compiling latest eCTD dossier ZIP package...", { id: "zip-download-toast" });
     try {
-      const compileRes = await api.post(`/projects/${projectId}/compile`);
+      let activeSeq: string | undefined = undefined;
+      let activeConfigId: string | undefined = undefined;
+      if (typeof window !== "undefined") {
+        activeSeq = sessionStorage.getItem(`active_dossier_sequence_${projectId}`) || undefined;
+        activeConfigId = sessionStorage.getItem(`active_dossier_id_${projectId}`) || undefined;
+      }
+      const compileRes = await api.post(`/projects/${projectId}/compile`, {
+        sequence: activeSeq,
+        dossierConfigId: activeConfigId ? parseInt(activeConfigId) : undefined,
+      });
       if (compileRes.data?.success && compileRes.data?.data?.downloadUrl) {
         const downloadUrl = compileRes.data.data.downloadUrl;
         window.open(downloadUrl, "_blank");
@@ -403,6 +412,8 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
     }
   };
 
+  const [selectedDocCode, setSelectedDocCode] = useState<string>("");
+
   const uploadFileToBackend = async (file?: File) => {
     if ((selectedOperation === "new" || selectedOperation === "replace") && !file) {
       toast.error("Please select a file to attach before executing this operation.");
@@ -416,9 +427,12 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
         formData.append("file", file);
       }
       formData.append("operation", selectedOperation);
+      if (selectedDocCode) {
+        formData.append("docCode", selectedDocCode);
+      }
 
       const response = await api.post(
-        `/projects/${projectId}/documents/${selectedModuleId}?operation=${selectedOperation}`,
+        `/projects/${projectId}/documents/${selectedModuleId}?operation=${selectedOperation}${selectedDocCode ? `&docCode=${selectedDocCode}` : ""}`,
         formData
       );
 

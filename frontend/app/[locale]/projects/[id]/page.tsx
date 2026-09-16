@@ -28,9 +28,15 @@ function ProjectWorkspaceContent({ id }: { id: string }) {
 
   const [isDossierComplete, setIsDossierComplete] = useState<boolean>(false);
   const [isCheckingStatus, setIsCheckingStatus] = useState<boolean>(true);
+  const [isCreatingDossier, setIsCreatingDossier] = useState<boolean>(false);
 
   useEffect(() => {
     if (!id) return;
+    if (id === "new") {
+      setIsCheckingStatus(false);
+      setIsDossierComplete(false);
+      return;
+    }
     const checkDossierStatus = async () => {
       setIsCheckingStatus(true);
       try {
@@ -70,24 +76,31 @@ function ProjectWorkspaceContent({ id }: { id: string }) {
     return <WorkspaceSkeleton />;
   }
 
+  const showTabs = isCreatingDossier || activeTab !== "dossier-data";
+
   return (
     <div className="space-y-6 w-full pb-12">
-      {/* 1. Persistent Top Header & Actions */}
-      <ProjectHeader projectId={id} />
-
-      {/* 2. Main Tabbed Navigation Bar */}
-      <ProjectTabs
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        isDossierComplete={isDossierComplete}
-      />
+      {/* 1. Main Tabbed Navigation Bar (Shown when configuring a dossier or on other sub-views) */}
+      {showTabs && (
+        <ProjectTabs
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+          isDossierComplete={isDossierComplete}
+        />
+      )}
 
       {/* Dynamic Views Rendering based on active tab */}
       {activeTab === "dossier-data" && (
         <DossierDataView
           projectId={id}
-          onNavigateToUpload={() => setActiveTab("upload-docs")}
+          onNavigateToUpload={() => {
+            setActiveTab("upload-docs");
+            if (typeof window !== "undefined") {
+              window.history.replaceState(null, "", `/projects/${id}?tab=upload-docs`);
+            }
+          }}
           onStatusChange={handleStatusChange}
+          onCreatingDossierChange={setIsCreatingDossier}
         />
       )}
       {activeTab === "upload-docs" && (

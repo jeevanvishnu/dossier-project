@@ -30,6 +30,8 @@ export const updateDossierDataSchema = z.object({
   additionalFeature: z.string().optional(),
   status: z.string().optional(),
   // dossier_config fields
+  dossierConfigId: z.number().int().optional(),
+  createNewDossier: z.boolean().optional(),
   submissionCountry: z.string().optional(),
   role: z.string().optional(),
   procedureType: z.string().optional(),

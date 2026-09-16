@@ -3,7 +3,7 @@ import { db } from "../db/db";
 import { projects, dossierConfig, projectMembers, auditLogs } from "../db/schema";
 import { createProjectSchema, updateDossierDataSchema } from "../validators/project.validator";
 import { parseIdParam, resolveProjectId } from "../utils/params.util";
-import { eq, desc } from "drizzle-orm";
+import { eq, and, desc, isNotNull } from "drizzle-orm";
 
 import crypto from "crypto";
 
@@ -27,7 +27,7 @@ export async function getProjects(req: Request, res: Response): Promise<void> {
       limit,
       offset,
     });
-    
+
     // Fallback count query since count() can be tricky across different drizzle versions
     const allProjects = await db.query.projects.findMany({ columns: { id: true } });
     const totalCount = allProjects.length;
@@ -80,7 +80,7 @@ export async function createProject(req: Request, res: Response): Promise<void> 
           tariff: input.tariff || "Tariff OWN",
           additionalFeature: input.additionalFeature || "Standard",
           status: "Active",
-          isProjectSaved: false,
+          isProjectSaved: true,
         })
         .returning();
 
@@ -142,6 +142,7 @@ export async function getDossierData(req: Request, res: Response): Promise<void>
       where: eq(projects.id, projectId),
       with: {
         dossierConfig: true,
+        documents: true,
         members: {
           with: {
             user: {
@@ -162,13 +163,21 @@ export async function getDossierData(req: Request, res: Response): Promise<void>
       return;
     }
 
-    const { dossierConfig: config, ...project } = projectData;
+    const allConfigs = await db.query.dossierConfig.findMany({
+      where: eq(dossierConfig.projectId, projectId),
+    });
+
+    const { dossierConfig: config, documents, ...project } = projectData;
+
+    const totalFileSize = (documents || []).reduce((sum: number, doc: any) => sum + (doc.fileSize || 0), 0);
 
     res.status(200).json({
       success: true,
       data: {
         project,
-        dossierConfig: config || null,
+        dossierConfig: allConfigs[0] || config || null,
+        dossierConfigs: allConfigs,
+        dossierSize: totalFileSize,
       },
     });
   } catch (error: any) {
@@ -268,11 +277,20 @@ export async function updateDossierData(req: Request, res: Response): Promise<vo
       let updatedConfig = existingProject.dossierConfig || null;
 
       if (hasConfigFields) {
+        let existingConfigForId = null;
+        if (input.dossierConfigId) {
+          existingConfigForId = await tx.query.dossierConfig.findFirst({
+            where: and(eq(dossierConfig.id, input.dossierConfigId), eq(dossierConfig.projectId, projectId)),
+          });
+        } else if (!input.createNewDossier && existingProject.dossierConfig) {
+          existingConfigForId = existingProject.dossierConfig;
+        }
+
         const mergedDetails = input.dossierDetails !== undefined
           ? {
-              ...((existingProject.dossierConfig?.dossierDetails as Record<string, any>) || {}),
-              ...input.dossierDetails,
-            }
+            ...((existingConfigForId?.dossierDetails as Record<string, any>) || {}),
+            ...input.dossierDetails,
+          }
           : undefined;
 
         const configFields: Record<string, any> = {
@@ -286,11 +304,11 @@ export async function updateDossierData(req: Request, res: Response): Promise<vo
           ...(mergedDetails !== undefined ? { dossierDetails: mergedDetails } : {}),
         };
 
-        if (existingProject.dossierConfig) {
+        if (!input.createNewDossier && existingConfigForId) {
           const [conf] = await tx
             .update(dossierConfig)
             .set(configFields)
-            .where(eq(dossierConfig.projectId, projectId))
+            .where(eq(dossierConfig.id, existingConfigForId.id))
             .returning();
           updatedConfig = conf;
         } else {
@@ -299,18 +317,22 @@ export async function updateDossierData(req: Request, res: Response): Promise<vo
             .values({
               projectId,
               submissionCountry: input.submissionCountry || "KAZAKHSTAN",
-              role: input.role,
-              procedureType: input.procedureType,
-              typeOfProcedure: input.typeOfProcedure,
+              role: input.role || "Reference Member State (RMS)",
+              procedureType: input.procedureType || "Mutual Recognition (MRP)",
+              typeOfProcedure: input.typeOfProcedure || "Bringing into conformity",
               applicationNumber: input.applicationNumber || "",
               dossierSequence: input.dossierSequence || "Sequence 0000",
               isDossierSaved: true,
-              dossierDetails: mergedDetails || null,
+              dossierDetails: input.dossierDetails || mergedDetails || null,
             })
             .returning();
           updatedConfig = conf;
         }
       }
+
+      const allConfigs = await tx.query.dossierConfig.findMany({
+        where: eq(dossierConfig.projectId, projectId),
+      });
 
       await tx.insert(auditLogs).values({
         projectId,
@@ -319,7 +341,7 @@ export async function updateDossierData(req: Request, res: Response): Promise<vo
         userCredentials: currentUser ? `${currentUser.email} (${currentUser.role})` : "System",
       });
 
-      return { project: updatedProject, dossierConfig: updatedConfig };
+      return { project: updatedProject, dossierConfig: updatedConfig, dossierConfigs: allConfigs };
     });
 
     res.status(200).json({
@@ -365,6 +387,58 @@ export async function deleteProject(req: Request, res: Response): Promise<void> 
   } catch (error: any) {
     console.error("[Delete Project Error]", error);
     res.status(500).json({ success: false, message: error.message || "Failed to delete project" });
+  }
+}
+
+/**
+ * DELETE /api/projects/:id/dossier-config
+ * Resets (clears) the dossier configuration for a project back to defaults.
+ * This does not delete the project itself — only wipes the dossier metadata.
+ */
+export async function deleteDossierConfig(req: Request, res: Response): Promise<void> {
+  try {
+    const projectId = await resolveProjectId(req.params.id);
+    if (!projectId) {
+      res.status(400).json({ success: false, message: "Invalid project ID or code" });
+      return;
+    }
+
+    const currentUser = req.user;
+    const rawTargetId = req.params.dossierConfigId || (typeof req.query.dossierConfigId === "string" ? req.query.dossierConfigId : null) || req.body?.dossierConfigId;
+    const targetConfigId = rawTargetId ? parseInt(String(rawTargetId)) : null;
+
+    if (targetConfigId) {
+      await db
+        .delete(dossierConfig)
+        .where(and(eq(dossierConfig.id, targetConfigId), eq(dossierConfig.projectId, projectId)));
+    } else {
+      const existingConfig = await db.query.dossierConfig.findFirst({
+        where: eq(dossierConfig.projectId, projectId),
+      });
+      if (existingConfig) {
+        await db.delete(dossierConfig).where(eq(dossierConfig.id, existingConfig.id));
+      }
+    }
+
+    const remainingConfigs = await db.query.dossierConfig.findMany({
+      where: eq(dossierConfig.projectId, projectId),
+    });
+
+    await db.insert(auditLogs).values({
+      projectId,
+      logType: "WARNING",
+      message: `Dossier configuration was deleted.`,
+      userCredentials: currentUser ? `${currentUser.email} (${currentUser.role})` : "System",
+    });
+
+    res.status(200).json({
+      success: true,
+      data: { remainingConfigs },
+      message: "Dossier configuration deleted successfully",
+    });
+  } catch (error: any) {
+    console.error("[Delete Dossier Config Error]", error);
+    res.status(500).json({ success: false, message: error.message || "Failed to delete dossier configuration" });
   }
 }
 

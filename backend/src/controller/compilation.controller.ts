@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { db } from "../db/db";
-import { projects, projectDocuments, packageArchives, auditLogs } from "../db/schema";
+import { projects, dossierConfig, projectDocuments, packageArchives, auditLogs } from "../db/schema";
 import { compileEctdPackage, sanitizeSequence } from "../services/compilation.service";
 import { uploadToImageKit } from "../services/imagekit.service";
 import { resolveProjectId } from "../utils/params.util";
@@ -40,7 +40,6 @@ export async function compileProjectPackage(req: Request, res: Response): Promis
 
     const project = await db.query.projects.findFirst({
       where: eq(projects.id, projectId),
-      with: { dossierConfig: true },
     });
 
     if (!project) {
@@ -48,7 +47,30 @@ export async function compileProjectPackage(req: Request, res: Response): Promis
       return;
     }
 
-    const targetSequence = sanitizeSequence(project.dossierConfig?.dossierSequence);
+    const targetConfigId = req.body?.dossierConfigId || req.query?.dossierConfigId;
+    const targetSeqParam = req.body?.sequence || req.query?.sequence;
+
+    let targetConfig = null;
+
+    if (targetConfigId) {
+      targetConfig = await db.query.dossierConfig.findFirst({
+        where: and(eq(dossierConfig.id, parseInt(String(targetConfigId))), eq(dossierConfig.projectId, projectId)),
+      });
+    } else if (targetSeqParam) {
+      const cleanSeq = sanitizeSequence(String(targetSeqParam));
+      const allConfigs = await db.query.dossierConfig.findMany({
+        where: eq(dossierConfig.projectId, projectId),
+        orderBy: [desc(dossierConfig.id)],
+      });
+      targetConfig = allConfigs.find((c) => sanitizeSequence(c.dossierSequence) === cleanSeq) || allConfigs[0] || null;
+    } else {
+      targetConfig = await db.query.dossierConfig.findFirst({
+        where: eq(dossierConfig.projectId, projectId),
+        orderBy: [desc(dossierConfig.id)],
+      });
+    }
+
+    const targetSequence = sanitizeSequence(targetConfig?.dossierSequence);
 
     // For sequence 0000 (initial registration submission), compile ONLY active documents.
     // Draft deletes during sequence 0000 do not create tombstones in initial sequence XML.
@@ -57,20 +79,20 @@ export async function compileProjectPackage(req: Request, res: Response): Promis
       where:
         targetSequence === "0000"
           ? and(
-              eq(projectDocuments.projectId, projectId),
-              eq(projectDocuments.status, "active")
-            )
+            eq(projectDocuments.projectId, projectId),
+            eq(projectDocuments.status, "active")
+          )
           : and(
-              eq(projectDocuments.projectId, projectId),
-              or(
-                eq(projectDocuments.status, "active"),
-                and(
-                  eq(projectDocuments.status, "deleted"),
-                  eq(projectDocuments.sequence, targetSequence),
-                  ne(projectDocuments.sequence, "0000")
-                )
+            eq(projectDocuments.projectId, projectId),
+            or(
+              eq(projectDocuments.status, "active"),
+              and(
+                eq(projectDocuments.status, "deleted"),
+                eq(projectDocuments.sequence, targetSequence),
+                ne(projectDocuments.sequence, "0000")
               )
-            ),
+            )
+          ),
     });
 
     if (docsToCompile.length === 0) {
@@ -81,8 +103,8 @@ export async function compileProjectPackage(req: Request, res: Response): Promis
       return;
     }
 
-    console.log(`[eCTD Compiler] Compiling ${docsToCompile.length} active documents for Project ${projectId}...`);
-    const compilation = await compileEctdPackage(project, project.dossierConfig, docsToCompile);
+    console.log(`[eCTD Compiler] Compiling ${docsToCompile.length} active documents for Project ${projectId} (Sequence ${targetSequence})...`);
+    const compilation = await compileEctdPackage(project, targetConfig || null, docsToCompile);
 
     const ikResult = await uploadToImageKit(
       compilation.zipBuffer,

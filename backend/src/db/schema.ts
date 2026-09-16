@@ -90,6 +90,8 @@ export const projectDocuments = pgTable("project_documents", {
     .references(() => projects.id, { onDelete: "cascade" })
     .notNull(),
   nodeId: varchar("node_id", { length: 100 }).notNull(),
+  docCode: varchar("doc_code", { length: 5 }),
+  docType: varchar("doc_type", { length: 100 }),
   originalName: text("original_name").notNull(),
   imageKitUrl: text("image_kit_url"),
   imageKitFileId: text("image_kit_file_id"),
@@ -145,6 +147,7 @@ export const projectsRelations = relations(projects, ({ one, many }) => ({
     fields: [projects.id],
     references: [dossierConfig.projectId],
   }),
+  dossierConfigs: many(dossierConfig),
   members: many(projectMembers),
   documents: many(projectDocuments),
   auditLogs: many(auditLogs),

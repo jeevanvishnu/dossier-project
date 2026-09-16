@@ -59,25 +59,26 @@ export function sanitizeSequence(rawSeq?: string | null): string {
   return digits.slice(-4).padStart(4, "0");
 }
 
+import { findCtdDocCodeEntry } from "../constants/ctdDocCodes";
+
 /**
- * Maps a document's eCTD nodeId (e.g., '1.3.1-02001') to Windows-style eCTD directory path (e.g. 'm1\1.3\1.3.1\').
- * Strips regional folders like '/us/' or '/kz/' and builds nested section paths using backslashes.
+ * Maps a document's eCTD nodeId (or docCode) to verbatim Windows-style eCTD directory path (e.g. 'm1\1.3\1.3.1').
+ * Returns exact folderPath WITHOUT a trailing backslash.
  */
-export function getEctdFolderPath(nodeId: string, _countryStr?: string | null): string {
-  if (!nodeId) return "m1/";
+export function getEctdFolderPath(nodeId: string, _countryStr?: string | null, docCode?: string): string {
+  const entry = findCtdDocCodeEntry(nodeId, docCode);
+  if (entry) {
+    return entry.folderPath.replace(/[\/\\]+$/, "");
+  }
 
-  // Clean off 5-digit docId suffix if present (e.g., '1.3.1-02001' -> '1.3.1')
+  if (!nodeId) return "m1";
+
   const cleanCode = nodeId.replace(/-\d{5}$/, "").trim();
-
-  // Section 1.0 (Cover letter) files reside directly in m1/ root directory
-  if (cleanCode === "1.0") return "m1/";
-
-  // Direct sub-module 1.2 files (e.g. 1.2.2, 1.2.5) reside in m1/1.2/ directory
-  if (["1.2", "1.2.1", "1.2.2", "1.2.3", "1.2.5"].includes(cleanCode)) return "m1/1.2/";
+  if (cleanCode === "1.0") return "m1\\1.0";
+  if (["1.2", "1.2.1", "1.2.2", "1.2.3", "1.2.5"].includes(cleanCode)) return "m1\\1.2";
 
   const parts = cleanCode.split(".").filter(Boolean);
-
-  if (parts.length === 0) return "m1/";
+  if (parts.length === 0) return "m1";
 
   const mainModuleNum = parts[0];
   const modulePrefix = `m${mainModuleNum}`;
@@ -89,7 +90,7 @@ export function getEctdFolderPath(nodeId: string, _countryStr?: string | null): 
     pathParts.push(currentSection);
   }
 
-  return pathParts.join("/") + "/";
+  return pathParts.join("\\");
 }
 
 export interface CompilationResult {
@@ -158,7 +159,7 @@ export async function compileEctdPackage(
   const xmlContent = generateEaeuManifestXml(project, config, updatedDocuments, {
     sanitizeFileNameFn: sanitizeFileName,
     sanitizeSequenceFn: sanitizeSequence,
-    getEctdFolderPathFn: getEctdFolderPath,
+    getEctdFolderPathFn: (nodeId, countryStr, docCode) => getEctdFolderPath(nodeId, countryStr, docCode),
   });
   const xmlChecksum = calculateMD5(xmlContent);
 
@@ -193,11 +194,12 @@ export async function compileEctdPackage(
 
   // Append physical documents into their respective eCTD folders
   for (const { doc, buffer } of downloadedDocs) {
-    const eaeuDocCode = mapNodeIdToEaeuCode(doc.nodeId);
+    const eaeuDocCode = mapNodeIdToEaeuCode(doc.nodeId, doc.docCode);
     const effectiveDocName = getRussianDocName(doc.originalName, eaeuDocCode, doc.nodeId);
-    const folderPath = getEctdFolderPath(doc.nodeId, country);
+    const folderPath = getEctdFolderPath(doc.nodeId, country, doc.docCode);
     const sanitizedName = sanitizeFileName(effectiveDocName);
-    archive.append(buffer, { name: `${folderPath}${sanitizedName}` });
+    const fullZipEntryName = `${folderPath.replace(/[\/\\]+$/, "")}\\${sanitizedName}`.replace(/\\\\+/g, "\\");
+    archive.append(buffer, { name: fullZipEntryName });
   }
 
   await archive.finalize();

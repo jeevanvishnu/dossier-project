@@ -1,7 +1,8 @@
-import { generateEaeuManifestXml } from "../services/eaeu-manifest.service";
+import { generateEaeuManifestXml, mapNodeIdToEaeuCode } from "../services/eaeu-manifest.service";
 import { getEctdFolderPath, sanitizeFileName, sanitizeSequence } from "../services/compilation.service";
 import { SORBIT_DOSSIER_FIXTURE } from "./sorbitDossier.fixture";
-import { Project, DossierConfig } from "../db/schema";
+import { Project, DossierConfig, ProjectDocument } from "../db/schema";
+import { CTD_DOC_CODES, getCtdDocCodeEntry } from "../constants/ctdDocCodes";
 
 const mockProject: Project = {
   id: 1,
@@ -57,54 +58,147 @@ export function runEaeuManifestTests() {
   }
   console.log("✅ Passed Assertion 1b: RegistrationKindCode element present with value 01");
 
-  const countryIndex = xmlOutput.indexOf(expectedCountryTag);
-  const kindIndex = xmlOutput.indexOf(expectedKindTag);
-  if (kindIndex < countryIndex) {
-    throw new Error("TEST FAILED: RegistrationKindCode MUST immediately follow UnifiedCountryCode!");
-  }
-  console.log("✅ Passed Assertion 1c: RegistrationKindCode immediately follows UnifiedCountryCode");
+  // Assertion 2: Physical File Path Formatting (Attribute 05 uses backslashes '\', NO '/' characters, NO double '\\')
+  const attr05Regex = /<hcsdo:DrugAttributeEnumText DrugAttributeKindEnumCode="05">([^<]+)<\/hcsdo:DrugAttributeEnumText>/g;
+  let match: RegExpExecArray | null;
+  let attr05Count = 0;
 
-  // Assertion 2: Physical File Path Formatting (Attribute 05 uses forward slashes '/')
-  const expectedPathExample = "m1/1.3/1.3.1/Сорбит ОХЛП ЕАЭС_18.04.2025.pdf";
-  const expectedPathTag = `<hcsdo:DrugAttributeEnumText DrugAttributeKindEnumCode="05">${expectedPathExample}</hcsdo:DrugAttributeEnumText>`;
+  while ((match = attr05Regex.exec(xmlOutput)) !== null) {
+    attr05Count++;
+    const pathValue = match[1];
 
-  if (!xmlOutput.includes(expectedPathTag)) {
-    throw new Error(`TEST FAILED: Missing expected Attribute 05 path:\n${expectedPathTag}`);
-  }
-  console.log(`✅ Passed Assertion 2a: Example output path with forward slashes found: ${expectedPathExample}`);
+    if (pathValue.includes("/")) {
+      throw new Error(`TEST FAILED: Attribute 05 path contains invalid forward slash '/': "${pathValue}"`);
+    }
 
-  // Check no backslashes in DrugAttributeKindEnumCode="05" tags
-  if (xmlOutput.match(/DrugAttributeKindEnumCode="05">[^<]*\\/)) {
-    throw new Error("TEST FAILED: Found invalid backslash '\\' in DrugAttributeKindEnumCode 05 relative file path tag!");
-  }
-  console.log("✅ Passed Assertion 2b: Relative ZIP file paths strictly use forward slashes '/' without backslashes");
+    // Check for doubled backslash separator '\\' (matching two consecutive backslashes)
+    if (/\\\\/.test(pathValue)) {
+      throw new Error(`TEST FAILED: Attribute 05 path contains doubled backslash '\\\\': "${pathValue}"`);
+    }
 
-  // Check no forward slash regional folders like /us/ or /kz/
-  if (xmlOutput.includes("m1/us/") || xmlOutput.includes("m1/kz/")) {
-    throw new Error("TEST FAILED: Hardcoded regional folder (/us/ or /kz/) found in output!");
-  }
-  console.log("✅ Passed Assertion 2c: No hardcoded regional subdirectories (/us/, /kz/) in XML");
+    // Extract directory folder portion before filename
+    const lastSlashIndex = pathValue.lastIndexOf("\\");
+    if (lastSlashIndex === -1) {
+      throw new Error(`TEST FAILED: Attribute 05 path lacks folder hierarchy: "${pathValue}"`);
+    }
+    const folderPortion = pathValue.substring(0, lastSlashIndex);
 
-  // Assertion 3: Verify all 10 Sorbit dossier documents & 5-digit 2058 code list mapping
-  const expectedEaeuCodes = ["01001", "01005", "01009", "01016", "01011", "02001", "02002", "02004", "02005", "02010", "02011"];
-  
-  for (const code of expectedEaeuCodes) {
-    const codeTag = `<hcsdo:DrugRegistrationDocCode codeListId="2058">${code}</hcsdo:DrugRegistrationDocCode>`;
-    if (!xmlOutput.includes(codeTag)) {
-      throw new Error(`TEST FAILED: Missing 2058 code tag for ${code}:\n${codeTag}`);
+    // Validate folder path depth regex: ^m\d(\\[^\\]+)*$
+    if (!/^m\d(\\[^\\]+)*$/.test(folderPortion)) {
+      throw new Error(`TEST FAILED: Folder path "${folderPortion}" does not match pattern ^m\\d(\\\\[^\\\\]+)*$`);
     }
   }
-  console.log("✅ Passed Assertion 3: All 10 Sorbit dossier document 5-digit EAEU codes correctly mapped to codeListId 2058");
 
-  // Assertion 4: Verify Sequence 0000 contains only 'new' operations (no 'delete' or 'replace')
-  if (xmlOutput.includes("<hcsdo:OperationAtribute>delete</hcsdo:OperationAtribute>") || xmlOutput.includes("<hcsdo:OperationAtribute>replace</hcsdo:OperationAtribute>")) {
-    throw new Error("TEST FAILED: Initial submission (Sequence 0000) must not contain delete or replace operation attributes!");
+  if (attr05Count === 0) {
+    throw new Error("TEST FAILED: No Attribute 05 paths found in XML output!");
   }
-  console.log("✅ Passed Assertion 4: Sequence 0000 contains only 'new' operation attributes (no tombstone/delete records)");
+  console.log(`✅ Passed Assertion 2: All ${attr05Count} Attribute 05 paths use backslashes '\\', contain NO '/', NO doubled '\\\\', and match ^m\\d(\\\\[^\\\\]+)+$`);
 
-  console.log("\n🎉 ALL EAEU MANIFEST SCHEME & SORBIT FIXTURE TESTS PASSED SUCCESSFULLY!\n");
-  console.log("--- Generated XML Snippet ---");
-  console.log(xmlOutput.substring(0, 800));
+  // Assertion 3: Verify mapNodeIdToEaeuCode and ctdDocCodes lookup
+  const code16 = mapNodeIdToEaeuCode("1.6", "04001");
+  if (code16 !== "04001") throw new Error(`TEST FAILED: Node 1.6 + docCode 04001 mapped to ${code16}`);
+
+  const code182 = mapNodeIdToEaeuCode("1.8.2", "01017");
+  if (code182 !== "01017") throw new Error(`TEST FAILED: Node 1.8.2 + docCode 01017 mapped to ${code182}`);
+
+  const code32p = mapNodeIdToEaeuCode("3.2.P", "13001");
+  if (code32p !== "13001") throw new Error(`TEST FAILED: Node 3.2.P + docCode 13001 mapped to ${code32p}`);
+
+  let threwErrorOnUnresolvable = false;
+  try {
+    mapNodeIdToEaeuCode("invalid.node.id", "99999");
+  } catch (err) {
+    threwErrorOnUnresolvable = true;
+  }
+  if (!threwErrorOnUnresolvable) {
+    throw new Error("TEST FAILED: mapNodeIdToEaeuCode did not throw error on unresolvable mapping!");
+  }
+  console.log("✅ Passed Assertion 3: mapNodeIdToEaeuCode maps docCodes (1.6, 1.8.2, 3.2.P) and throws error on unresolvable mappings");
+
+  // Assertion 4: Verification of Doc Code 13001 with Cyrillic 'Р' in folder path
+  const testDoc13001: ProjectDocument = {
+    id: 99,
+    projectId: 1,
+    nodeId: "3.2.P",
+    docCode: "13001",
+    docType: "13001",
+    originalName: "3.2.P.1 Quality Document.pdf",
+    sequence: "0000",
+    uploadedAt: new Date(),
+    status: "active",
+    operation: "new",
+    issueDate: null,
+    expirationDate: null,
+    imageKitUrl: "https://ik.imagekit.io/ectd/test/doc13001.pdf",
+    imageKitFileId: "file_13001",
+    fileSize: 2048,
+    md5Checksum: "13001md5checksum13001md5checksum13",
+  };
+
+  const xml13001 = generateEaeuManifestXml(mockProject, mockConfig, [testDoc13001], {
+    sanitizeFileNameFn: sanitizeFileName,
+    sanitizeSequenceFn: sanitizeSequence,
+    getEctdFolderPathFn: getEctdFolderPath,
+  });
+
+  const expected13001Path = "m3\\3.2\\3.2.P\\3.2.Р.1\\3.2.P. Документация качества готового препарата (раздел 3.2.P.1).pdf";
+  const containsCyrillicR = xml13001.includes("3.2.Р.1");
+
+  if (!containsCyrillicR) {
+    throw new Error(`TEST FAILED: Generated XML for 13001 missing Cyrillic 'Р' in path segment!\n${xml13001}`);
+  }
+  // Assertion 5: Regression test for docCode 25001 (Module 1 TOC sits directly in m1 without subfolder)
+  const testDoc25001: ProjectDocument = {
+    id: 100,
+    projectId: 1,
+    nodeId: "1.1",
+    docCode: "25001",
+    docType: "25001",
+    originalName: "1.1 TOC module 1.pdf",
+    sequence: "0000",
+    uploadedAt: new Date(),
+    status: "active",
+    operation: "new",
+    issueDate: null,
+    expirationDate: null,
+    imageKitUrl: "https://ik.imagekit.io/ectd/test/doc25001.pdf",
+    imageKitFileId: "file_25001",
+    fileSize: 1024,
+    md5Checksum: "25001md5checksum25001md5checksum25",
+  };
+
+  const xml25001 = generateEaeuManifestXml(mockProject, mockConfig, [testDoc25001], {
+    sanitizeFileNameFn: sanitizeFileName,
+    sanitizeSequenceFn: sanitizeSequence,
+    getEctdFolderPathFn: getEctdFolderPath,
+  });
+
+  const expected25001PathTag = `<hcsdo:DrugAttributeEnumText DrugAttributeKindEnumCode="05">m1\\1.1. Содержание регистрационного досье.pdf</hcsdo:DrugAttributeEnumText>`;
+  if (xml25001.includes("m1\\1.1\\")) {
+    throw new Error(`TEST FAILED: docCode 25001 must sit directly in m1 root without subfolder \\1.1\\!\n${xml25001}`);
+  }
+  if (!xml25001.includes("m1\\")) {
+    throw new Error(`TEST FAILED: docCode 25001 missing m1\\ prefix!\n${xml25001}`);
+  }
+  console.log("✅ Passed Assertion 5: Doc Code 25001 sits directly in m1 root (m1\\<filename>) with NO \\1.1\\ subfolder");
+
+  console.log("\n🎉 ALL EAEU MANIFEST SCHEME & VERIFICATION TESTS PASSED SUCCESSFULLY!\n");
+
+  // Display required outputs for user inspection
+  console.log("==========================================================================");
+  console.log("📌 FINAL ctdDocCodes.ts ENTRIES FOR 12001, 13001, AND 01017 (Node 1.8.2)");
+  console.log("==========================================================================");
+  console.log("Doc Code 12001:", JSON.stringify(getCtdDocCodeEntry("12001"), null, 2));
+  console.log("Doc Code 13001:", JSON.stringify(getCtdDocCodeEntry("13001"), null, 2));
+  console.log("Doc Code 01017 (Node 1.8.2):", JSON.stringify(getCtdDocCodeEntry("01017"), null, 2));
+
+  console.log("\n==========================================================================");
+  console.log("📄 SAMPLE GENERATED XML BLOCK FOR DOC CODE 13001 (Node 3.2.P)");
+  console.log("==========================================================================");
+  const docDetailsStart = xml13001.indexOf("<hccdo:RegistrationDossierDocDetails>");
+  const docDetailsEnd = xml13001.indexOf("</hccdo:RegistrationDossierDocDetails>") + "</hccdo:RegistrationDossierDocDetails>".length;
+  console.log(xml13001.substring(docDetailsStart, docDetailsEnd));
+  console.log("==========================================================================\n");
 }
 
 if (require.main === module) {

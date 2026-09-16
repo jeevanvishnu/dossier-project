@@ -143,6 +143,11 @@ export async function uploadDocument(req: Request, res: Response): Promise<void>
     );
     uploadedFileId = ikResult.fileId;
 
+    const rawDocCode = req.query.docCode || req.body?.docCode;
+    const rawDocType = req.query.docType || req.body?.docType;
+    const docCode = rawDocCode ? rawDocCode.toString() : undefined;
+    const docType = rawDocType ? rawDocType.toString() : undefined;
+
     const newDocRecord = await db.transaction(async (tx) => {
       if (existingActive) {
         await tx
@@ -156,6 +161,8 @@ export async function uploadDocument(req: Request, res: Response): Promise<void>
         .values({
           projectId,
           nodeId,
+          docCode,
+          docType,
           originalName: file.originalname,
           imageKitUrl: ikResult.url,
           imageKitFileId: ikResult.fileId,

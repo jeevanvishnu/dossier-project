@@ -8,6 +8,7 @@ import {
   updateDossierData,
   updateProject,
   deleteProject,
+  deleteDossierConfig,
 } from "../controller/project.controller";
 
 const router = Router();
@@ -23,6 +24,10 @@ router.get("/:id/dossier-data", protect, checkProjectRole("owner", "editor", "vi
 
 // Update dossier project metadata
 router.put("/:id/dossier-data", protect, checkProjectRole("owner", "editor"), updateDossierData);
+
+// Delete (reset) dossier configuration only
+router.delete("/:id/dossier-config/:dossierConfigId", protect, checkProjectRole("owner", "editor"), deleteDossierConfig);
+router.delete("/:id/dossier-config", protect, checkProjectRole("owner", "editor"), deleteDossierConfig);
 
 // Update project details directly
 router.put("/:id", protect, checkProjectRole("owner", "editor"), updateProject);
