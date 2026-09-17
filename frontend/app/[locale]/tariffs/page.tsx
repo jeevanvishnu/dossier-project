@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { AppShell } from "../../components/AppShell";
 import { useTranslations } from "next-intl";
 import { CreditCard, Calculator, Receipt, ShieldCheck, CheckCircle } from "@phosphor-icons/react";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 
 export default function TariffsPage() {
   const tTariffs = useTranslations("tariffs");

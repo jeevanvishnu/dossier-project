@@ -8,7 +8,7 @@ import {
   DownloadSimple,
   Key,
 } from "@phosphor-icons/react";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import { api } from "@/app/lib/axios";
 import { SkeletonTableRow } from "@/app/components/ui/Skeleton";
 
@@ -28,6 +28,8 @@ interface XmlCreationHistoryViewProps {
 
 export const XmlCreationHistoryView: React.FC<XmlCreationHistoryViewProps> = ({ projectId = "1" }) => {
   const tWorkspace = useTranslations("workspace");
+  const tToasts = useTranslations("toasts");
+  const tErrors = useTranslations("errors");
   const [xmlPackages, setXmlPackages] = useState<XmlPackageRow[]>([
     {
       id: "pkg-1",
@@ -72,9 +74,9 @@ export const XmlCreationHistoryView: React.FC<XmlCreationHistoryViewProps> = ({ 
   const handleDownload = (packageName: string, downloadUrl: string) => {
     if (downloadUrl && downloadUrl !== "#") {
       window.open(downloadUrl, "_blank");
-      toast.success(`Downloading eCTD archive package: ${packageName}`);
+      toast.success(tToasts("downloadingArchive", { package: packageName }));
     } else {
-      toast.error("Download URL not available for this package.");
+      toast.error(tErrors("downloadUrlUnavailable"));
     }
   };
 

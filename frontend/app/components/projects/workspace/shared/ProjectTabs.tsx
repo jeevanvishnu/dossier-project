@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Folder, UploadSimple, Clock, FileCode, LockKey } from "@phosphor-icons/react";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 
 export type TabType = "dossier-data" | "upload-docs" | "dossier-history" | "xml-history";

@@ -2,7 +2,8 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { api, setAccessToken, getAccessToken, handleApiError } from "../lib/axios";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 
 export interface User {
   id: number;
@@ -25,6 +26,8 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const tToasts = useTranslations("toasts");
+  const tErrors = useTranslations("errors");
   const [user, setUser] = useState<User | null>(null);
   const [accessTokenState, setAccessTokenState] = useState<string | null>(getAccessToken());
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -91,11 +94,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const { user: userData, accessToken } = response.data.data;
         updateToken(accessToken);
         setUser(userData);
-        toast.success(`Welcome back, ${userData.name}!`);
+        toast.success(tToasts("welcomeBack", { name: userData.name }));
         return true;
       }
     } catch (err: unknown) {
-      handleApiError(err, "Invalid email or password.");
+      handleApiError(err, tErrors("invalidCredentials"));
     } finally {
       setIsLoading(false);
     }
@@ -111,7 +114,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       updateToken(null);
       setUser(null);
       setIsLoading(false);
-      toast.success("Logged out successfully.");
+      toast.success(tToasts("loggedOutSuccessfully"));
     }
   };
 

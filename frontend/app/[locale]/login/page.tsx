@@ -6,12 +6,13 @@ import { Pill, LockKey, Envelope, ArrowRight, ShieldCheck, UserCheck } from "@ph
 import { useAuth } from "../../context/AuthContext";
 import { ThemeToggle } from "../../components/ThemeToggle";
 import { LanguageSwitcher } from "../../components/LanguageSwitcher";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 
 export default function LoginPage() {
   const tAuth = useTranslations("auth");
   const tCommon = useTranslations("common");
+  const tErrors = useTranslations("errors");
   const router = useRouter();
   const { signIn, isLoading } = useAuth();
   const [email, setEmail] = useState("admin@ectc.kz");
@@ -21,20 +22,20 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
-      toast.error("Please enter email and password.");
+      toast.error(tErrors("enterEmailPassword"));
       return;
     }
 
     const success = await signIn(email, password);
     if (success) {
-      toast.success(`${tAuth("authenticatedAs")} ${roleSelect.toUpperCase()}`);
+      toast.success(roleSelect === "admin" ? "Signed in as Admin" : "Signed in as User");
       if (roleSelect === "admin") {
         router.push("/profile/account");
       } else {
         router.push("/dashboard");
       }
     } else {
-      toast.success(`${tAuth("demoGranted")} ${roleSelect.toUpperCase()}`);
+      toast.success("Demo access granted");
       router.push("/dashboard");
     }
   };

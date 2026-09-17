@@ -194,9 +194,9 @@ export async function compileEctdPackage(
 
   // Append physical documents into their respective eCTD folders
   for (const { doc, buffer } of downloadedDocs) {
-    const eaeuDocCode = mapNodeIdToEaeuCode(doc.nodeId, doc.docCode);
+    const eaeuDocCode = mapNodeIdToEaeuCode(doc.nodeId, doc.docCode || undefined);
     const effectiveDocName = getRussianDocName(doc.originalName, eaeuDocCode, doc.nodeId);
-    const folderPath = getEctdFolderPath(doc.nodeId, country, doc.docCode);
+    const folderPath = getEctdFolderPath(doc.nodeId, country, doc.docCode || undefined);
     const sanitizedName = sanitizeFileName(effectiveDocName);
     const fullZipEntryName = `${folderPath.replace(/[\/\\]+$/, "")}\\${sanitizedName}`.replace(/\\\\+/g, "\\");
     archive.append(buffer, { name: fullZipEntryName });

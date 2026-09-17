@@ -167,7 +167,7 @@ export function AuthModal() {
                 <div className="w-14 h-14 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-500 mb-3 shadow-sm">
                   <CheckCircle size={32} weight="fill" />
                 </div>
-                <h3 className="font-lexend text-lg font-semibold text-primary">Instructions Sent!</h3>
+                <h3 className="font-lexend text-lg font-semibold text-primary">{tAuth("instructionsSent")}</h3>
                 <button
                   type="button"
                   onClick={() => setMode("signin")}

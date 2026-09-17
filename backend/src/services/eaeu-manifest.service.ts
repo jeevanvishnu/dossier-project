@@ -116,7 +116,7 @@ export function generateEaeuManifestXml(
   // Document Iteration
   for (const doc of documents) {
     const docId = crypto.randomUUID();
-    const eaeuDocCode = mapNodeIdToEaeuCode(doc.nodeId, doc.docCode);
+    const eaeuDocCode = mapNodeIdToEaeuCode(doc.nodeId, doc.docCode || undefined);
     const effectiveDocName = getRussianDocName(doc.originalName, eaeuDocCode, doc.nodeId);
     const sanitizedName = helpers.sanitizeFileNameFn(effectiveDocName);
     const rawFolderPath = helpers.getEctdFolderPathFn(doc.nodeId, countryCode, doc.docCode || eaeuDocCode);

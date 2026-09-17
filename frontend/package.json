@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "translate": "node scripts/translate.js"
   },
   "dependencies": {
     "@phosphor-icons/react": "^2.1.10",
@@ -18,10 +19,10 @@
     "next-intl": "^4.14.4",
     "react": "19.2.8",
     "react-dom": "19.2.8",
-    "react-hot-toast": "^2.6.0",
     "react-redux": "^9.3.0",
     "react-virtuoso": "^4.18.13",
-    "simple-icons": "^16.30.0"
+    "simple-icons": "^16.30.0",
+    "sonner": "^2.0.8"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

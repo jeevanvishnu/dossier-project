@@ -70,7 +70,9 @@ export const dossierConfig = pgTable("dossier_config", {
   dossierSequence: text("dossier_sequence").default("Sequence 0000").notNull(),
   isDossierSaved: boolean("is_dossier_saved").default(false).notNull(),
   dossierDetails: jsonb("dossier_details"),
-});
+}, (table) => [
+  index("idx_dossier_config_project_id").on(table.projectId),
+]);
 
 export const projectMembers = pgTable("project_members", {
   id: serial("id").primaryKey(),
@@ -82,7 +84,10 @@ export const projectMembers = pgTable("project_members", {
     .notNull(),
   role: projectMemberRoleEnum("role").default("editor").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("idx_project_members_project_id").on(table.projectId),
+  index("idx_project_members_user_id").on(table.userId),
+]);
 
 export const projectDocuments = pgTable("project_documents", {
   id: serial("id").primaryKey(),
@@ -103,7 +108,10 @@ export const projectDocuments = pgTable("project_documents", {
   issueDate: timestamp("issue_date"),
   expirationDate: timestamp("expiration_date"),
   uploadedAt: timestamp("uploaded_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("idx_project_documents_project_id").on(table.projectId),
+  index("idx_project_documents_node_id").on(table.nodeId),
+]);
 
 export const auditLogs = pgTable("audit_logs", {
   id: serial("id").primaryKey(),
@@ -114,7 +122,9 @@ export const auditLogs = pgTable("audit_logs", {
   message: text("message").notNull(),
   userCredentials: text("user_credentials"),
   formationDate: timestamp("formation_date").defaultNow().notNull(),
-});
+}, (table) => [
+  index("idx_audit_logs_project_id").on(table.projectId),
+]);
 
 export const packageArchives = pgTable("package_archives", {
   id: serial("id").primaryKey(),
@@ -127,7 +137,9 @@ export const packageArchives = pgTable("package_archives", {
   zipChecksum: text("zip_checksum").notNull(),
   downloadUrl: text("download_url").notNull(),
   generatedAt: timestamp("generated_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("idx_package_archives_project_id").on(table.projectId),
+]);
 
 // ─── RELATIONS ───────────────────────────────────────────────────────────────
 export const usersRelations = relations(users, ({ many }) => ({

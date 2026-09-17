@@ -15,7 +15,7 @@ import {
   X,
   CheckCircle,
 } from "@phosphor-icons/react";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 
 export default function DashboardPage() {
@@ -200,25 +200,25 @@ export default function DashboardPage() {
                 </span>
               </div>
 
-                {announcements.map((item) => {
-                  const titleLabel = tDash.has(item.titleKey as any) ? tDash(item.titleKey as any) : item.titleDefault;
-                  const contentLabel = tDash.has(item.contentKey as any) ? tDash(item.contentKey as any) : item.contentDefault;
-                  return (
-                    <div key={item.id} className="bg-bg border border-border p-3.5 rounded-xl hover:border-accent/30 transition-colors">
-                      <div className="flex items-center justify-between gap-2 mb-1">
-                        <span className="text-xs font-semibold text-primary truncate max-w-[200px]">{titleLabel}</span>
-                        <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-accent/15 text-accent shrink-0">
-                          {item.category}
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-secondary leading-snug line-clamp-2 font-normal">{contentLabel}</p>
-                      <div className="mt-2 text-[9px] text-muted font-medium flex items-center justify-between border-t border-border/40 pt-1.5">
-                        <span>Ref ID: {item.id}</span>
-                        <span>{item.date}</span>
-                      </div>
+              {announcements.map((item) => {
+                const titleLabel = tDash.has(item.titleKey as any) ? tDash(item.titleKey as any) : item.titleDefault;
+                const contentLabel = tDash.has(item.contentKey as any) ? tDash(item.contentKey as any) : item.contentDefault;
+                return (
+                  <div key={item.id} className="bg-bg border border-border p-3.5 rounded-xl hover:border-accent/30 transition-colors">
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <span className="text-xs font-semibold text-primary truncate max-w-[200px]">{titleLabel}</span>
+                      <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-accent/15 text-accent shrink-0">
+                        {item.category}
+                      </span>
                     </div>
-                  );
-                })}
+                    <p className="text-[11px] text-secondary leading-snug line-clamp-2 font-normal">{contentLabel}</p>
+                    <div className="mt-2 text-[9px] text-muted font-medium flex items-center justify-between border-t border-border/40 pt-1.5">
+                      <span>Ref ID: {item.id}</span>
+                      <span>{item.date}</span>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 

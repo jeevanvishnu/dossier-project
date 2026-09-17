@@ -22,7 +22,7 @@ import {
   Warning,
   UploadSimple,
 } from "@phosphor-icons/react";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import { Virtuoso } from "react-virtuoso";
 import { ECTD_FULL_TREE, CTDNode } from "@/app/constants/ctdStructure";
 import { api, handleApiError } from "@/app/lib/axios";
@@ -40,72 +40,7 @@ interface UploadedFile {
   expirationDate?: string;
 }
 
-const RU_NODE_TITLES: Record<string, string> = {
-  "Administrative Information & Prescribing Information": "Административная информация и информация о назначении",
-  "Cover letter": "Сопроводительное письмо",
-  "Table of contents": "Содержание",
-  "General Documentation": "Общая документация",
-  "Application for registration of a medicinal product": "Заявление о регистрации лекарственного препарата",
-  "Application for registration of a medicinal product for medical use (bringing registration dossier into compliance with EAEU requirements)": "Заявление о регистрации лекарственного препарата (приведение в соответствие с требованиями ЕАЭС)",
-  "Application for amendments to the registration dossier of a medicinal product": "Заявление о внесении изменений в регистрационное досье",
-  "Application for re-registration of a medicinal product": "Заявление о перерегистрации лекарственного препарата",
-  "Document confirming payment of expert work fees and/or registration fees (duties) in accordance with EAEU member state legislation": "Документ, подтверждающий уплату пошлины (сбора) за проведение экспертизы",
-  "Copy of certificate for medicinal product in accordance with WHO recommended format": "Копия сертификата на лекарственный препарат по форме ВОЗ",
-  "Translation into Russian and copy of expert report issued upon registration": "Перевод на русский язык и копия экспертного отчета",
-  "Conclusion (recommendation) of authorized body following preliminary scientific advice": "Заключение (рекомендация) уполномоченного органа по научным консультациям",
-  "Recommendation of Expert Committee on Medicinal Products under EEC following preliminary scientific advice": "Рекомендация Экспертного комитета по лекарственным средствам при ЕЭК",
-  "Summary of Product Characteristics (SmPC), package leaflet, package mock-ups": "Общая характеристика лекарственного препарата (ОХЛП), листок-вкладыш, макеты упаковки",
-  "Drafts of SmPC and package leaflet compiled in accordance with EAEU requirements in Russian": "Проекты ОХЛП и листка-вкладыша на русском языке",
-  "Draft summary of product characteristics (SmPC) in Russian and Kazakh": "Проект общей характеристики лекарственного препарата (ОХЛП) на русском и казахском языках",
-  "Draft package leaflet (patient information leaflet) in Russian and Kazakh": "Проект листка-вкладыша (инструкции по медицинскому применению)",
-  "Mock-ups of primary, secondary, and intermediate packaging": "Макеты первичной, вторичной и промежуточной упаковки",
-  "Draft medicinal product labeling": "Проект маркировки лекарственного препарата",
-  "Mock-up of secondary (consumer) packaging of medicinal product": "Макет вторичной (потребительской) упаковки",
-  "Mock-up of primary (inner) packaging of medicinal product": "Макет первичной (внутренней) упаковки",
-  "Mock-up of intermediate packaging of medicinal product": "Макет промежуточной упаковки",
-  "Mock-up of medicinal product label": "Макет этикетки лекарственного препарата",
-  "Mock-up of medicinal product sticker": "Макет стикера лекарственного препарата",
-  "Results of user testing of package leaflet mock-up (Annex 12 EAEU Council Decision No. 88)": "Результаты пользовательского тестирования листка-вкладыша",
-  "Copies of approved SmPC and package leaflet from manufacturing country": "Копии утвержденных ОХЛП и листка-вкладыша страны-производителя",
-  "Information on regulatory status of medicinal product in other countries": "Информация о регуляторном статусе в других странах",
-  "List of countries where medicinal product has been submitted, registered, refused, or suspended": "Перечень стран, в которых препарат заявлен, зарегистрирован или отклонен",
-  "Quality Documents": "Документы качества",
-  "Manufacturing Documents": "Производственная документация",
-  "Information on Experts": "Информация об экспертах",
-  "Specific Requirements for Different Types of Applications": "Специальные требования для различных видов заявлений",
-  "Applicant's documents on environmental risk assessment": "Документы заявителя по оценке экологического риска",
-  "Information Concerning Pharmacovigilance in EAEU Member State": "Информация по фармаконадзору в государствах-членах ЕАЭС",
-  "Copies of documents confirming trademark registration": "Копии документов, подтверждающих регистрацию товарного знака",
-  "CTD Summaries": "Резюме CTD",
-  "Table of contents of modules 2 – 5": "Содержание модулей 2 – 5",
-  "Introduction to the Common Technical Document (CTD)": "Введение в Общий технический документ (CTD)",
-  "Quality Overall Summary (QOS)": "Общее резюме качества (QOS)",
-  "Non-clinical overview": "Доклинический обзор",
-  "Clinical overview": "Клинический обзор",
-  "Non-clinical Written and Tabulated Summaries": "Доклинические письменные и табличные резюме",
-  "Clinical Summary": "Клиническое резюме",
-  "Quality (Chemical, Pharmaceutical and Biological Information)": "Качество (химическая, фармацевтическая и биологическая информация)",
-  "Table of contents of module 3": "Содержание модуля 3",
-  "Body of Data": "Основной массив данных",
-  "Active Substance (AS)": "Действующее вещество",
-  "Medicinal Product": "Лекарственный препарат",
-  "Manufacture": "Производство",
-  "Characterization": "Характеристика",
-  "Control of Active Substance": "Контроль действующего вещества",
-  "Stability": "Стабильность",
-  "Pharmaceutical Development": "Фармацевтическая разработка",
-  "Manufacture of Medicinal Product": "Производство лекарственного препарата",
-  "Control of Excipients": "Контроль вспомогательных веществ",
-  "Control of Finished Product": "Контроль готового продукта",
-  "Non-Clinical Study Reports": "Отчеты о доклинических исследованиях",
-  "Table of contents of module 4": "Содержание модуля 4",
-  "Study Reports": "Отчеты об исследованиях",
-  "Pharmacology": "Фармакология",
-  "Pharmacokinetics": "Фармакокинетика",
-  "Toxicology": "Токсикология",
-  "Clinical Study Reports": "Отчеты о клинических исследованиях",
-  "Table of contents of module 5": "Содержание модуля 5",
-};
+
 
 const MAIN_MODULE_TABS = [
   { id: "m1", code: "1", label: "1. Admin information" },
@@ -150,11 +85,14 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
 }) => {
   const tWorkspace = useTranslations("workspace");
   const tCommon = useTranslations("common");
-  const locale = useLocale();
+  const tDocTitles = useTranslations("documentTitles");
+  const tErrors = useTranslations("errors");
+  const tToasts = useTranslations("toasts");
 
   const getNodeTitle = (node: CTDNode) => {
-    if (locale === "ru") {
-      return RU_NODE_TITLES[node.title] || node.title;
+    const key = node.id.replace(/[\.\-]/g, "_");
+    if (tDocTitles.has(key as any)) {
+      return tDocTitles(key as any);
     }
     return node.title;
   };
@@ -204,10 +142,10 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
   const handleConfirmToggleLock = () => {
     if (isDossierLocked) {
       setIsDossierLocked(false);
-      toast.success("Dossier structure unlocked. Editing & deleting are now enabled.");
+      toast.success(tToasts("dossierUnlocked"));
     } else {
       setIsDossierLocked(true);
-      toast.success("Dossier structure locked & MD5 checksums verified. ZIP package generation enabled.");
+      toast.success(tToasts("dossierLocked"));
     }
     setIsLockModalOpen(false);
   };
@@ -225,7 +163,7 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
     }
 
     setIsDownloadingZip(true);
-    toast.loading("Compiling latest eCTD dossier ZIP package...", { id: "zip-download-toast" });
+    toast.loading(tWorkspace("compilingBtn"), { id: "zip-download-toast" });
     try {
       let activeSeq: string | undefined = undefined;
       let activeConfigId: string | undefined = undefined;
@@ -240,12 +178,12 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
       if (compileRes.data?.success && compileRes.data?.data?.downloadUrl) {
         const downloadUrl = compileRes.data.data.downloadUrl;
         window.open(downloadUrl, "_blank");
-        toast.success(`eCTD ZIP compiled and downloaded successfully!`, { id: "zip-download-toast" });
+        toast.success(tToasts("zipCompiled"), { id: "zip-download-toast" });
       } else {
-        toast.error(compileRes.data?.message || "No active documents found to compile ZIP package.", { id: "zip-download-toast" });
+        toast.error(tErrors("noDocsToCompile"), { id: "zip-download-toast" });
       }
     } catch (err: any) {
-      handleApiError(err, "Failed to download eCTD ZIP package", { id: "zip-download-toast" });
+      handleApiError(err, tErrors("failedDownloadZip"), { id: "zip-download-toast" });
     } finally {
       setIsDownloadingZip(false);
     }
@@ -393,7 +331,7 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
       const file = e.dataTransfer.files[0];
       // Pre-upload client file size validation (50MB Limit)
       if (file.size > 50 * 1024 * 1024) {
-        toast.error("File size exceeds the 50MB limit. Upload rejected.");
+        toast.error(tErrors("fileSizeLimit50MB"));
         return;
       }
       uploadFileToBackend(file);
@@ -405,7 +343,7 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
       const file = e.target.files[0];
       // Pre-upload client file size validation (50MB Limit)
       if (file.size > 50 * 1024 * 1024) {
-        toast.error("File size exceeds the 50MB limit. Upload rejected.");
+        toast.error(tErrors("fileSizeLimit50MB"));
         return;
       }
       uploadFileToBackend(file);
@@ -416,7 +354,7 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
 
   const uploadFileToBackend = async (file?: File) => {
     if ((selectedOperation === "new" || selectedOperation === "replace") && !file) {
-      toast.error("Please select a file to attach before executing this operation.");
+      toast.error(tErrors("selectFileToAttach"));
       return;
     }
 
@@ -443,7 +381,7 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
             ...prev,
             [selectedModuleId]: [],
           }));
-          toast.success(`Marked section as deleted (eCTD Tombstone record created).`);
+          toast.success(tToasts("markedDeleted"));
         } else {
           const uploadedAtDate = doc.uploadedAt ? new Date(doc.uploadedAt) : new Date();
           const newFileItem: UploadedFile = {
@@ -466,7 +404,7 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
           expandAncestors(selectedModuleId);
           fetchAllDocuments();
 
-          toast.success(`Uploaded ${doc.originalName} (${selectedOperation.toUpperCase()}) successfully!`);
+          toast.success(tToasts("uploadedSuccessfully", { name: doc.originalName, op: selectedOperation.toUpperCase() }));
         }
       }
     } catch (err) {
@@ -511,7 +449,7 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
       const issue = new Date(editIssueDate);
       const exp = new Date(editExpirationDate);
       if (exp < issue) {
-        toast.error("Document expiration date cannot be earlier than issue date.");
+        toast.error(tErrors("expiryBeforeIssue"));
         return;
       }
     }
@@ -526,7 +464,7 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
       });
 
       if (response.data?.success) {
-        toast.success("Document dates updated successfully!");
+        toast.success(tToasts("documentDatesUpdated"));
         const updatedDoc = response.data.data;
         setModuleFiles((prev) => ({
           ...prev,
@@ -605,7 +543,7 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
         [selectedModuleId]: (prev[selectedModuleId] || []).filter((f) => f.id !== deleteConfirmFile.id),
       }));
       fetchAllDocuments();
-      toast.success(`Removed ${deleteConfirmFile.name} and created eCTD tombstone.`);
+      toast.success(tToasts("removedAndTombstoned", { name: deleteConfirmFile.name }));
       setDeleteConfirmFile(null);
     } catch (err) {
       handleApiError(err, `Failed to delete ${deleteConfirmFile.name}`);
@@ -656,8 +594,8 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
             type="button"
             onClick={handleToggleLock}
             className={`p-1.5 rounded transition-all cursor-pointer border ${isDossierLocked
-                ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20"
-                : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 hover:bg-amber-500/20"
+              ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20"
+              : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 hover:bg-amber-500/20"
               }`}
             title={
               isDossierLocked
@@ -806,10 +744,10 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
             onDragLeave={isDossierLocked ? undefined : handleDrag}
             onDrop={isDossierLocked ? undefined : handleDrop}
             className={`border-2 border-dashed rounded-lg p-5 text-center transition-all relative ${isDossierLocked
-                ? "border-border bg-surface-raised/40 opacity-60"
-                : dragActive
-                  ? "border-accent bg-accent/10"
-                  : "border-border bg-bg/50 hover:border-accent"
+              ? "border-border bg-surface-raised/40 opacity-60"
+              : dragActive
+                ? "border-accent bg-accent/10"
+                : "border-border bg-bg/50 hover:border-accent"
               }`}
           >
             <input
@@ -829,7 +767,7 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
               {isDossierLocked
                 ? tWorkspace("uploadDropzoneLocked")
                 : isUploading
-                  ? "Uploading to ImageKit..."
+                  ? tWorkspace("uploadingImageKit")
                   : tWorkspace("uploadDropzoneNew")}
             </p>
             <p className="text-[10.5px] text-muted mt-0.5">{tWorkspace("maxFileLimit")}</p>
@@ -1044,31 +982,31 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
               {isDossierLocked ? (
                 <>
                   <p className="leading-relaxed">
-                    Unlocking the dossier allows you to edit document details, dates, and perform replacement or deletion operations.
+                    {tWorkspace("lockModalUnlockBody")}
                   </p>
                   <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-lg space-y-1.5 text-amber-900 dark:text-amber-200">
                     <p className="font-bold text-[11px] uppercase tracking-wider text-amber-700 dark:text-amber-300">
-                      When Unlocked:
+                      {tWorkspace("lockModalWhenUnlocked")}
                     </p>
                     <ul className="list-disc list-inside space-y-0.5 text-[11px]">
-                      <li>Document date editing & file deletion are enabled.</li>
-                      <li>ZIP Package generation is temporarily disabled until locked again.</li>
+                      <li>{tWorkspace("lockModalUnlockedItem1")}</li>
+                      <li>{tWorkspace("lockModalUnlockedItem2")}</li>
                     </ul>
                   </div>
                 </>
               ) : (
                 <>
                   <p className="leading-relaxed">
-                    Locking the dossier verifies MD5 checksums, locks document editing to ensure compliance, and enables eCTD ZIP compilation.
+                    {tWorkspace("lockModalLockBody")}
                   </p>
                   <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 rounded-lg space-y-1.5 text-emerald-900 dark:text-emerald-200">
                     <p className="font-bold text-[11px] uppercase tracking-wider text-emerald-700 dark:text-emerald-300">
-                      When Locked:
+                      {tWorkspace("lockModalWhenLocked")}
                     </p>
                     <ul className="list-disc list-inside space-y-0.5 text-[11px]">
-                      <li>MD5 checksums and structure are locked & verified.</li>
-                      <li>eCTD ZIP Package & XML compilation is enabled.</li>
-                      <li>Document editing/deletion is restricted.</li>
+                      <li>{tWorkspace("lockModalLockedItem1")}</li>
+                      <li>{tWorkspace("lockModalLockedItem2")}</li>
+                      <li>{tWorkspace("lockModalLockedItem3")}</li>
                     </ul>
                   </div>
                 </>
@@ -1088,8 +1026,8 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
                 type="button"
                 onClick={handleConfirmToggleLock}
                 className={`px-4 py-1.5 rounded-lg text-xs font-bold text-white transition-colors cursor-pointer ${isDossierLocked
-                    ? "bg-amber-600 hover:bg-amber-500 shadow-xs"
-                    : "bg-emerald-600 hover:bg-emerald-500 shadow-xs"
+                  ? "bg-amber-600 hover:bg-amber-500 shadow-xs"
+                  : "bg-emerald-600 hover:bg-emerald-500 shadow-xs"
                   }`}
               >
                 {isDossierLocked ? "Unlock Dossier for Editing" : "Lock Dossier & Enable ZIP"}

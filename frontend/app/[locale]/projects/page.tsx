@@ -25,11 +25,20 @@ import {
   Sparkle,
   CircleNotch,
 } from "@phosphor-icons/react";
-import toast from "react-hot-toast";
-import { useTranslations } from "next-intl";
+import { toast } from "sonner";
+import { useTranslations, useLocale } from "next-intl";
 
 import { api, handleApiError } from "@/app/lib/axios";
 import { SkeletonCard, SkeletonTableRow } from "@/app/components/ui/Skeleton";
+import {
+  translateValue,
+  tariffMapRu,
+  productTypeMapRu,
+  dosageFormMapRu,
+  additionalFeatureMapRu,
+  responsibleUserMapRu,
+  statusMapRu,
+} from "@/app/lib/i18nLookups";
 
 interface ProjectItem {
   id: string;
@@ -53,7 +62,10 @@ interface ProjectItem {
 export default function ProjectsPage() {
   const router = useRouter();
   const tProjects = useTranslations("projects");
+  const tWorkspace = useTranslations("workspace");
   const tCommon = useTranslations("common");
+  const tToasts = useTranslations("toasts");
+  const locale = useLocale();
 
   const [deleteConfirmProject, setDeleteConfirmProject] = useState<ProjectItem | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -114,14 +126,14 @@ export default function ProjectsPage() {
 
 
 
-  const handleDeleteProject = async (id: string) => {
-    setIsDeletingId(id);
+  const handleDeleteProject = async (targetPrj: ProjectItem) => {
+    setIsDeletingId(targetPrj.id);
     try {
-      const response = await api.delete(`/projects/${id}`);
+      const response = await api.delete(`/projects/${targetPrj.id}`);
       if (response.data?.success || response.status === 200) {
-        setProjects(projects.filter((p) => p.id !== id));
+        setProjects((prev) => prev.filter((p) => p.id !== targetPrj.id));
         setDeleteConfirmProject(null);
-        toast.success(`Project ${id} deleted successfully`);
+        toast.success(tToasts("projectDeleted", { name: targetPrj.productName }));
       }
     } catch (err) {
       handleApiError(err, "Failed to delete project");
@@ -194,8 +206,8 @@ export default function ProjectsPage() {
                 onClick={() => setViewMode("grid")}
                 title="Grid View"
                 className={`p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${viewMode === "grid"
-                    ? "bg-accent text-white shadow-xs"
-                    : "text-secondary hover:text-primary hover:bg-surface"
+                  ? "bg-accent text-white shadow-xs"
+                  : "text-secondary hover:text-primary hover:bg-surface"
                   }`}
               >
                 <SquaresFour size={16} />
@@ -206,8 +218,8 @@ export default function ProjectsPage() {
                 onClick={() => setViewMode("list")}
                 title="List View"
                 className={`p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${viewMode === "list"
-                    ? "bg-accent text-white shadow-xs"
-                    : "text-secondary hover:text-primary hover:bg-surface"
+                  ? "bg-accent text-white shadow-xs"
+                  : "text-secondary hover:text-primary hover:bg-surface"
                   }`}
               >
                 <List size={16} />
@@ -275,11 +287,11 @@ export default function ProjectsPage() {
                     <div className="flex items-center gap-2">
                       <span
                         className={`text-[10px] font-bold px-2 py-0.5 rounded ${prj.status.includes("Approved")
-                            ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
-                            : "bg-accent/10 text-accent border border-accent/20"
+                          ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
+                          : "bg-accent/10 text-accent border border-accent/20"
                           }`}
                       >
-                        {prj.status}
+                        {translateValue(prj.status, locale, statusMapRu)}
                       </span>
                     </div>
                   </div>
@@ -289,7 +301,7 @@ export default function ProjectsPage() {
                   </h3>
                   <p className="text-xs text-secondary mb-3 flex items-center gap-1.5 font-medium">
                     <Pill size={14} className="text-accent shrink-0" />
-                    <span>{prj.dosageForm}</span>
+                    <span>{translateValue(prj.dosageForm, locale, dosageFormMapRu)}</span>
                   </p>
 
                   <div className="space-y-2 bg-bg p-3 rounded-xl border border-border text-xs mb-4">
@@ -303,20 +315,20 @@ export default function ProjectsPage() {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted">{tProjects("labelProductType")}:</span>
-                      <span className="text-primary font-semibold">{prj.drugType}</span>
+                      <span className="text-primary font-semibold">{translateValue(prj.drugType, locale, productTypeMapRu)}</span>
                     </div>
                     <div className="flex justify-between items-start">
                       <span className="text-muted shrink-0">{tProjects("labelTariff")}:</span>
-                      <span className="font-bold text-accent text-[11px]">{prj.assignedTariff}</span>
+                      <span className="font-bold text-accent text-[11px]">{translateValue(prj.assignedTariff, locale, tariffMapRu)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted">{tProjects("labelResponsibleUser")}:</span>
-                      <span className="text-primary font-semibold">{prj.responsiblePerson}</span>
+                      <span className="text-primary font-semibold">{translateValue(prj.responsiblePerson, locale, responsibleUserMapRu)}</span>
                     </div>
                     {prj.additionalFeature && (
                       <div className="pt-1.5 border-t border-border/60 text-[11px] text-secondary">
                         <span className="font-semibold text-accent">{tProjects("labelFeature")}: </span>
-                        <span>{prj.additionalFeature}</span>
+                        <span>{translateValue(prj.additionalFeature, locale, additionalFeatureMapRu)}</span>
                       </div>
                     )}
                   </div>
@@ -376,13 +388,13 @@ export default function ProjectsPage() {
 
                       {/* 2. Tariff */}
                       <td className="py-3.5 px-4 min-w-[120px]">
-                        <span className="font-bold text-accent text-[11px] block">{prj.assignedTariff}</span>
+                        <span className="font-bold text-accent text-[11px] block">{translateValue(prj.assignedTariff, locale, tariffMapRu)}</span>
                       </td>
 
                       {/* 3. Product Type */}
                       <td className="py-3.5 px-4 text-primary font-medium whitespace-nowrap">
                         <span className="px-2 py-0.5 bg-bg border border-border rounded text-[11px]">
-                          {prj.drugType}
+                          {translateValue(prj.drugType, locale, productTypeMapRu)}
                         </span>
                       </td>
 
@@ -432,9 +444,11 @@ export default function ProjectsPage() {
         {!isLoadingProjects && projects.length > 0 && totalPages > 1 && (
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-surface border border-border p-4 rounded-2xl shadow-xs text-xs text-secondary mt-6">
             <div>
-              Showing <span className="font-bold text-primary">{filteredProjects.length}</span> project(s) on page{" "}
-              <span className="font-bold text-primary">{currentPage}</span> of{" "}
-              <span className="font-bold text-primary">{totalPages}</span>
+              {tWorkspace("showingDossiers", {
+                start: (currentPage - 1) * itemsPerPage + 1,
+                end: Math.min(currentPage * itemsPerPage, filteredProjects.length),
+                total: filteredProjects.length,
+              })}
             </div>
             <div className="flex items-center gap-2">
               <button
@@ -444,10 +458,10 @@ export default function ProjectsPage() {
                 className="px-3.5 py-1.5 bg-bg border border-border rounded-xl text-xs font-semibold text-secondary hover:text-primary hover:bg-surface disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all flex items-center gap-1"
               >
                 <ArrowLeft size={13} weight="bold" />
-                <span>Previous</span>
+                <span>{tWorkspace("previous")}</span>
               </button>
               <span className="font-mono text-xs font-semibold text-primary px-2">
-                Page {currentPage} of {totalPages}
+                {tWorkspace("pageOf", { current: currentPage, total: totalPages })}
               </span>
               <button
                 type="button"
@@ -455,7 +469,7 @@ export default function ProjectsPage() {
                 disabled={currentPage === totalPages}
                 className="px-3.5 py-1.5 bg-bg border border-border rounded-xl text-xs font-semibold text-secondary hover:text-primary hover:bg-surface disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer transition-all flex items-center gap-1"
               >
-                <span>Next</span>
+                <span>{tWorkspace("next")}</span>
                 <ArrowRight size={13} weight="bold" />
               </button>
             </div>
@@ -472,7 +486,8 @@ export default function ProjectsPage() {
                 </div>
                 <div>
                   <h3 className="font-lexend font-bold text-base text-primary">{tProjects("deleteProjectTitle")}</h3>
-                  <span className="font-mono text-xs text-rose-400 font-semibold">{deleteConfirmProject.id}</span>
+                  <p className="font-lexend font-bold text-sm text-rose-400 mt-0.5">{deleteConfirmProject.productName}</p>
+                  <span className="font-mono text-[10px] text-muted block">{deleteConfirmProject.id}</span>
                 </div>
               </div>
 
@@ -492,7 +507,7 @@ export default function ProjectsPage() {
                 <button
                   type="button"
                   disabled={isDeletingId === deleteConfirmProject.id}
-                  onClick={() => handleDeleteProject(deleteConfirmProject.id)}
+                  onClick={() => handleDeleteProject(deleteConfirmProject)}
                   className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-lg transition-all shadow-sm cursor-pointer flex items-center gap-2 disabled:opacity-50 text-xs"
                 >
                   {isDeletingId === deleteConfirmProject.id && <CircleNotch size={16} className="animate-spin" />}

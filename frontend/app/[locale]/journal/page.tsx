@@ -14,7 +14,7 @@ import {
   Hash,
   DownloadSimple,
 } from "@phosphor-icons/react";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 
 export default function AuditJournalPage() {
   const tJournal = useTranslations("journal");

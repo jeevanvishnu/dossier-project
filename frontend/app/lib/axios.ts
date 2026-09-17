@@ -1,5 +1,5 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  In-Memory Access Token Storage (Security Best Practice)

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import {
   CaretDown,
   FloppyDiskBack,
@@ -21,11 +21,26 @@ import {
   ArrowRight,
   FileText,
 } from "@phosphor-icons/react";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import { api, handleApiError } from "@/app/lib/axios";
 import { SkeletonForm } from "@/app/components/ui/Skeleton";
 import { EditableSelect } from "@/app/components/ui/EditableSelect";
 import { Link } from "@/i18n/routing";
+import {
+  translateValue,
+  countryMapRu,
+  roleMapRu,
+  kindProcedureMapRu,
+  typeProcedureMapRu,
+  sequenceMapRu,
+  productTypeMapRu,
+  dosageFormMapRu,
+  additionalFeatureMapRu,
+  responsibleUserMapRu,
+  tariffMapRu,
+  excipientCategoryMapRu,
+  targetPopulationMapRu,
+} from "@/app/lib/i18nLookups";
 
 interface ExcipientItem {
   id: string;
@@ -71,6 +86,10 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
 }) => {
   const tWorkspace = useTranslations("workspace");
   const tCommon = useTranslations("common");
+  const tProjects = useTranslations("projects");
+  const tErrors = useTranslations("errors");
+  const tToasts = useTranslations("toasts");
+  const locale = useLocale();
 
   // Accordion & View Toggle States
   const [isProjectDataOpen, setIsProjectDataOpen] = useState<boolean>(true);
@@ -442,9 +461,9 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
       if (onStatusChange) {
         onStatusChange({ isProjectSaved, isDossierSaved: remaining.length > 0 });
       }
-      toast.success("Dossier configuration deleted successfully.");
+      toast.success(tToasts("dossierConfigDeleted"));
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || "Failed to delete dossier configuration.");
+      toast.error(err?.response?.data?.message || tToasts("failedDeleteDossierConfig"));
     } finally {
       setIsDeletingDossier(false);
       setDeletingDossierId(null);
@@ -454,7 +473,7 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
   // Section 1: Save Project Data
   const handleSaveCard1 = async () => {
     if (!medicinalState.productName.trim()) {
-      toast.error("Name of Drug Substance is required.");
+      toast.error(tToasts("drugSubstanceNameRequired"));
       return;
     }
     setIsSavingProject(true);
@@ -498,7 +517,7 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
         if (onStatusChange) {
           onStatusChange({ isProjectSaved: true, isDossierSaved });
         }
-        toast.success("Project data saved successfully! Dossier Configuration is now activated.");
+        toast.success(tToasts("projectDataSaved"));
       }
     } catch (err: any) {
       if (err?.response?.status === 409) {
@@ -520,7 +539,7 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
       setMedicinalState(savedMedicinalState);
     }
     setIsEditingProject(false);
-    toast("Editing project data cancelled.");
+    toast(tToasts("editingProjectDataCancelled"));
   };
 
   // Medicinal Product Metadata: Clear Handler
@@ -567,7 +586,7 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
       "Indications": false,
       "Manufacturer": false,
     });
-    toast.success("Project metadata form cleared.");
+    toast.success(tToasts("projectMetadataCleared"));
   };
 
   // Medicinal Product Metadata: Edit Handler
@@ -577,18 +596,18 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
     } else {
       setSavedMedicinalState(medicinalState);
       setIsEditingProject(true);
-      toast.success("Project Data enabled for editing. Modify fields and click 'Update Data'.");
+      toast.success(tToasts("projectDataEditEnabled"));
     }
   };
 
   // Dossier Data Configuration: Save Handler
   const handleSaveCard2 = async () => {
     if (!isProjectSaved) {
-      toast.error("Please save Project Data first to activate Dossier Data Configuration.");
+      toast.error(tToasts("saveProjectDataFirstToActivate"));
       return;
     }
     if (!configState.submissionCountry || !configState.procedureType) {
-      toast.error("Country of Submission and Kind of Procedure are required.");
+      toast.error(tToasts("countryAndProcedureRequired"));
       return;
     }
     setIsSavingDossier(true);
@@ -663,7 +682,7 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
         if (onStatusChange) {
           onStatusChange({ isProjectSaved: true, isDossierSaved: true });
         }
-        toast.success("Dossier data configuration saved successfully!");
+        toast.success(tToasts("dossierConfigSaved"));
       }
     } catch (err: any) {
       if (err?.response?.status === 409) {
@@ -689,7 +708,7 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
     if (savedManufacturerState) setManufacturerState(savedManufacturerState);
     if (savedSubTabHasData) setSubTabHasData(savedSubTabHasData);
     setIsEditingDossier(false);
-    toast("Editing dossier configuration cancelled.");
+    toast(tToasts("editingDossierConfigCancelled"));
   };
 
   // Section 2: Edit Handler
@@ -705,14 +724,14 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
       setSavedManufacturerState(manufacturerState);
       setSavedSubTabHasData(subTabHasData);
       setIsEditingDossier(true);
-      toast.success("Dossier Data enabled for editing. Modify fields and click 'Save Dossier Data'.");
+      toast.success(tToasts("dossierDataEditEnabled"));
     }
   };
 
   const handleAddExcipient = () => {
     if (isSection1Disabled) return;
     if (!newExcipient.name || !newExcipient.concentration) {
-      toast.error("Please provide both name and concentration for the excipient.");
+      toast.error(tToasts("excipientNameAndConcRequired"));
       return;
     }
     const item: ExcipientItem = {
@@ -723,20 +742,20 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
     };
     setExcipientsList([...excipientsList, item]);
     setNewExcipient({ name: "", concentration: "", category: "Vehicle" });
-    toast.success("Added new excipient.");
+    toast.success(tToasts("excipientAdded"));
   };
 
   const handleDeleteExcipient = (id: string) => {
     if (isSection1Disabled) return;
     setExcipientsList(excipientsList.filter((e) => e.id !== id));
-    toast.error("Excipient removed.");
+    toast.error(tToasts("excipientRemoved"));
   };
 
   const handleAddIcd10Tag = () => {
     if (isSection1Disabled) return;
     if (!newIcd10Tag.trim()) return;
     if (indicationsState.icd10Tags.includes(newIcd10Tag.trim())) {
-      toast.error("Tag already exists.");
+      toast.error(tToasts("tagAlreadyExists"));
       return;
     }
     setIndicationsState({
@@ -773,7 +792,7 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
         {isSaved && (
           <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400 font-semibold uppercase tracking-wider">
             <CheckCircle size={12} weight="fill" />
-            Valid
+            {tWorkspace("validStatus")}
           </span>
         )}
       </div>
@@ -837,7 +856,7 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
         {isSaved && (
           <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400 font-semibold uppercase tracking-wider">
             <CheckCircle size={12} weight="fill" />
-            Valid
+            {tWorkspace("validStatus")}
           </span>
         )}
       </div>
@@ -872,9 +891,11 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
         <FolderSimple size={28} className="text-accent" />
       </div>
       <div className="space-y-1">
-        <h3 className="text-sm font-bold text-primary">No {tabName} Data Added</h3>
+        <h3 className="text-sm font-bold text-primary">
+          {tWorkspace("noSubTabDataTitle", { tabName: subTabsMap[tabName] || tabName })}
+        </h3>
         <p className="text-xs text-secondary max-w-md mx-auto leading-relaxed">
-          No details have been entered for {tabName.toLowerCase()} yet. Click the button below to add information to this section.
+          {tWorkspace("noSubTabDataDesc")}
         </p>
       </div>
       <button
@@ -884,7 +905,7 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
         className="px-4 py-2.5 bg-accent hover:bg-accent-hover text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 mx-auto cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed active:scale-95"
       >
         <Plus size={16} weight="bold" />
-        <span>Add {tabName} Data</span>
+        <span>{tWorkspace("addSubTabDataBtn", { tabName: subTabsMap[tabName] || tabName })}</span>
       </button>
     </div>
   );
@@ -905,9 +926,9 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
                 <Trash size={20} className="text-red-400" weight="fill" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-primary">Delete Dossier Configuration?</h3>
+                <h3 className="text-sm font-bold text-primary">{tWorkspace("deleteDossierConfigTitle")}</h3>
                 <p className="text-xs text-secondary mt-1">
-                  This will permanently reset the dossier configuration for this project. All saved dossier data will be cleared. This action cannot be undone.
+                  {tWorkspace("deleteDossierConfigMsg")}
                 </p>
               </div>
             </div>
@@ -917,7 +938,7 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
                 disabled={isDeletingDossier}
                 className="px-4 py-2 text-xs font-semibold text-secondary hover:text-primary bg-surface-raised hover:bg-border border border-border rounded-xl transition-colors cursor-pointer"
               >
-                Cancel
+                {tWorkspace("cancelBtn")}
               </button>
               <button
                 onClick={() => handleDeleteDossier()}
@@ -929,7 +950,7 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
                 ) : (
                   <Trash size={14} weight="bold" />
                 )}
-                {isDeletingDossier ? "Deleting..." : "Delete"}
+                {isDeletingDossier ? tWorkspace("deleting") : tCommon("delete")}
               </button>
             </div>
           </div>
@@ -943,10 +964,10 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
             <div className="space-y-1">
               <h1 className="text-lg md:text-xl font-bold font-lexend text-primary flex items-center gap-2">
                 <FolderSimple size={24} className="text-accent" weight="fill" />
-                Create Project & Manage Dossiers
+                {tWorkspace("bannerTitle")}
               </h1>
               <p className="text-xs text-secondary max-w-2xl leading-relaxed">
-                Welcome to the project setup workspace. Expand the sections below to complete your Project Data metadata and configure regulatory Dossier Data.
+                {tWorkspace("bannerSub")}
               </p>
             </div>
 
@@ -955,7 +976,7 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
               className="px-4 py-2 bg-surface-raised hover:bg-border text-primary text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-2 shrink-0 active:scale-95 border border-border cursor-pointer"
             >
               <ArrowLeft size={16} weight="bold" />
-              <span>Back to Projects</span>
+              <span>{tWorkspace("backToProjects")}</span>
             </Link>
           </div>
 
@@ -1020,14 +1041,14 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
                 {activeSubTab === "Medicinal Product" && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                     {renderTextInput(
-                      "Name of Drug Substance",
+                      tProjects("formProductName"),
                       medicinalState.productName,
                       (val) => setMedicinalState({ ...medicinalState, productName: val }),
                       isProjectSaved,
                       isSection1Disabled
                     )}
                     {renderSelectInput(
-                      "Dosage Form",
+                      tProjects("formDosageForm"),
                       medicinalState.dosageForm,
                       (val) => setMedicinalState({ ...medicinalState, dosageForm: val }),
                       [
@@ -1044,12 +1065,12 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
                         { label: "Eye Drops (Ophthalmic)", value: "Eye Drops (Ophthalmic)" },
                         { label: "Nasal Spray", value: "Nasal Spray" },
                         { label: "Transdermal Patch", value: "Transdermal Patch" },
-                      ],
+                      ].map((opt) => ({ value: opt.value, label: translateValue(opt.label, locale, dosageFormMapRu) })),
                       isProjectSaved,
                       isSection1Disabled
                     )}
                     {renderSelectInput(
-                      "Type of Medicinal Product",
+                      tProjects("formProductType"),
                       medicinalState.productType,
                       (val) => setMedicinalState({ ...medicinalState, productType: val }),
                       [
@@ -1059,12 +1080,12 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
                         { label: "Hybrid / Well-established use", value: "Hybrid / Well-established use" },
                         { label: "Fixed Combination Product", value: "Fixed Combination Product" },
                         { label: "Herbal / Traditional Product", value: "Herbal / Traditional Product" },
-                      ],
+                      ].map((opt) => ({ value: opt.value, label: translateValue(opt.label, locale, productTypeMapRu) })),
                       isProjectSaved,
                       isSection1Disabled
                     )}
                     {renderSelectInput(
-                      "Additional Attribute",
+                      tProjects("formAdditionalFeature"),
                       medicinalState.additionalFeature,
                       (val) => setMedicinalState({ ...medicinalState, additionalFeature: val }),
                       [
@@ -1074,26 +1095,26 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
                         { label: "Controlled Substance (Schedule II-IV)", value: "Controlled Substance (Schedule II-IV)" },
                         { label: "Cold Chain Storage (2°C - 8°C)", value: "Cold Chain Storage (2°C - 8°C)" },
                         { label: "Preservative-Free Single Dose", value: "Preservative-Free Single Dose" },
-                      ],
+                      ].map((opt) => ({ value: opt.value, label: translateValue(opt.label, locale, additionalFeatureMapRu) })),
                       isProjectSaved,
                       isSection1Disabled
                     )}
                     {renderTextInput(
-                      "Manufacturer",
+                      tProjects("formManufacturer"),
                       medicinalState.manufacturer,
                       (val) => setMedicinalState({ ...medicinalState, manufacturer: val }),
                       isProjectSaved,
                       isSection1Disabled
                     )}
                     {renderTextInput(
-                      "MA Holder",
+                      tProjects("formMah"),
                       medicinalState.mah,
                       (val) => setMedicinalState({ ...medicinalState, mah: val }),
                       isProjectSaved,
                       isSection1Disabled
                     )}
                     {renderSelectInput(
-                      "Responsible User for the Project",
+                      tProjects("formResponsibleUser"),
                       medicinalState.responsibleUser,
                       (val) => setMedicinalState({ ...medicinalState, responsibleUser: val }),
                       [
@@ -1105,12 +1126,12 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
                         { label: "Quality Assurance Officer", value: "Quality Assurance Officer" },
                         { label: "Chief Compliance Lead", value: "Chief Compliance Lead" },
                         { label: "Admin User", value: "Admin User" },
-                      ],
+                      ].map((opt) => ({ value: opt.value, label: translateValue(opt.label, locale, responsibleUserMapRu) })),
                       isProjectSaved,
                       isSection1Disabled
                     )}
                     {renderSelectInput(
-                      "Tariff",
+                      tProjects("formTariff"),
                       medicinalState.tariff,
                       (val) => setMedicinalState({ ...medicinalState, tariff: val }),
                       [
@@ -1121,7 +1142,7 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
                         { label: "Fast-track Expedited Review Tariff", value: "Fast-track Expedited Review Tariff" },
                         { label: "Minor Variation Fee (Type IA/IB)", value: "Minor Variation Fee (Type IA/IB)" },
                         { label: "Major Variation Fee (Type II)", value: "Major Variation Fee (Type II)" },
-                      ],
+                      ].map((opt) => ({ value: opt.value, label: translateValue(opt.label, locale, tariffMapRu) })),
                       isProjectSaved,
                       isSection1Disabled
                     )}
@@ -1137,7 +1158,7 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
                       <div className="flex items-center justify-between pb-1 border-b border-border/40">
                         <span className="text-xs font-bold text-primary flex items-center gap-1.5">
                           <CheckCircle size={14} className="text-emerald-400" weight="fill" />
-                          Active Substance Details
+                          {tWorkspace("activeSubstanceDetails")}
                         </span>
                         {!isSection1Disabled && (
                           <button
@@ -1148,13 +1169,13 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
                             type="button"
                             className="text-xs text-red-400 hover:text-red-300 font-semibold cursor-pointer"
                           >
-                            Reset / Remove Section
+                            {tWorkspace("resetSection")}
                           </button>
                         )}
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         {renderTextInput(
-                          "International Nonproprietary Name (INN)",
+                          tWorkspace("innLabel"),
                           activeSubstanceState.inn,
                           (val) => setActiveSubstanceState({ ...activeSubstanceState, inn: val }),
                           isProjectSaved,
@@ -1164,7 +1185,7 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
                           "font-semibold"
                         )}
                         {renderTextInput(
-                          "CAS Number",
+                          tWorkspace("casNumberLabel"),
                           activeSubstanceState.casNumber,
                           (val) => setActiveSubstanceState({ ...activeSubstanceState, casNumber: val }),
                           isProjectSaved,
@@ -1174,14 +1195,14 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
                           "font-mono"
                         )}
                         {renderTextInput(
-                          "Manufacturer of Active Substance",
+                          tWorkspace("activeManufacturerLabel"),
                           activeSubstanceState.activeManufacturer,
                           (val) => setActiveSubstanceState({ ...activeSubstanceState, activeManufacturer: val }),
                           isProjectSaved,
                           isSection1Disabled
                         )}
                         {renderTextInput(
-                          "Quality Standard (Ph. Eur. / USP)",
+                          tWorkspace("qualityStandardLabel"),
                           activeSubstanceState.qualityStandard,
                           (val) => setActiveSubstanceState({ ...activeSubstanceState, qualityStandard: val }),
                           isProjectSaved,
@@ -1204,7 +1225,7 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
                       <div className="flex items-center justify-between pb-1 border-b border-border/40">
                         <span className="text-xs font-bold text-primary flex items-center gap-1.5">
                           <CheckCircle size={14} className="text-emerald-400" weight="fill" />
-                          Excipients Details
+                          {tWorkspace("excipientsDetails")}
                         </span>
                         {!isSection1Disabled && (
                           <button
@@ -1215,7 +1236,7 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
                             type="button"
                             className="text-xs text-red-400 hover:text-red-300 font-semibold cursor-pointer"
                           >
-                            Reset / Remove Section
+                            {tWorkspace("resetSection")}
                           </button>
                         )}
                       </div>
@@ -1223,10 +1244,10 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
                       {/* Add Excipient Bar */}
                       <div className="bg-bg border border-border p-3.5 rounded-xl flex flex-col md:flex-row items-end gap-3">
                         <div className="w-full md:w-1/3 space-y-1">
-                          <label className="block text-[11px] font-semibold text-secondary">Excipient Name</label>
+                          <label className="block text-[11px] font-semibold text-secondary">{tWorkspace("excipientNameLabel")}</label>
                           <input
                             type="text"
-                            placeholder="Ethanol 96%"
+                            placeholder={tWorkspace("placeholderEthanol")}
                             disabled={isSection1Disabled}
                             value={newExcipient.name}
                             onChange={(e) => setNewExcipient({ ...newExcipient, name: e.target.value })}
@@ -1234,10 +1255,10 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
                           />
                         </div>
                         <div className="w-full md:w-1/3 space-y-1">
-                          <label className="block text-[11px] font-semibold text-secondary">Concentration</label>
+                          <label className="block text-[11px] font-semibold text-secondary">{tWorkspace("concentrationLabel")}</label>
                           <input
                             type="text"
-                            placeholder="55.0 % v/v"
+                            placeholder={tWorkspace("placeholderConcentration")}
                             disabled={isSection1Disabled}
                             value={newExcipient.concentration}
                             onChange={(e) => setNewExcipient({ ...newExcipient, concentration: e.target.value })}
@@ -1246,7 +1267,7 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
                         </div>
                         <div className="w-full md:w-1/3">
                           <EditableSelect
-                            label="Functional Category"
+                            label={tWorkspace("functionalCategoryLabel")}
                             size="sm"
                             isDisabled={isSection1Disabled}
                             value={newExcipient.category}
@@ -1260,8 +1281,8 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
                               { label: "Antioxidant & Stabilizer", value: "Antioxidant & Stabilizer" },
                               { label: "pH Buffer Agent", value: "pH Buffer Agent" },
                               { label: "Coloring / Flavoring Agent", value: "Coloring / Flavoring Agent" },
-                            ]}
-                            placeholder="Select or type..."
+                            ].map((opt) => ({ value: opt.value, label: translateValue(opt.label, locale, excipientCategoryMapRu) }))}
+                            placeholder={tWorkspace("selectOrType")}
                           />
                         </div>
                         <button
@@ -1271,7 +1292,7 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
                           className="w-full md:w-auto px-4 py-2 bg-accent hover:bg-accent-hover text-white font-bold text-xs rounded-lg transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <Plus size={15} weight="bold" />
-                          <span>Add Excipient</span>
+                          <span>{tWorkspace("addExcipientBtn")}</span>
                         </button>
                       </div>
 
@@ -1280,10 +1301,10 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
                         <table className="w-full text-left text-xs text-secondary">
                           <thead className="bg-bg text-primary uppercase font-bold text-[10px] tracking-wider border-b border-border">
                             <tr>
-                              <th className="py-3 px-4">EXCIPIENT INGREDIENT</th>
-                              <th className="py-3 px-4">CONCENTRATION / QUANTITY</th>
-                              <th className="py-3 px-4">FUNCTIONAL CATEGORY</th>
-                              <th className="py-3 px-4 text-center">ACTION</th>
+                              <th className="py-3 px-4">{tWorkspace("colExcipientIngredient")}</th>
+                              <th className="py-3 px-4">{tWorkspace("colConcentrationQuantity")}</th>
+                              <th className="py-3 px-4">{tWorkspace("colFunctionalCategory")}</th>
+                              <th className="py-3 px-4 text-center">{tWorkspace("colAction")}</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-border bg-surface">
@@ -1295,7 +1316,7 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
                                     <span>{exc.name}</span>
                                   </td>
                                   <td className="py-3 px-4 font-mono text-accent font-bold">{exc.concentration}</td>
-                                  <td className="py-3 px-4">{exc.category}</td>
+                                  <td className="py-3 px-4">{translateValue(exc.category, locale, excipientCategoryMapRu)}</td>
                                   <td className="py-3 px-4 text-center">
                                     <button
                                       onClick={() => handleDeleteExcipient(exc.id)}
@@ -1311,7 +1332,7 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
                             ) : (
                               <tr>
                                 <td colSpan={4} className="py-6 text-center text-xs text-secondary italic">
-                                  No excipient ingredients added yet. Use the form above to add ingredients.
+                                  {tWorkspace("noExcipientsAdded")}
                                 </td>
                               </tr>
                             )}
@@ -1331,7 +1352,7 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
                       <div className="flex items-center justify-between pb-1 border-b border-border/40">
                         <span className="text-xs font-bold text-primary flex items-center gap-1.5">
                           <CheckCircle size={14} className="text-emerald-400" weight="fill" />
-                          Pharmaceutical Product Details
+                          {tWorkspace("pharmProductDetails")}
                         </span>
                         {!isSection1Disabled && (
                           <button
@@ -1342,13 +1363,13 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
                             type="button"
                             className="text-xs text-red-400 hover:text-red-300 font-semibold cursor-pointer"
                           >
-                            Reset / Remove Section
+                            {tWorkspace("resetSection")}
                           </button>
                         )}
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {renderTextInput(
-                          "Shelf-Life Parameters",
+                          tWorkspace("shelfLifeLabel"),
                           pharmaceuticalState.shelfLife,
                           (val) => setPharmaceuticalState({ ...pharmaceuticalState, shelfLife: val }),
                           isProjectSaved,
@@ -1358,7 +1379,7 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
                           "font-semibold"
                         )}
                         {renderTextInput(
-                          "Packaging Sizes",
+                          tWorkspace("packagingSizesLabel"),
                           pharmaceuticalState.packagingSizes,
                           (val) => setPharmaceuticalState({ ...pharmaceuticalState, packagingSizes: val }),
                           isProjectSaved,
@@ -1366,7 +1387,7 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
                         )}
                         <div className="md:col-span-2">
                           {renderTextareaInput(
-                            "Storage Conditions & Precautions",
+                            tWorkspace("storageConditionsLabel"),
                             pharmaceuticalState.storageConditions,
                             (val) => setPharmaceuticalState({ ...pharmaceuticalState, storageConditions: val }),
                             isProjectSaved,
@@ -1376,7 +1397,7 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
                         </div>
                         <div className="md:col-span-2">
                           {renderTextareaInput(
-                            "Container Closure Description",
+                            tWorkspace("containerClosureLabel"),
                             pharmaceuticalState.containerClosure,
                             (val) => setPharmaceuticalState({ ...pharmaceuticalState, containerClosure: val }),
                             isProjectSaved,
@@ -1398,7 +1419,7 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
                       <div className="flex items-center justify-between pb-1 border-b border-border/40">
                         <span className="text-xs font-bold text-primary flex items-center gap-1.5">
                           <CheckCircle size={14} className="text-emerald-400" weight="fill" />
-                          Indications Details
+                          {tWorkspace("indicationsDetails")}
                         </span>
                         {!isSection1Disabled && (
                           <button
@@ -1409,14 +1430,14 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
                             type="button"
                             className="text-xs text-red-400 hover:text-red-300 font-semibold cursor-pointer"
                           >
-                            Reset / Remove Section
+                            {tWorkspace("resetSection")}
                           </button>
                         )}
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="md:col-span-2">
                           {renderTextareaInput(
-                            "Therapeutic Indications Text Area",
+                            tWorkspace("therapeuticIndicationsLabel"),
                             indicationsState.therapeuticIndications,
                             (val) => setIndicationsState({ ...indicationsState, therapeuticIndications: val }),
                             isProjectSaved,
@@ -1425,7 +1446,7 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
                           )}
                         </div>
                         {renderSelectInput(
-                          "Target Patient Population Selector",
+                          tWorkspace("targetPopulationLabel"),
                           indicationsState.targetPopulation,
                           (val) => setIndicationsState({ ...indicationsState, targetPopulation: val }),
                           [
@@ -1435,7 +1456,7 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
                             { label: "All Age Groups", value: "All Age Groups" },
                             { label: "Geriatric Population (≥ 65 yrs)", value: "Geriatric Population (≥ 65 yrs)" },
                             { label: "Neonates & Infants (< 2 yrs)", value: "Neonates & Infants (< 2 yrs)" },
-                          ],
+                          ].map((opt) => ({ value: opt.value, label: translateValue(opt.label, locale, targetPopulationMapRu) })),
                           isProjectSaved,
                           isSection1Disabled
                         )}
@@ -1443,12 +1464,12 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
                         {/* ICD-10 Tags */}
                         <div className="space-y-2">
                           <label className="block text-xs font-semibold text-secondary">
-                            ICD-10 Disease Classification Tags
+                            {tWorkspace("icd10TagsLabel")}
                           </label>
                           <div className="flex items-center gap-2">
                             <input
                               type="text"
-                              placeholder="B35.1 (Tinea unguium)"
+                              placeholder={tWorkspace("placeholderICD10")}
                               disabled={isSection1Disabled}
                               value={newIcd10Tag}
                               onChange={(e) => setNewIcd10Tag(e.target.value)}
@@ -1460,7 +1481,7 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
                               type="button"
                               className="px-3 py-2 bg-accent hover:bg-accent-hover text-white text-xs font-bold rounded-xl cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                              Add Tag
+                              {tWorkspace("addTagBtn")}
                             </button>
                           </div>
                           <div className="flex flex-wrap gap-2 pt-1">
@@ -1497,7 +1518,7 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
                       <div className="flex items-center justify-between pb-1 border-b border-border/40">
                         <span className="text-xs font-bold text-primary flex items-center gap-1.5">
                           <CheckCircle size={14} className="text-emerald-400" weight="fill" />
-                          Manufacturer Details
+                          {tWorkspace("manufacturerDetails")}
                         </span>
                         {!isSection1Disabled && (
                           <button
@@ -1508,34 +1529,34 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
                             type="button"
                             className="text-xs text-red-400 hover:text-red-300 font-semibold cursor-pointer"
                           >
-                            Reset / Remove Section
+                            {tWorkspace("resetSection")}
                           </button>
                         )}
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {renderTextInput(
-                          "Primary Manufacturing Sites",
+                          tWorkspace("primarySiteLabel"),
                           manufacturerState.primarySite,
                           (val) => setManufacturerState({ ...manufacturerState, primarySite: val }),
                           isProjectSaved,
                           isSection1Disabled
                         )}
                         {renderTextInput(
-                          "Secondary Packaging Facilities",
+                          tWorkspace("secondaryPackagingLabel"),
                           manufacturerState.secondaryPackaging,
                           (val) => setManufacturerState({ ...manufacturerState, secondaryPackaging: val }),
                           isProjectSaved,
                           isSection1Disabled
                         )}
                         {renderTextInput(
-                          "Batch Release Locations",
+                          tWorkspace("batchReleaseLocationLabel"),
                           manufacturerState.batchReleaseLocation,
                           (val) => setManufacturerState({ ...manufacturerState, batchReleaseLocation: val }),
                           isProjectSaved,
                           isSection1Disabled
                         )}
                         {renderTextInput(
-                          "GMP Certificate Number",
+                          tWorkspace("gmpCertificateLabel"),
                           manufacturerState.gmpCertificate,
                           (val) => setManufacturerState({ ...manufacturerState, gmpCertificate: val }),
                           isProjectSaved,
@@ -1558,7 +1579,7 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
                     className="px-3.5 py-1.5 bg-surface-raised hover:bg-border text-secondary hover:text-primary border border-border text-xs font-bold rounded-xl transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed active:scale-95 shadow-xs"
                   >
                     <Eraser size={15} weight="bold" />
-                    <span>Clear</span>
+                    <span>{tWorkspace("clear")}</span>
                   </button>
                   {isProjectSaved ? (
                     <div className="flex items-center gap-3">
@@ -1660,13 +1681,13 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
               className="px-4 py-2 bg-surface-raised hover:bg-border text-primary text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer shrink-0 active:scale-95 border border-border"
             >
               <ArrowLeft size={15} weight="bold" />
-              <span>Back to List</span>
+              <span>{tWorkspace("backToList")}</span>
             </button>
           ) : (
             <button
               onClick={() => {
                 if (!isProjectSaved) {
-                  toast.error("Please save Project Data first to create a dossier.");
+                  toast.error(tErrors("saveProjectDataFirst"));
                   return;
                 }
                 resetDossierForm();
@@ -1679,7 +1700,7 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
               className="px-4 py-2 bg-accent hover:bg-accent-hover text-white text-xs font-bold rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer shrink-0 active:scale-95"
             >
               <Plus size={15} weight="bold" />
-              <span>Create Dossier</span>
+              <span>{tWorkspace("createDossier")}</span>
             </button>
           )}
         </div>
@@ -1692,21 +1713,21 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <h3 className="text-xs font-bold text-secondary uppercase tracking-wider">
-                        Created Dossiers ({dossierList.length})
+                        {tWorkspace("createdDossiers", { count: dossierList.length })}
                       </h3>
                     </div>
                     <div className="border border-border rounded-xl overflow-hidden">
                       <table className="w-full text-left text-xs text-secondary">
                         <thead className="bg-bg text-primary uppercase font-bold text-[10px] tracking-wider border-b border-border">
                           <tr>
-                            <th className="py-3 px-4">DOSSIER ID NUMBER</th>
-                            <th className="py-3 px-4">COUNTRY OF SUBMISSION</th>
-                            <th className="py-3 px-4">ROLE OF SUBMISSION COUNTRY</th>
-                            <th className="py-3 px-4">TYPE PROCEDURE</th>
-                            <th className="py-3 px-4">SEQUENCE</th>
-                            <th className="py-3 px-4">DATE OF CREATION</th>
-                            <th className="py-3 px-4">DOSSIER SIZE</th>
-                            <th className="py-3 px-4 text-center">ACTIONS</th>
+                            <th className="py-3 px-4">{tWorkspace("colDossierIdNumber")}</th>
+                            <th className="py-3 px-4">{tWorkspace("colCountryOfSubmission")}</th>
+                            <th className="py-3 px-4">{tWorkspace("colRoleOfSubmissionCountry")}</th>
+                            <th className="py-3 px-4">{tWorkspace("colTypeProcedure")}</th>
+                            <th className="py-3 px-4">{tWorkspace("colSequence")}</th>
+                            <th className="py-3 px-4">{tWorkspace("colDateOfCreation")}</th>
+                            <th className="py-3 px-4">{tWorkspace("colDossierSize")}</th>
+                            <th className="py-3 px-4 text-center">{tWorkspace("colActions")}</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-border bg-surface">
@@ -1720,10 +1741,10 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
                                     <span className="font-mono font-bold text-accent">{dos.dossierIdNumber}</span>
                                   </div>
                                 </td>
-                                <td className="py-3 px-4 font-semibold text-primary uppercase">{dos.countryOfSubmission}</td>
-                                <td className="py-3 px-4 text-secondary font-medium">{dos.roleOfSubmissionCountry}</td>
-                                <td className="py-3 px-4 text-secondary">{dos.typeProcedure}</td>
-                                <td className="py-3 px-4 font-mono font-bold text-sky-400">{dos.sequence}</td>
+                                <td className="py-3 px-4 font-semibold text-primary uppercase">{translateValue(dos.countryOfSubmission, locale, countryMapRu)}</td>
+                                <td className="py-3 px-4 text-secondary font-medium">{translateValue(dos.roleOfSubmissionCountry, locale, roleMapRu)}</td>
+                                <td className="py-3 px-4 text-secondary">{translateValue(dos.typeProcedure, locale, kindProcedureMapRu)}</td>
+                                <td className="py-3 px-4 font-mono font-bold text-sky-400">{translateValue(dos.sequence, locale, sequenceMapRu)}</td>
                                 <td className="py-3 px-4 text-secondary font-medium">{dos.dateOfCreation}</td>
                                 <td className="py-3 px-4 font-mono font-bold text-emerald-400">{dos.dossierSize}</td>
                                 <td className="py-3 px-4">
@@ -1761,7 +1782,7 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
                                       className="flex items-center gap-1.5 px-3 py-1.5 bg-accent/10 hover:bg-accent/20 text-accent text-xs font-semibold rounded-lg transition-colors border border-accent/20 cursor-pointer"
                                     >
                                       <PencilSimple size={13} weight="bold" />
-                                      Edit
+                                      {tCommon("edit")}
                                     </button>
                                     <button
                                       onClick={() => setDeletingDossierId(dos.id)}
@@ -1769,7 +1790,7 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
                                       className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-semibold rounded-lg transition-colors border border-red-500/20 cursor-pointer"
                                     >
                                       <Trash size={13} weight="bold" />
-                                      Delete
+                                      {tCommon("delete")}
                                     </button>
                                     <button
                                       onClick={() => {
@@ -1817,9 +1838,11 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
                     {Math.ceil(dossierList.length / dossierPageSize) > 1 && (
                       <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-border text-xs text-secondary">
                         <div>
-                          Showing <span className="font-bold text-primary">{(dossierPage - 1) * dossierPageSize + 1}</span> to{" "}
-                          <span className="font-bold text-primary">{Math.min(dossierPage * dossierPageSize, dossierList.length)}</span> of{" "}
-                          <span className="font-bold text-primary">{dossierList.length}</span> dossiers
+                          {tWorkspace("showingDossiers", {
+                            start: (dossierPage - 1) * dossierPageSize + 1,
+                            end: Math.min(dossierPage * dossierPageSize, dossierList.length),
+                            total: dossierList.length,
+                          })}
                         </div>
                         <div className="flex items-center gap-2">
                           <button
@@ -1829,10 +1852,10 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
                             className="px-3 py-1.5 bg-bg border border-border rounded-lg text-xs font-semibold hover:text-primary hover:bg-surface disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 cursor-pointer"
                           >
                             <ArrowLeft size={12} weight="bold" />
-                            <span>Previous</span>
+                            <span>{tWorkspace("previous")}</span>
                           </button>
                           <span className="font-mono text-xs text-primary font-semibold px-2">
-                            Page {dossierPage} of {Math.ceil(dossierList.length / dossierPageSize)}
+                            {tWorkspace("pageOf", { current: dossierPage, total: Math.ceil(dossierList.length / dossierPageSize) })}
                           </span>
                           <button
                             type="button"
@@ -1840,7 +1863,7 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
                             disabled={dossierPage === Math.ceil(dossierList.length / dossierPageSize)}
                             className="px-3 py-1.5 bg-bg border border-border rounded-lg text-xs font-semibold hover:text-primary hover:bg-surface disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1 cursor-pointer"
                           >
-                            <span>Next</span>
+                            <span>{tWorkspace("next")}</span>
                             <ArrowRight size={12} weight="bold" />
                           </button>
                         </div>
@@ -1853,9 +1876,9 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
                       <Globe size={24} />
                     </div>
                     <div className="space-y-1">
-                      <p className="text-sm font-bold text-primary">No dossier created yet</p>
+                      <p className="text-sm font-bold text-primary">{tWorkspace("noDossierCreated")}</p>
                       <p className="text-xs text-secondary max-w-sm mx-auto">
-                        Click the &quot;Create Dossier&quot; button in the header above to configure your regulatory dossier sequence for this project.
+                        {tWorkspace("noDossierCreatedDesc")}
                       </p>
                     </div>
                   </div>
@@ -1866,14 +1889,14 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
                 <div className="flex items-center justify-between pb-2 border-b border-border/50">
                   <span className="text-xs font-bold text-accent flex items-center gap-1.5">
                     <Globe size={16} />
-                    Dossier Configuration & Target Country
+                    {tWorkspace("dossierConfigTargetCountry")}
                   </span>
                 </div>
 
                 {/* Form Grid (6 columns x 1 row) */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                   {renderSelectInput(
-                    "Country of Submission",
+                    tWorkspace("formSubmissionCountry"),
                     configState.submissionCountry,
                     (val) => setConfigState({ ...configState, submissionCountry: val }),
                     [
@@ -1887,14 +1910,14 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
                       { label: "EUROPEAN UNION (EMA)", value: "EU" },
                       { label: "TURKEY", value: "TURKEY" },
                       { label: "UNITED KINGDOM (MHRA)", value: "UK" },
-                    ],
+                    ].map((opt) => ({ value: opt.value, label: translateValue(opt.label, locale, countryMapRu) })),
                     isDossierSaved,
                     isSection2Disabled,
                     true
                   )}
 
                   {renderSelectInput(
-                    "Role of Submission Country",
+                    tWorkspace("formRoleOfSubmissionCountry"),
                     configState.roleOfSubmissionCountry,
                     (val) => setConfigState({ ...configState, roleOfSubmissionCountry: val }),
                     [
@@ -1902,13 +1925,13 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
                       { label: "Concerned Member State (CMS)", value: "Concerned Member State (CMS)" },
                       { label: "Primary Regulatory Authority", value: "Primary Regulatory Authority" },
                       { label: "National Supervisory Body", value: "National Supervisory Body" },
-                    ],
+                    ].map((opt) => ({ value: opt.value, label: translateValue(opt.label, locale, roleMapRu) })),
                     isDossierSaved,
                     isSection2Disabled
                   )}
 
                   {renderSelectInput(
-                    "Kind of Procedure",
+                    tWorkspace("formKindProcedure"),
                     configState.procedureType,
                     (val) => setConfigState({ ...configState, procedureType: val }),
                     [
@@ -1918,14 +1941,14 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
                       { label: "National Registration", value: "National Registration" },
                       { label: "Variation", value: "Variation" },
                       { label: "Renewal / Extension", value: "Renewal / Extension" },
-                    ],
+                    ].map((opt) => ({ value: opt.value, label: translateValue(opt.label, locale, kindProcedureMapRu) })),
                     isDossierSaved,
                     isSection2Disabled,
                     true
                   )}
 
                   {renderSelectInput(
-                    "Type of Procedure",
+                    tWorkspace("formTypeProcedure"),
                     configState.typeOfProcedure,
                     (val) => setConfigState({ ...configState, typeOfProcedure: val }),
                     [
@@ -1935,13 +1958,13 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
                       { label: "Variation", value: "Variation" },
                       { label: "Line Extension", value: "Line Extension" },
                       { label: "License Transfer", value: "License Transfer" },
-                    ],
+                    ].map((opt) => ({ value: opt.value, label: translateValue(opt.label, locale, typeProcedureMapRu) })),
                     isDossierSaved,
                     isSection2Disabled
                   )}
 
                   {renderTextInput(
-                    "Application Number",
+                    tWorkspace("formApplicationNumber"),
                     configState.applicationNumber,
                     (val) => setConfigState({ ...configState, applicationNumber: val }),
                     isDossierSaved,
@@ -1949,7 +1972,7 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
                   )}
 
                   {renderSelectInput(
-                    "Dossier Sequence",
+                    tWorkspace("formDossierSequence"),
                     configState.dossierSequence,
                     (val) => setConfigState({ ...configState, dossierSequence: val }),
                     [
@@ -1959,7 +1982,7 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
                       { label: "Sequence 0003", value: "Sequence 0003" },
                       { label: "Sequence 0004", value: "Sequence 0004" },
                       { label: "Sequence 0005", value: "Sequence 0005" },
-                    ],
+                    ].map((opt) => ({ value: opt.value, label: translateValue(opt.label, locale, sequenceMapRu) })),
                     isDossierSaved,
                     isSection2Disabled
                   )}
@@ -2006,7 +2029,7 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
                           {isSavingDossier
                             ? tWorkspace("updating")
                             : isEditingDossier
-                              ? "Save"
+                              ? tCommon("save")
                               : tWorkspace("btnEditSection2")}
                         </span>
                       </button>
@@ -2023,7 +2046,7 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
                       ) : (
                         <FloppyDiskBack size={15} weight="fill" />
                       )}
-                      <span>{isSavingDossier ? tWorkspace("saving") : "Save"}</span>
+                      <span>{isSavingDossier ? tWorkspace("saving") : tCommon("save")}</span>
                     </button>
                   )}
                 </div>
@@ -2042,13 +2065,13 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
                 <Trash size={22} />
               </div>
               <div>
-                <h3 className="font-lexend font-bold text-base text-primary">Delete Dossier Configuration</h3>
+                <h3 className="font-lexend font-bold text-base text-primary">{tWorkspace("deleteDossierConfigTitle")}</h3>
                 <span className="font-mono text-xs text-red-400 font-semibold">{deletingDossierId}</span>
               </div>
             </div>
 
             <p className="text-xs text-secondary leading-relaxed">
-              Are you sure you want to delete this dossier configuration? This action cannot be undone.
+              {tWorkspace("deleteDossierConfigMsg")}
             </p>
 
             <div className="flex items-center justify-end gap-3 pt-3 border-t border-border">
@@ -2058,7 +2081,7 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
                 onClick={() => setDeletingDossierId(null)}
                 className="px-4 py-2 bg-bg hover:bg-surface-raised border border-border text-secondary font-semibold rounded-lg cursor-pointer disabled:opacity-50 text-xs"
               >
-                Cancel
+                {tWorkspace("cancelBtn")}
               </button>
               <button
                 type="button"
@@ -2067,7 +2090,7 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
                 className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition-all shadow-sm cursor-pointer flex items-center gap-2 disabled:opacity-50 text-xs"
               >
                 {isDeletingDossier && <CircleNotch size={16} className="animate-spin" />}
-                <span>{isDeletingDossier ? "Deleting..." : "Confirm Delete"}</span>
+                <span>{isDeletingDossier ? tWorkspace("deleting") : tWorkspace("confirmDelete")}</span>
               </button>
             </div>
           </div>

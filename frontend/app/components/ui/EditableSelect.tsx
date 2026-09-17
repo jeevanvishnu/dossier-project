@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { CaretDown, Check, CheckCircle } from "@phosphor-icons/react";
+import { useTranslations } from "next-intl";
 
 export interface SelectOption {
   label: string;
@@ -33,6 +34,7 @@ export const EditableSelect: React.FC<EditableSelectProps> = ({
   className = "",
   size = "md",
 }) => {
+  const tWorkspace = useTranslations("workspace");
   const [isOpen, setIsOpen] = useState(false);
   const [isUserTyping, setIsUserTyping] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -55,6 +57,10 @@ export const EditableSelect: React.FC<EditableSelectProps> = ({
       document.removeEventListener("touchstart", handleClickOutside);
     };
   }, []);
+
+  // Compute display value for input when not typing
+  const selectedOption = options.find((opt) => opt.value === value || opt.label === value);
+  const displayInputValue = isUserTyping ? value : (selectedOption ? selectedOption.label : value);
 
   // Compute filtered options
   let displayOptions = options;
@@ -158,7 +164,7 @@ export const EditableSelect: React.FC<EditableSelectProps> = ({
           {isSaved && (
             <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400 font-semibold uppercase tracking-wider">
               <CheckCircle size={12} weight="fill" />
-              Valid
+              {tWorkspace("validStatus")}
             </span>
           )}
         </div>
@@ -169,7 +175,7 @@ export const EditableSelect: React.FC<EditableSelectProps> = ({
           ref={inputRef}
           type="text"
           disabled={isDisabled}
-          value={value}
+          value={displayInputValue}
           placeholder={placeholder}
           onChange={handleInputChange}
           onFocus={handleInputFocus}

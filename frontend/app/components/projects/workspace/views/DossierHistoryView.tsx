@@ -11,7 +11,7 @@ import {
   WarningCircle,
   XCircle,
 } from "@phosphor-icons/react";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import { api, handleApiError } from "@/app/lib/axios";
 import { SkeletonTableRow } from "@/app/components/ui/Skeleton";
 
@@ -30,6 +30,8 @@ interface DossierHistoryViewProps {
 
 export const DossierHistoryView: React.FC<DossierHistoryViewProps> = ({ projectId = "1" }) => {
   const tWorkspace = useTranslations("workspace");
+  const tToasts = useTranslations("toasts");
+  const tCommon = useTranslations("common");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [historyLogs, setHistoryLogs] = useState<AuditLogRow[]>([
     {
@@ -99,7 +101,7 @@ export const DossierHistoryView: React.FC<DossierHistoryViewProps> = ({ projectI
     try {
       const exportUrl = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"}/projects/${projectId}/audit-logs/export`;
       window.open(exportUrl, "_blank");
-      toast.success("Downloading audit logs CSV...");
+      toast.success(tToasts("downloadingAuditLogsCsv"));
     } catch (err) {
       handleApiError(err, "Failed to export audit logs CSV");
     }
@@ -149,7 +151,7 @@ export const DossierHistoryView: React.FC<DossierHistoryViewProps> = ({ projectI
             <MagnifyingGlass size={16} className="absolute left-3 text-muted" />
             <input
               type="text"
-              placeholder="Search history logs..."
+              placeholder={tWorkspace("searchHistoryLogs")}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-bg border border-border focus:border-accent text-primary text-xs rounded-xl pl-9 pr-3 py-2 focus:outline-none transition-colors"
@@ -235,17 +237,17 @@ export const DossierHistoryView: React.FC<DossierHistoryViewProps> = ({ projectI
             disabled={currentPage === 1}
             className="px-3 py-1.5 bg-bg border border-border rounded-lg text-xs font-semibold text-secondary hover:text-primary hover:bg-surface-raised disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Previous
+            {tCommon("back")}
           </button>
           <span className="text-xs text-secondary font-mono">
-            Page {currentPage} of {totalPages}
+            {tWorkspace("pageOf", { current: currentPage, total: totalPages })}
           </span>
           <button
             onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
             disabled={currentPage === totalPages}
             className="px-3 py-1.5 bg-bg border border-border rounded-lg text-xs font-semibold text-secondary hover:text-primary hover:bg-surface-raised disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Next
+            {tCommon("next")}
           </button>
         </div>
       )}

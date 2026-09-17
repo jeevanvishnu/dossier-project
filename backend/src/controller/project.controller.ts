@@ -1,9 +1,10 @@
 import { Request, Response } from "express";
 import { db } from "../db/db";
-import { projects, dossierConfig, projectMembers, auditLogs } from "../db/schema";
+import { projects, dossierConfig, projectMembers, auditLogs, packageArchives, projectDocuments } from "../db/schema";
 import { createProjectSchema, updateDossierDataSchema } from "../validators/project.validator";
 import { parseIdParam, resolveProjectId } from "../utils/params.util";
-import { eq, and, desc, isNotNull } from "drizzle-orm";
+import { deleteFromImageKit } from "../services/imagekit.service";
+import { eq, and, desc, isNotNull, sql } from "drizzle-orm";
 
 import crypto from "crypto";
 
@@ -28,9 +29,8 @@ export async function getProjects(req: Request, res: Response): Promise<void> {
       offset,
     });
 
-    // Fallback count query since count() can be tricky across different drizzle versions
-    const allProjects = await db.query.projects.findMany({ columns: { id: true } });
-    const totalCount = allProjects.length;
+    const countResult = await db.select({ count: sql<number>`count(*)` }).from(projects);
+    const totalCount = Number(countResult[0]?.count || 0);
 
     res.status(200).json({
       success: true,
@@ -359,7 +359,13 @@ export const updateProject = updateDossierData;
 
 /**
  * DELETE /api/projects/:id
- * Deletes a project and all associated cascade records (dossier_config, members, documents, audit_logs, package_archives).
+ * Deletes a project and all associated cascade records:
+ * - Product Metadata (projects table)
+ * - Dossier Data & Configuration (dossier_config table)
+ * - Dossier History (audit_logs table)
+ * - XML Creation History (package_archives table)
+ * - Project Documents & ImageKit Cloud Assets (project_documents table)
+ * - Project Team Members (project_members table)
  */
 export async function deleteProject(req: Request, res: Response): Promise<void> {
   try {
@@ -369,20 +375,66 @@ export async function deleteProject(req: Request, res: Response): Promise<void> 
       return;
     }
 
-    const [deleted] = await db
-      .delete(projects)
-      .where(eq(projects.id, projectId))
-      .returning();
+    // Check if project exists
+    const existingProject = await db.query.projects.findFirst({
+      where: eq(projects.id, projectId),
+    });
 
-    if (!deleted) {
+    if (!existingProject) {
       res.status(404).json({ success: false, message: "Project not found" });
       return;
     }
 
+    // Collect any ImageKit asset IDs before deleting project document records
+    const docRecords = await db.query.projectDocuments.findMany({
+      where: eq(projectDocuments.projectId, projectId),
+      columns: { imageKitFileId: true },
+    });
+    const imageKitFileIds = docRecords
+      .map((d) => d.imageKitFileId)
+      .filter((id): id is string => Boolean(id));
+
+    // Perform full atomic transaction across all associated tables
+    const deletedProject = await db.transaction(async (tx) => {
+      // 1. Delete Dossier History (audit_logs)
+      await tx.delete(auditLogs).where(eq(auditLogs.projectId, projectId));
+
+      // 2. Delete XML Creation History (package_archives)
+      await tx.delete(packageArchives).where(eq(packageArchives.projectId, projectId));
+
+      // 3. Delete Project Documents (project_documents)
+      await tx.delete(projectDocuments).where(eq(projectDocuments.projectId, projectId));
+
+      // 4. Delete Dossier Data & Configuration (dossier_config)
+      await tx.delete(dossierConfig).where(eq(dossierConfig.projectId, projectId));
+
+      // 5. Delete Project Team Members (project_members)
+      await tx.delete(projectMembers).where(eq(projectMembers.projectId, projectId));
+
+      // 6. Delete Project & Product Metadata (projects)
+      const [deleted] = await tx
+        .delete(projects)
+        .where(eq(projects.id, projectId))
+        .returning();
+
+      return deleted;
+    });
+
+    // Asynchronously delete cloud storage assets (ImageKit) without blocking response
+    if (imageKitFileIds.length > 0) {
+      Promise.allSettled(imageKitFileIds.map((fileId) => deleteFromImageKit(fileId))).catch((err) => {
+        console.warn("[Delete Project] Cloud asset cleanup warning:", err);
+      });
+    }
+
     res.status(200).json({
       success: true,
-      data: { id: deleted.id, projectCode: deleted.projectCode, productName: deleted.productName },
-      message: `Project ${deleted.productName} (${deleted.projectCode}) deleted successfully`,
+      data: {
+        id: deletedProject.id,
+        projectCode: deletedProject.projectCode,
+        productName: deletedProject.productName,
+      },
+      message: `Project ${deletedProject.productName} (${deletedProject.projectCode}) and all associated product metadata, dossier data, configuration, dossier history, and XML creation history were deleted successfully.`,
     });
   } catch (error: any) {
     console.error("[Delete Project Error]", error);

@@ -20,7 +20,7 @@ export function parseIdParam(param: string | string[] | undefined): number {
 }
 
 /**
- * Helper to resolve numeric project ID from either numeric ID or projectCode string.
+ * Helper to resolve numeric project ID from numeric ID or unique projectCode UUID.
  */
 export async function resolveProjectId(param: string | string[] | undefined): Promise<number | null> {
   const rawStr = getSingleParam(param);
@@ -32,7 +32,7 @@ export async function resolveProjectId(param: string | string[] | undefined): Pr
     return isNaN(parsedId) ? null : parsedId;
   }
 
-  // Combined lookup by exact or case-insensitive projectCode in a single DB query
+  // Lookup by exact or case-insensitive unique projectCode
   const existingProject = await db.query.projects.findFirst({
     where: or(eq(projects.projectCode, rawStr), ilike(projects.projectCode, rawStr)),
     columns: { id: true },
@@ -40,5 +40,6 @@ export async function resolveProjectId(param: string | string[] | undefined): Pr
 
   return existingProject ? existingProject.id : null;
 }
+
 
 

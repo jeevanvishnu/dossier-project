@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import { AppShell } from "../../components/AppShell";
 import { FileText, CheckCircle, WarningOctagon, Plus, DownloadSimple, MagnifyingGlass } from "@phosphor-icons/react";
-import toast from "react-hot-toast";
+import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 
 export default function ContractsPage() {
@@ -103,25 +103,22 @@ export default function ContractsPage() {
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <button
               onClick={() => setFilterType("all")}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
-                filterType === "all" ? "bg-accent text-white" : "bg-bg text-secondary hover:text-primary border border-border"
-              }`}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${filterType === "all" ? "bg-accent text-white" : "bg-bg text-secondary hover:text-primary border border-border"
+                }`}
             >
               {tContracts("filterStatus")} ({contracts.length})
             </button>
             <button
               onClick={() => setFilterType("active")}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
-                filterType === "active" ? "bg-emerald-500 text-white" : "bg-bg text-secondary hover:text-primary border border-border"
-              }`}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${filterType === "active" ? "bg-emerald-500 text-white" : "bg-bg text-secondary hover:text-primary border border-border"
+                }`}
             >
               {tContracts("statusActive")}
             </button>
             <button
               onClick={() => setFilterType("expired")}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
-                filterType === "expired" ? "bg-red-500 text-white" : "bg-bg text-secondary hover:text-primary border border-border"
-              }`}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${filterType === "expired" ? "bg-red-500 text-white" : "bg-bg text-secondary hover:text-primary border border-border"
+                }`}
             >
               {tContracts("statusExpired")}
             </button>

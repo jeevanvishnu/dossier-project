@@ -27,7 +27,7 @@ export function SupportWidget() {
 
         <div className="flex items-center gap-1.5 text-[11px] text-muted mb-3">
           <Clock className="text-accent shrink-0" size={13} />
-          <span>Mon–Fri, 09:00–18:00 (Astana)</span>
+          <span>{tSupp("scheduleDetail")}</span>
         </div>
 
         <div className="flex items-center justify-between bg-surface-raised rounded-lg p-2 border border-border">
@@ -37,14 +37,14 @@ export function SupportWidget() {
             </div>
             <div>
               <p className="text-[11px] font-semibold text-primary">@ectc_support</p>
-              <p className="text-[9px] text-muted">SLA: Max 2h response</p>
+              <p className="text-[9px] text-muted">{tSupp("slaResponse")}</p>
             </div>
           </div>
           <button
             onClick={() => setShowQrModal(true)}
             className="px-2 py-1 text-[10px] font-semibold bg-accent/15 hover:bg-accent/25 text-accent rounded transition-colors"
           >
-            QR Code
+            {tSupp("qrCode")}
           </button>
         </div>
       </div>
@@ -97,7 +97,7 @@ export function SupportWidget() {
 
             <div className="flex items-center justify-center gap-2 text-xs text-muted">
               <ShieldCheck className="text-emerald-500" size={16} />
-              <span>Provide your Organization User ID when contacting support</span>
+              <span>{tSupp("provideUserId")}</span>
             </div>
 
             <div className="mt-5 pt-4 border-t border-border">
