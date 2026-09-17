@@ -156,30 +156,33 @@ export default function AuditJournalPage() {
               <thead className="bg-bg text-primary uppercase font-bold text-[10px] tracking-wider border-b border-border">
                 <tr>
                   <th className="py-3.5 px-4">{tJournal("colTxHash")}</th>
-                  <th className="py-3.5 px-4">{tJournal("colTimestamp")}</th>
                   <th className="py-3.5 px-4">{tJournal("colUser")}</th>
                   <th className="py-3.5 px-4">{tJournal("colEvent")}</th>
-                  <th className="py-3.5 px-4">{tJournal("colDetails")}</th>
+                  <th className="py-3.5 px-4">{tJournal("colTimestamp")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
                 {filteredLogs.map((log) => (
                   <tr key={log.txHash} className="hover:bg-surface-raised transition-colors">
-                    <td className="py-3.5 px-4 font-mono font-bold text-accent flex items-center gap-1.5">
-                      <Hash size={14} className="text-accent shrink-0" />
-                      <span>{log.txHash}</span>
+                    <td className="py-3.5 px-4 font-mono font-bold text-accent">
+                      <div className="flex items-center gap-1.5">
+                        <Hash size={14} className="text-accent shrink-0" />
+                        <span>{log.txHash}</span>
+                      </div>
                     </td>
-                    <td className="py-3.5 px-4 font-mono text-primary font-medium">{log.timestamp}</td>
                     <td className="py-3.5 px-4 text-primary font-semibold">{log.userId}</td>
                     <td className="py-3.5 px-4">
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-bg border border-border">
-                        {getEventIcon(log.eventTypeKey)}
-                        <span className="text-primary">
-                          {tJournal.has(log.eventTypeKey as any) ? tJournal(log.eventTypeKey as any) : log.eventTypeDefault}
+                      <div className="flex flex-col gap-1">
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-bg border border-border w-fit">
+                          {getEventIcon(log.eventTypeKey)}
+                          <span className="text-primary">
+                            {tJournal.has(log.eventTypeKey as any) ? tJournal(log.eventTypeKey as any) : log.eventTypeDefault}
+                          </span>
                         </span>
-                      </span>
+                        <span className="text-secondary text-xs">{log.details}</span>
+                      </div>
                     </td>
-                    <td className="py-3.5 px-4 text-secondary leading-relaxed">{log.details}</td>
+                    <td className="py-3.5 px-4 font-mono text-primary font-medium whitespace-nowrap">{log.timestamp}</td>
                   </tr>
                 ))}
               </tbody>

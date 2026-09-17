@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { AppShell } from "../../../components/AppShell";
 import { useTranslations } from "next-intl";
 import {
@@ -12,13 +12,15 @@ import {
   Trash,
   ToggleLeft,
   ToggleRight,
+  UserGear,
 } from "@phosphor-icons/react";
 import { toast } from "sonner";
 
 export default function AccountSettingsPage() {
   const tProfile = useTranslations("profile");
   const tCommon = useTranslations("common");
-  const [activeTab, setActiveTab] = useState<"users" | "avatar" | "password" | "company">("users");
+  const [activeTab, setActiveTab] = useState<"account" | "users">("account");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // User List Management State (Admin View)
   const [users, setUsers] = useState([
@@ -167,6 +169,16 @@ export default function AccountSettingsPage() {
 
         <div className="flex items-center gap-2 bg-surface border border-border p-1.5 rounded-2xl overflow-x-auto shadow-xs">
           <button
+            onClick={() => setActiveTab("account")}
+            className={`px-4 py-2 text-xs font-bold rounded-xl transition-colors flex items-center gap-2 shrink-0 cursor-pointer ${
+              activeTab === "account" ? "bg-accent text-white" : "text-secondary hover:text-primary"
+            }`}
+          >
+            <UserGear size={16} />
+            <span>{tProfile("tabAccountSettings")}</span>
+          </button>
+
+          <button
             onClick={() => setActiveTab("users")}
             className={`px-4 py-2 text-xs font-bold rounded-xl transition-colors flex items-center gap-2 shrink-0 cursor-pointer ${
               activeTab === "users" ? "bg-accent text-white" : "text-secondary hover:text-primary"
@@ -175,37 +187,185 @@ export default function AccountSettingsPage() {
             <Users size={16} />
             <span>{tProfile("tabUsers")}</span>
           </button>
-
-          <button
-            onClick={() => setActiveTab("avatar")}
-            className={`px-4 py-2 text-xs font-bold rounded-xl transition-colors flex items-center gap-2 shrink-0 cursor-pointer ${
-              activeTab === "avatar" ? "bg-accent text-white" : "text-secondary hover:text-primary"
-            }`}
-          >
-            <UploadSimple size={16} />
-            <span>{tProfile("tabAvatar")}</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab("password")}
-            className={`px-4 py-2 text-xs font-bold rounded-xl transition-colors flex items-center gap-2 shrink-0 cursor-pointer ${
-              activeTab === "password" ? "bg-accent text-white" : "text-secondary hover:text-primary"
-            }`}
-          >
-            <LockKey size={16} />
-            <span>{tProfile("tabPassword")}</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab("company")}
-            className={`px-4 py-2 text-xs font-bold rounded-xl transition-colors flex items-center gap-2 shrink-0 cursor-pointer ${
-              activeTab === "company" ? "bg-accent text-white" : "text-secondary hover:text-primary"
-            }`}
-          >
-            <Buildings size={16} />
-            <span>{tProfile("tabCompany")}</span>
-          </button>
         </div>
+
+        {activeTab === "account" && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+            {/* Photo Upload (Avatar) Card */}
+            <div className="bg-surface border border-border rounded-2xl p-6 shadow-sm space-y-4 h-full">
+              <div className="flex items-center gap-2 pb-3 border-b border-border">
+                <UploadSimple size={20} className="text-accent" />
+                <h2 className="font-lexend font-bold text-base text-primary">
+                  {tProfile("avatarTitle")}
+                </h2>
+              </div>
+
+              <div className="flex flex-col items-center gap-3 pt-1">
+                <div className="w-20 h-20 rounded-full bg-bg border-2 border-accent/40 overflow-hidden flex items-center justify-center shrink-0">
+                  {avatarPreview ? (
+                    <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="font-lexend font-bold text-2xl text-accent">AZ</span>
+                  )}
+                </div>
+
+                <div className="space-y-2 flex flex-col items-center">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarChange}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="px-4 py-2 bg-accent hover:bg-accent-hover text-white text-xs font-bold rounded-xl transition-all shadow-xs flex items-center gap-2 cursor-pointer"
+                  >
+                    <UploadSimple size={16} />
+                    <span>{tProfile("tabAvatar")}</span>
+                  </button>
+                  {avatarError && (
+                    <p className="text-xs text-red-500 font-medium text-center">{avatarError}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="bg-bg p-4 rounded-xl border border-border space-y-2 text-xs mt-auto">
+                <span className="font-bold text-accent block uppercase tracking-wider">{tProfile("dimensionLimits")}</span>
+                <p className="text-secondary">• {tProfile("maxSize")} <strong className="text-primary">50 KB</strong></p>
+                <p className="text-secondary">• {tProfile("maxDimensions")} <strong className="text-primary">130 x 130 pixels</strong></p>
+              </div>
+            </div>
+
+            {/* Password Update Card */}
+            <div className="bg-surface border border-border rounded-2xl p-6 shadow-sm space-y-4 h-full">
+              <div className="flex items-center gap-2 pb-3 border-b border-border">
+                <LockKey size={20} className="text-accent" />
+                <h2 className="font-lexend font-bold text-base text-primary">
+                  {tProfile("passwordTitle")}
+                </h2>
+              </div>
+
+              <form onSubmit={handlePasswordSubmit} className="space-y-4 text-xs">
+                <div>
+                  <label className="block text-primary font-bold mb-1">{tProfile("currentPassword")}</label>
+                  <input
+                    type="password"
+                    required
+                    value={passwords.current}
+                    onChange={(e) => setPasswords({ ...passwords, current: e.target.value })}
+                    className="w-full bg-bg border border-border rounded-xl p-2.5 text-primary outline-none focus:border-accent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-primary font-bold mb-1">{tProfile("newPassword")}</label>
+                  <input
+                    type="password"
+                    required
+                    value={passwords.next}
+                    onChange={(e) => setPasswords({ ...passwords, next: e.target.value })}
+                    className="w-full bg-bg border border-border rounded-xl p-2.5 text-primary outline-none focus:border-accent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-primary font-bold mb-1">{tProfile("confirmPassword")}</label>
+                  <input
+                    type="password"
+                    required
+                    value={passwords.confirm}
+                    onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}
+                    className="w-full bg-bg border border-border rounded-xl p-2.5 text-primary outline-none focus:border-accent"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full py-2.5 bg-accent hover:bg-accent-hover text-white font-bold rounded-xl transition-all shadow-sm cursor-pointer"
+                >
+                  {tProfile("updatePasswordBtn")}
+                </button>
+              </form>
+            </div>
+
+            {/* Company Data & Representation Card */}
+            <div className="bg-surface border border-border rounded-2xl p-6 shadow-sm space-y-4 h-full">
+              <div className="flex items-center gap-2 pb-3 border-b border-border">
+                <Buildings size={20} className="text-accent" />
+                <h2 className="font-lexend font-bold text-base text-primary">
+                  {tProfile("companyTitle")}
+                </h2>
+              </div>
+
+              <form onSubmit={handleCompanySubmit} className="space-y-4 text-xs">
+                <div>
+                  <label className="block text-primary font-bold mb-1">{tProfile("tinBin")}</label>
+                  <input
+                    type="text"
+                    required
+                    value={companyData.tinBin}
+                    onChange={(e) => setCompanyData({ ...companyData, tinBin: e.target.value })}
+                    className="w-full bg-bg border border-border rounded-xl p-2.5 text-primary outline-none focus:border-accent font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-primary font-bold mb-1">{tProfile("officialEmail")}</label>
+                  <input
+                    type="email"
+                    required
+                    value={companyData.officialEmail}
+                    onChange={(e) => setCompanyData({ ...companyData, officialEmail: e.target.value })}
+                    className="w-full bg-bg border border-border rounded-xl p-2.5 text-primary outline-none focus:border-accent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-primary font-bold mb-1">{tProfile("legalAddress")}</label>
+                  <input
+                    type="text"
+                    required
+                    value={companyData.legalAddress}
+                    onChange={(e) => setCompanyData({ ...companyData, legalAddress: e.target.value })}
+                    className="w-full bg-bg border border-border rounded-xl p-2.5 text-primary outline-none focus:border-accent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-primary font-bold mb-1">{tProfile("additionalAddress")}</label>
+                  <input
+                    type="text"
+                    value={companyData.additionalAddress}
+                    onChange={(e) => setCompanyData({ ...companyData, additionalAddress: e.target.value })}
+                    className="w-full bg-bg border border-border rounded-xl p-2.5 text-primary outline-none focus:border-accent"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-primary font-bold mb-1">{tProfile("corporatePhone")}</label>
+                  <input
+                    type="text"
+                    required
+                    value={companyData.corporatePhone}
+                    onChange={(e) => setCompanyData({ ...companyData, corporatePhone: e.target.value })}
+                    className="w-full bg-bg border border-border rounded-xl p-2.5 text-primary outline-none focus:border-accent font-mono"
+                  />
+                </div>
+
+                <div className="pt-2">
+                  <button
+                    type="submit"
+                    className="w-full py-2.5 bg-accent hover:bg-accent-hover text-white font-bold rounded-xl transition-all shadow-sm cursor-pointer"
+                  >
+                    {tProfile("saveCompanyBtn")}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
         {activeTab === "users" && (
           <div className="bg-surface border border-border rounded-2xl overflow-hidden shadow-sm">
@@ -295,176 +455,6 @@ export default function AccountSettingsPage() {
                 </tbody>
               </table>
             </div>
-          </div>
-        )}
-
-        {activeTab === "avatar" && (
-          <div className="bg-surface border border-border rounded-2xl p-6 shadow-sm max-w-xl space-y-4">
-            <div className="flex items-center gap-2 pb-3 border-b border-border">
-              <UploadSimple size={20} className="text-accent" />
-              <h2 className="font-lexend font-bold text-base text-primary">
-                {tProfile("avatarTitle")}
-              </h2>
-            </div>
-
-            <div className="bg-bg p-4 rounded-xl border border-border space-y-2 text-xs">
-              <span className="font-bold text-accent block uppercase tracking-wider">{tProfile("dimensionLimits")}</span>
-              <p className="text-secondary">• {tProfile("maxSize")} <strong className="text-primary">50 KB</strong></p>
-              <p className="text-secondary">• {tProfile("maxDimensions")} <strong className="text-primary">130 x 130 pixels</strong></p>
-            </div>
-
-            <div className="flex items-center gap-4 pt-2">
-              <div className="w-24 h-24 rounded-full bg-bg border-2 border-accent/40 overflow-hidden flex items-center justify-center shrink-0">
-                {avatarPreview ? (
-                  <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
-                ) : (
-                  <span className="font-lexend font-bold text-2xl text-accent">AZ</span>
-                )}
-              </div>
-
-              <div className="space-y-2 flex-1">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleAvatarChange}
-                  className="block w-full text-xs text-secondary file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-accent file:text-white hover:file:bg-accent-hover file:cursor-pointer cursor-pointer"
-                />
-                {avatarError && (
-                  <p className="text-xs text-red-500 font-medium">{avatarError}</p>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {activeTab === "password" && (
-          <div className="bg-surface border border-border rounded-2xl p-6 shadow-sm max-w-lg space-y-4">
-            <div className="flex items-center gap-2 pb-3 border-b border-border">
-              <LockKey size={20} className="text-accent" />
-              <h2 className="font-lexend font-bold text-base text-primary">
-                {tProfile("passwordTitle")}
-              </h2>
-            </div>
-
-            <form onSubmit={handlePasswordSubmit} className="space-y-4 text-xs">
-              <div>
-                <label className="block text-primary font-bold mb-1">{tProfile("currentPassword")}</label>
-                <input
-                  type="password"
-                  required
-                  value={passwords.current}
-                  onChange={(e) => setPasswords({ ...passwords, current: e.target.value })}
-                  className="w-full bg-bg border border-border rounded-xl p-2.5 text-primary outline-none focus:border-accent"
-                />
-              </div>
-
-              <div>
-                <label className="block text-primary font-bold mb-1">{tProfile("newPassword")}</label>
-                <input
-                  type="password"
-                  required
-                  value={passwords.next}
-                  onChange={(e) => setPasswords({ ...passwords, next: e.target.value })}
-                  className="w-full bg-bg border border-border rounded-xl p-2.5 text-primary outline-none focus:border-accent"
-                />
-              </div>
-
-              <div>
-                <label className="block text-primary font-bold mb-1">{tProfile("confirmPassword")}</label>
-                <input
-                  type="password"
-                  required
-                  value={passwords.confirm}
-                  onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}
-                  className="w-full bg-bg border border-border rounded-xl p-2.5 text-primary outline-none focus:border-accent"
-                />
-              </div>
-
-              <button
-                type="submit"
-                className="w-full py-2.5 bg-accent hover:bg-accent-hover text-white font-bold rounded-xl transition-all shadow-sm cursor-pointer"
-              >
-                {tProfile("updatePasswordBtn")}
-              </button>
-            </form>
-          </div>
-        )}
-
-        {activeTab === "company" && (
-          <div className="bg-surface border border-border rounded-2xl p-6 shadow-sm max-w-2xl space-y-4">
-            <div className="flex items-center gap-2 pb-3 border-b border-border">
-              <Buildings size={20} className="text-accent" />
-              <h2 className="font-lexend font-bold text-base text-primary">
-                {tProfile("companyTitle")}
-              </h2>
-            </div>
-
-            <form onSubmit={handleCompanySubmit} className="space-y-4 text-xs">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-primary font-bold mb-1">{tProfile("tinBin")}</label>
-                  <input
-                    type="text"
-                    required
-                    value={companyData.tinBin}
-                    onChange={(e) => setCompanyData({ ...companyData, tinBin: e.target.value })}
-                    className="w-full bg-bg border border-border rounded-xl p-2.5 text-primary outline-none focus:border-accent font-mono"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-primary font-bold mb-1">{tProfile("officialEmail")}</label>
-                  <input
-                    type="email"
-                    required
-                    value={companyData.officialEmail}
-                    onChange={(e) => setCompanyData({ ...companyData, officialEmail: e.target.value })}
-                    className="w-full bg-bg border border-border rounded-xl p-2.5 text-primary outline-none focus:border-accent"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-primary font-bold mb-1">{tProfile("legalAddress")}</label>
-                <input
-                  type="text"
-                  required
-                  value={companyData.legalAddress}
-                  onChange={(e) => setCompanyData({ ...companyData, legalAddress: e.target.value })}
-                  className="w-full bg-bg border border-border rounded-xl p-2.5 text-primary outline-none focus:border-accent"
-                />
-              </div>
-
-              <div>
-                <label className="block text-primary font-bold mb-1">{tProfile("additionalAddress")}</label>
-                <input
-                  type="text"
-                  value={companyData.additionalAddress}
-                  onChange={(e) => setCompanyData({ ...companyData, additionalAddress: e.target.value })}
-                  className="w-full bg-bg border border-border rounded-xl p-2.5 text-primary outline-none focus:border-accent"
-                />
-              </div>
-
-              <div>
-                <label className="block text-primary font-bold mb-1">{tProfile("corporatePhone")}</label>
-                <input
-                  type="text"
-                  required
-                  value={companyData.corporatePhone}
-                  onChange={(e) => setCompanyData({ ...companyData, corporatePhone: e.target.value })}
-                  className="w-full bg-bg border border-border rounded-xl p-2.5 text-primary outline-none focus:border-accent font-mono"
-                />
-              </div>
-
-              <div className="pt-2">
-                <button
-                  type="submit"
-                  className="w-full py-2.5 bg-accent hover:bg-accent-hover text-white font-bold rounded-xl transition-all shadow-sm cursor-pointer"
-                >
-                  {tProfile("saveCompanyBtn")}
-                </button>
-              </div>
-            </form>
           </div>
         )}
 
