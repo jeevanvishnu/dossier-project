@@ -23,22 +23,33 @@ export function Sidebar() {
   const tCommon = useTranslations("common");
   const pathname = usePathname();
   const router = useRouter();
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
 
-  const navItems = [
-    { name: tNav("systemTour"), href: "/tour", icon: Compass },
+  const isAdmin = user?.role === "admin" || user?.role === "superadmin";
+
+  const systemTourItem = { name: tNav("systemTour"), href: "/tour", icon: Compass };
+  const activityLogItem = { name: tNav("activityLog"), href: "/journal", icon: ListBullets };
+
+  const userNavItems = [
     { name: tNav("dashboard"), href: "/dashboard", icon: SquaresFour },
     { name: tNav("myContracts"), href: "/contracts", icon: FileText },
     { name: tNav("myTariffs"), href: "/tariffs", icon: CreditCard },
     { name: tNav("myProjects"), href: "/projects", icon: Folders },
     { name: tNav("paymentHistory"), href: "/payments", icon: Receipt },
     { name: tNav("accountSettings"), href: "/profile/account", icon: UserGear },
-    { name: tNav("activityLog"), href: "/journal", icon: ListBullets },
   ];
 
+  const navItems = isAdmin
+    ? [systemTourItem, ...userNavItems, activityLogItem]
+    : userNavItems;
+
   const handleLogout = async () => {
-    await logout();
-    router.push("/start");
+    try {
+      await logout();
+      router.push("/start");
+    } catch (error) {
+      console.error("[Sidebar] Error during logout execution:", error);
+    }
   };
 
   return (

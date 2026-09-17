@@ -20,11 +20,30 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { openAuthModal } = useAuthModal();
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      router.push("/");
-      openAuthModal("signin");
+    try {
+      if (!isLoading && !isAuthenticated) {
+        router.push("/");
+        openAuthModal("signin");
+        return;
+      }
+
+      // Route guard for standard users attempting to access admin-only routes
+      if (!isLoading && isAuthenticated && user) {
+        const isAdmin = user.role === "admin" || user.role === "superadmin";
+        const adminOnlyRoutes = ["/tour", "/journal", "/dashboard/users", "/dashboard/audit"];
+        const isAccessingAdminRoute = adminOnlyRoutes.some(
+          (route) => pathname === route || pathname?.startsWith(route + "/")
+        );
+
+        if (!isAdmin && isAccessingAdminRoute) {
+          console.warn(`[AppShell] Access denied to ${pathname} for role '${user.role}'. Redirecting to /dashboard.`);
+          router.replace("/dashboard");
+        }
+      }
+    } catch (err) {
+      console.error("[AppShell] Error in auth and route guard check:", err);
     }
-  }, [isLoading, isAuthenticated, router, openAuthModal]);
+  }, [isLoading, isAuthenticated, user, pathname, router, openAuthModal]);
 
   if (isLoading) {
     return (
