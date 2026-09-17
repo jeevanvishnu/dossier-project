@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "../../../i18n/routing";
 import { AppShell } from "../../components/AppShell";
 import {
@@ -21,6 +21,38 @@ import { useTranslations } from "next-intl";
 export default function DashboardPage() {
   const tDash = useTranslations("dashboard");
   const tCommon = useTranslations("common");
+
+  const [gaugeAnimated, setGaugeAnimated] = useState(false);
+  const [gaugePercent, setGaugePercent] = useState(0);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setGaugeAnimated(true);
+    }, 150);
+
+    const startTime = performance.now();
+    const duration = 2400; // Slow, unhurried 2.4s sweep
+
+    const animateCount = (now: number) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const easeProgress = 1 - Math.pow(1 - progress, 3);
+      setGaugePercent(Math.round(easeProgress * 100));
+
+      if (progress < 1) {
+        requestAnimationFrame(animateCount);
+      }
+    };
+
+    const countTimer = setTimeout(() => {
+      requestAnimationFrame(animateCount);
+    }, 150);
+
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(countTimer);
+    };
+  }, []);
 
   const [dossierCounts] = useState({
     pinned: 0,
@@ -159,13 +191,69 @@ export default function DashboardPage() {
                     </p>
                   </div>
 
-                  <div className="flex flex-col items-center justify-center p-3.5 rounded-2xl bg-accent/10 border border-accent/25 text-accent min-w-[125px] shrink-0 text-center shadow-xs">
-                    <InfinityIcon size={38} weight="bold" />
-                    <span className="text-[10px] font-semibold uppercase tracking-wider mt-1 text-accent">
-                      {tDash("infinity")}
-                    </span>
-                    <span className="text-[9px] text-muted font-medium">{tDash("storageUsed")}</span>
-                  </div>
+                  {/* Speedometer Gauge Meter Widget */}
+                  {(() => {
+                    const needleAngle = 5 + (gaugePercent / 100) * 170;
+                    const dashOffset = 151 * (1 - gaugePercent / 100);
+                    const isRed = gaugePercent <= 50;
+                    const strokeColor = isRed ? "#ef4444" : "#10b981";
+                    const glowColor = isRed ? "rgba(239, 68, 68, 0.6)" : "rgba(16, 185, 129, 0.6)";
+                    const textColorClass = isRed ? "text-red-400" : "text-emerald-400";
+
+                    return (
+                      <div className="flex flex-col items-center justify-center text-accent shrink-0 text-center">
+                        <div className="relative w-36 h-22 shrink-0 flex flex-col items-center justify-center pt-1">
+                          <svg className="w-full h-full" viewBox="0 0 140 90">
+                            {/* Background Arc Track */}
+                            <path
+                              d="M 22 75 A 48 48 0 0 1 118 75"
+                              fill="none"
+                              stroke="#262d3d"
+                              strokeWidth="14"
+                              strokeLinecap="round"
+                            />
+                            {/* Active Filled Progress Arc: Red (0-50%) -> Green (50-100%) */}
+                            <path
+                              d="M 22 75 A 48 48 0 0 1 118 75"
+                              fill="none"
+                              stroke={strokeColor}
+                              strokeWidth="14"
+                              strokeLinecap="round"
+                              style={{
+                                strokeDasharray: 151,
+                                strokeDashoffset: dashOffset,
+                                transition: "stroke 0.4s ease, filter 0.4s ease",
+                                filter: `drop-shadow(0px 0px 8px ${glowColor})`,
+                              }}
+                            />
+                            {/* Red Needle Dial Rotating from 0% (5deg) to 100% (175deg) */}
+                            <line
+                              x1="70"
+                              y1="75"
+                              x2="28"
+                              y2="75"
+                              stroke="#ef4444"
+                              strokeWidth="3.5"
+                              strokeLinecap="round"
+                              transform={`rotate(${needleAngle}, 70, 75)`}
+                            />
+                            {/* Pivot Center Dot */}
+                            <circle cx="70" cy="75" r="5.5" fill="#ef4444" />
+                            <circle cx="70" cy="75" r="2.5" fill="#ffffff" />
+                          </svg>
+                          <div className="flex items-center gap-1 -mt-1">
+                            <InfinityIcon size={14} weight="bold" className="text-accent" />
+                            <span className={`text-[10px] font-black tracking-wider transition-colors duration-300 ${textColorClass}`}>
+                              {gaugePercent}% {gaugePercent === 100 ? "FULL" : ""}
+                            </span>
+                          </div>
+                        </div>
+                        <span className="text-[9px] text-muted font-medium mt-1">
+                          {tDash("storageUsed")} (Unlimited)
+                        </span>
+                      </div>
+                    );
+                  })()}
                 </div>
               ) : (
                 <div className="bg-bg border border-dashed border-red-500/30 rounded-xl p-5 flex flex-col items-center justify-center text-center space-y-2">

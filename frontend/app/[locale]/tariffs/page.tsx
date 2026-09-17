@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { AppShell } from "../../components/AppShell";
 import { useTranslations } from "next-intl";
 import {
@@ -19,9 +19,41 @@ import { toast } from "sonner";
 export default function TariffsPage() {
   const tTariffs = useTranslations("tariffs");
 
+  const [gaugeAnimated, setGaugeAnimated] = useState(false);
+  const [gaugePercent, setGaugePercent] = useState(0);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setGaugeAnimated(true);
+    }, 150);
+
+    const startTime = performance.now();
+    const duration = 2400; // Slow, unhurried 2.4s sweep
+
+    const animateCount = (now: number) => {
+      const elapsed = now - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const easeProgress = 1 - Math.pow(1 - progress, 3);
+      setGaugePercent(Math.round(easeProgress * 100));
+
+      if (progress < 1) {
+        requestAnimationFrame(animateCount);
+      }
+    };
+
+    const countTimer = setTimeout(() => {
+      requestAnimationFrame(animateCount);
+    }, 150);
+
+    return () => {
+      clearTimeout(timer);
+      clearTimeout(countTimer);
+    };
+  }, []);
+
   const [leaseMonths, setLeaseMonths] = useState(12);
   const monthlyRateKzt = 115000;
-  
+
   // Calculate discount percentage based on months
   const discountPct = leaseMonths >= 24 ? 20 : leaseMonths >= 12 ? 15 : leaseMonths >= 6 ? 10 : 0;
   const discountMultiplier = 1 - discountPct / 100;
@@ -84,7 +116,7 @@ export default function TariffsPage() {
                 {tTariffs("sub")}
               </p>
             </div>
-            
+
             <div className="flex items-center gap-2 self-start sm:self-auto">
               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-semibold text-xs">
                 <ShieldCheck className="w-4 h-4 text-emerald-400" />
@@ -117,49 +149,64 @@ export default function TariffsPage() {
               {/* Unlimited Capacity Speedometer Gauge Widget */}
               <div className="bg-bg/90 border border-border/80 rounded-xl p-4 relative overflow-hidden flex flex-col sm:flex-row items-center gap-4">
                 {/* SVG Speedometer Gauge Graphic */}
-                <div className="relative w-36 h-24 shrink-0 flex flex-col items-center justify-center pt-1">
-                  <svg className="w-full h-full" viewBox="0 0 140 90">
-                    {/* Background Arc Track */}
-                    <path
-                      d="M 22 75 A 48 48 0 0 1 118 75"
-                      fill="none"
-                      stroke="#262d3d"
-                      strokeWidth="14"
-                      strokeLinecap="round"
-                    />
-                    {/* Active Filled Progress Arc (Light Blue / Accent) */}
-                    <path
-                      d="M 22 75 A 48 48 0 0 1 118 75"
-                      fill="none"
-                      stroke="#60a5fa"
-                      strokeWidth="14"
-                      strokeLinecap="round"
-                      style={{
-                        filter: "drop-shadow(0px 0px 6px rgba(96, 165, 250, 0.5))",
-                      }}
-                    />
-                    {/* Red Needle Dial (Pointing 100% Full to Bottom Right) */}
-                    <line
-                      x1="70"
-                      y1="75"
-                      x2="112"
-                      y2="71"
-                      stroke="#ef4444"
-                      strokeWidth="3.5"
-                      strokeLinecap="round"
-                    />
-                    {/* Red Pivot Center Dot */}
-                    <circle cx="70" cy="75" r="5.5" fill="#ef4444" />
-                    <circle cx="70" cy="75" r="2.5" fill="#ffffff" />
-                  </svg>
-                  {/* Gauge Text Below Pivot */}
-                  <div className="flex items-center gap-1 mt-0.5">
-                    <InfinityIcon className="w-3.5 h-3.5 text-accent" />
-                    <span className="text-[10px] font-extrabold text-emerald-400 tracking-wider">
-                      100% FULL
-                    </span>
-                  </div>
-                </div>
+                {(() => {
+                  const needleAngle = 5 + (gaugePercent / 100) * 170;
+                  const dashOffset = 151 * (1 - gaugePercent / 100);
+                  const isRed = gaugePercent <= 50;
+                  const strokeColor = isRed ? "#ef4444" : "#10b981";
+                  const glowColor = isRed ? "rgba(239, 68, 68, 0.6)" : "rgba(16, 185, 129, 0.6)";
+                  const textColorClass = isRed ? "text-red-400" : "text-emerald-400";
+
+                  return (
+                    <div className="relative w-36 h-24 shrink-0 flex flex-col items-center justify-center pt-1">
+                      <svg className="w-full h-full" viewBox="0 0 140 90">
+                        {/* Background Arc Track */}
+                        <path
+                          d="M 22 75 A 48 48 0 0 1 118 75"
+                          fill="none"
+                          stroke="#262d3d"
+                          strokeWidth="14"
+                          strokeLinecap="round"
+                        />
+                        {/* Active Filled Progress Arc: Red (0-50%) -> Green (50-100%) */}
+                        <path
+                          d="M 22 75 A 48 48 0 0 1 118 75"
+                          fill="none"
+                          stroke={strokeColor}
+                          strokeWidth="14"
+                          strokeLinecap="round"
+                          style={{
+                            strokeDasharray: 151,
+                            strokeDashoffset: dashOffset,
+                            transition: "stroke 0.4s ease, filter 0.4s ease",
+                            filter: `drop-shadow(0px 0px 8px ${glowColor})`,
+                          }}
+                        />
+                        {/* Red Needle Dial Rotating from 0% (5deg) to 100% (175deg) */}
+                        <line
+                          x1="70"
+                          y1="75"
+                          x2="28"
+                          y2="75"
+                          stroke="#ef4444"
+                          strokeWidth="3.5"
+                          strokeLinecap="round"
+                          transform={`rotate(${needleAngle}, 70, 75)`}
+                        />
+                        {/* Red Pivot Center Dot */}
+                        <circle cx="70" cy="75" r="5.5" fill="#ef4444" />
+                        <circle cx="70" cy="75" r="2.5" fill="#ffffff" />
+                      </svg>
+                      {/* Gauge Text Below Pivot */}
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <InfinityIcon className="w-3.5 h-3.5 text-accent" />
+                        <span className={`text-[10px] font-black tracking-wider transition-colors duration-300 ${textColorClass}`}>
+                          {gaugePercent}% {gaugePercent === 100 ? "FULL" : ""}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {/* Gauge Info Text */}
                 <div className="space-y-1 text-center sm:text-left">
@@ -212,11 +259,10 @@ export default function TariffsPage() {
                       key={preset.months}
                       type="button"
                       onClick={() => setLeaseMonths(preset.months)}
-                      className={`py-1.5 px-2 rounded-lg text-[11px] font-bold transition-all border text-center cursor-pointer ${
-                        leaseMonths === preset.months
+                      className={`py-1.5 px-2 rounded-lg text-[11px] font-bold transition-all border text-center cursor-pointer ${leaseMonths === preset.months
                           ? "bg-accent/15 border-accent text-accent shadow-xs"
                           : "bg-bg border-border text-secondary hover:text-primary hover:border-border/80"
-                      }`}
+                        }`}
                     >
                       <div>{preset.months} {tTariffs("months")}</div>
                       {preset.discount > 0 ? (
