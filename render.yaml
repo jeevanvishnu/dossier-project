@@ -1,7 +1,0 @@
-services:
-  - type: web
-    name: ectc-backend
-    env: node
-    rootDir: backend
-    buildCommand: npm install && npm run build
-    startCommand: npm start

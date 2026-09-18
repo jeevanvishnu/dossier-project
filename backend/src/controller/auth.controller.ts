@@ -15,7 +15,9 @@ import {
 // ─────────────────────────────────────────────────────────────────────────────
 //  Cookie Configuration Helpers
 // ─────────────────────────────────────────────────────────────────────────────
-const COOKIE_SAME_SITE = (process.env.COOKIE_SAME_SITE as "strict" | "lax" | "none") || "lax";
+const COOKIE_SAME_SITE =
+  (process.env.COOKIE_SAME_SITE as "strict" | "lax" | "none") ||
+  (process.env.NODE_ENV === "production" ? "none" : "lax");
 
 const COOKIE_OPTS_ACCESS = {
   httpOnly: true,

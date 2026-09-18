@@ -23,7 +23,7 @@ const USERS_TO_SEED: UserSeed[] = [
   },
   {
     email: "testuser@gmail.com",
-    rawPassword: "testpass@2244",
+    rawPassword: "testuser@2244",
     role: "user",
     name: "Test User",
   },

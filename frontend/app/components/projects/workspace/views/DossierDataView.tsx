@@ -25,7 +25,7 @@ import { toast } from "sonner";
 import { api, handleApiError } from "@/app/lib/axios";
 import { SkeletonForm } from "@/app/components/ui/Skeleton";
 import { EditableSelect } from "@/app/components/ui/EditableSelect";
-import { Link } from "@/i18n/routing";
+import { Link, useRouter } from "@/i18n/routing";
 import {
   translateValue,
   countryMapRu,
@@ -90,6 +90,15 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
   const tErrors = useTranslations("errors");
   const tToasts = useTranslations("toasts");
   const locale = useLocale();
+  const router = useRouter();
+
+  const [currentProjectId, setCurrentProjectId] = useState<string>(projectId);
+
+  useEffect(() => {
+    if (projectId) {
+      setCurrentProjectId(projectId);
+    }
+  }, [projectId]);
 
   // Accordion & View Toggle States
   const [isProjectDataOpen, setIsProjectDataOpen] = useState<boolean>(true);
@@ -272,9 +281,9 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
 
   // Load project metadata from backend API
   useEffect(() => {
-    if (!projectId) return;
+    if (!currentProjectId) return;
 
-    if (projectId === "new") {
+    if (currentProjectId === "new") {
       setMedicinalState({
         productName: "",
         dosageForm: "",
@@ -296,7 +305,7 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
     const fetchDossierData = async () => {
       setIsLoading(true);
       try {
-        const response = await api.get(`/projects/${projectId}/dossier-data`);
+        const response = await api.get(`/projects/${currentProjectId}/dossier-data`);
         if (response.data?.success && response.data?.data) {
           const { project, dossierConfig, dossierConfigs } = response.data.data;
           let projSaved = false;
@@ -381,8 +390,8 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
               setConfigState(fetchedConfig);
               setSavedConfigState(fetchedConfig);
               if (typeof window !== "undefined") {
-                sessionStorage.setItem(`active_dossier_sequence_${projectId}`, latestConfig.dossierSequence || "Sequence 0000");
-                sessionStorage.setItem(`active_dossier_id_${projectId}`, String(latestConfig.id));
+                sessionStorage.setItem(`active_dossier_sequence_${currentProjectId}`, latestConfig.dossierSequence || "Sequence 0000");
+                sessionStorage.setItem(`active_dossier_id_${currentProjectId}`, String(latestConfig.id));
               }
 
               if (latestConfig.dossierDetails) {
@@ -441,15 +450,15 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
     };
 
     fetchDossierData();
-  }, [projectId, onStatusChange]);
+  }, [currentProjectId, onStatusChange]);
 
   // Delete dossier configuration handler
   const handleDeleteDossier = async (targetDosId?: string) => {
     const dosId = targetDosId || deletingDossierId;
-    if (!projectId || !dosId) return;
+    if (!currentProjectId || !dosId) return;
     setIsDeletingDossier(true);
     try {
-      await api.delete(`/projects/${projectId}/dossier-config/${dosId}`);
+      await api.delete(`/projects/${currentProjectId}/dossier-config/${dosId}`);
       const remaining = dossierList.filter((d) => d.id !== dosId);
       setDossierList(remaining);
       if (remaining.length === 0) {
@@ -492,10 +501,10 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
       };
 
       let response;
-      if (projectId === "new") {
+      if (currentProjectId === "new") {
         response = await api.post("/projects", payload);
       } else {
-        response = await api.put(`/projects/${projectId}/dossier-data`, payload);
+        response = await api.put(`/projects/${currentProjectId}/dossier-data`, payload);
       }
 
       if (response.data?.success) {
@@ -505,10 +514,12 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
             setProjectVersion(createdOrUpdated.version);
           }
           const realId = createdOrUpdated.projectCode || String(createdOrUpdated.id);
-          if (projectId === "new" && realId) {
+          if (realId) {
+            setCurrentProjectId(realId);
             if (typeof window !== "undefined") {
               window.history.replaceState(null, "", `/projects/${realId}?tab=dossier-data`);
             }
+            router.replace(`/projects/${realId}?tab=dossier-data`);
           }
         }
         setSavedMedicinalState(medicinalState);
@@ -633,7 +644,7 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
         dossierDetails: dossierDetailsPayload,
       };
 
-      const response = await api.put(`/projects/${projectId}/dossier-data`, payload);
+      const response = await api.put(`/projects/${currentProjectId}/dossier-data`, payload);
       if (response.data?.success) {
         if (response.data?.data?.project?.version) {
           setProjectVersion(response.data.data.project.version);
