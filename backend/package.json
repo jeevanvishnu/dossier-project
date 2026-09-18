@@ -91,7 +91,13 @@
     "ws": "^8.21.3",
     "xmlbuilder2": "^4.0.3",
     "zod": "^4.6.2",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "@types/archiver": "^8.0.0",
+    "@types/cookie-parser": "^1.4.10",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/multer": "^2.2.0",
+    "@types/node": "^22.20.2"
   },
   "scripts": {
     "dev": "tsx watch src/server.ts",
@@ -109,12 +115,6 @@
   "license": "ISC",
   "type": "commonjs",
   "devDependencies": {
-    "@types/archiver": "^8.0.0",
-    "@types/cookie-parser": "^1.4.10",
-    "@types/cors": "^2.8.19",
-    "@types/express": "^5.0.6",
-    "@types/multer": "^2.2.0",
-    "@types/node": "^22.20.2",
     "drizzle-kit": "^0.31.10",
     "tsx": "^4.23.13"
   }
