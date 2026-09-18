@@ -42,6 +42,15 @@ interface UploadedFile {
 
 
 
+function formatBytes(bytes: number, decimals = 1): string {
+  if (!bytes || bytes === 0) return "0 Bytes";
+  const k = 1024;
+  const dm = decimals < 0 ? 0 : decimals;
+  const sizes = ["Bytes", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + " " + sizes[i];
+}
+
 const MAIN_MODULE_TABS = [
   { id: "m1", code: "1", label: "1. Admin information" },
   { id: "m2", code: "2", label: "2. CTD Summaries" },
@@ -129,6 +138,10 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
   const [dragActive, setDragActive] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [isUploading, setIsUploading] = useState<boolean>(false);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [uploadingFileName, setUploadingFileName] = useState<string>("");
+  const [uploadingFileSize, setUploadingFileSize] = useState<string>("");
+  const [uploadStatus, setUploadStatus] = useState<"idle" | "uploading" | "processing" | "success">("idle");
   const [isDownloadingZip, setIsDownloadingZip] = useState<boolean>(false);
 
   const [isLoadingDoc, setIsLoadingDoc] = useState<boolean>(false);
@@ -358,7 +371,19 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
       return;
     }
 
+    if (file) {
+      setUploadingFileName(file.name);
+      setUploadingFileSize(formatBytes(file.size));
+      setUploadProgress(0);
+      setUploadStatus("uploading");
+    } else {
+      setUploadingFileName("");
+      setUploadingFileSize("");
+      setUploadProgress(0);
+      setUploadStatus("uploading");
+    }
     setIsUploading(true);
+
     try {
       const formData = new FormData();
       if (file) {
@@ -371,10 +396,24 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
 
       const response = await api.post(
         `/projects/${projectId}/documents/${selectedModuleId}?operation=${selectedOperation}${selectedDocCode ? `&docCode=${selectedDocCode}` : ""}`,
-        formData
+        formData,
+        {
+          onUploadProgress: (progressEvent) => {
+            if (progressEvent.total) {
+              const percent = Math.min(99, Math.round((progressEvent.loaded * 100) / progressEvent.total));
+              setUploadProgress(percent);
+              if (percent >= 99) {
+                setUploadStatus("processing");
+              }
+            }
+          },
+        }
       );
 
       if (response.data?.success && response.data?.data) {
+        setUploadProgress(100);
+        setUploadStatus("success");
+
         const doc = response.data.data;
         if (selectedOperation === "delete" || doc.status === "deleted") {
           setModuleFiles((prev) => ({
@@ -410,7 +449,13 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
     } catch (err) {
       handleApiError(err, `Failed to execute ${selectedOperation} operation`);
     } finally {
-      setIsUploading(false);
+      setTimeout(() => {
+        setIsUploading(false);
+        setUploadProgress(0);
+        setUploadStatus("idle");
+        setUploadingFileName("");
+        setUploadingFileSize("");
+      }, 700);
     }
   };
 
@@ -537,7 +582,7 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
     if (!deleteConfirmFile) return;
     setIsDeletingFile(true);
     try {
-      await api.delete(`/projects/${projectId}/documents/${selectedModuleId}`);
+      await api.delete(`/projects/${projectId}/documents/${selectedModuleId}?docId=${deleteConfirmFile.id}`);
       setModuleFiles((prev) => ({
         ...prev,
         [selectedModuleId]: (prev[selectedModuleId] || []).filter((f) => f.id !== deleteConfirmFile.id),
@@ -739,16 +784,19 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
         {/* Column 3: Right Area - Upload Zone & Data Table (47% width) */}
         <div className="w-full lg:w-[47%] bg-surface p-4 flex flex-col space-y-4">
           <div
-            onDragEnter={isDossierLocked ? undefined : handleDrag}
-            onDragOver={isDossierLocked ? undefined : handleDrag}
-            onDragLeave={isDossierLocked ? undefined : handleDrag}
-            onDrop={isDossierLocked ? undefined : handleDrop}
-            className={`border-2 border-dashed rounded-lg p-5 text-center transition-all relative ${isDossierLocked
-              ? "border-border bg-surface-raised/40 opacity-60"
-              : dragActive
-                ? "border-accent bg-accent/10"
-                : "border-border bg-bg/50 hover:border-accent"
-              }`}
+            onDragEnter={isDossierLocked || isUploading ? undefined : handleDrag}
+            onDragOver={isDossierLocked || isUploading ? undefined : handleDrag}
+            onDragLeave={isDossierLocked || isUploading ? undefined : handleDrag}
+            onDrop={isDossierLocked || isUploading ? undefined : handleDrop}
+            className={`border-2 border-dashed rounded-xl p-5 text-center transition-all relative ${
+              isDossierLocked
+                ? "border-border bg-surface-raised/40 opacity-60 cursor-not-allowed"
+                : isUploading
+                ? "border-accent/50 bg-accent/5 dark:bg-accent/10 shadow-sm"
+                : dragActive
+                ? "border-accent bg-accent/10 scale-[1.01]"
+                : "border-border bg-bg/50 hover:border-accent/70 hover:bg-surface-raised/50"
+            }`}
           >
             <input
               type="file"
@@ -756,21 +804,57 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
               onChange={handleFileInput}
               className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10 disabled:cursor-not-allowed"
             />
-            <div className="w-8 h-8 rounded-full bg-accent/15 text-accent flex items-center justify-center mx-auto mb-1.5">
-              {isDossierLocked ? (
-                <LockKey size={18} weight="bold" />
-              ) : (
-                <UploadSimple size={18} weight="bold" />
-              )}
-            </div>
-            <p className="font-semibold text-xs text-primary">
-              {isDossierLocked
-                ? tWorkspace("uploadDropzoneLocked")
-                : isUploading
-                  ? tWorkspace("uploadingImageKit")
-                  : tWorkspace("uploadDropzoneNew")}
-            </p>
-            <p className="text-[10.5px] text-muted mt-0.5">{tWorkspace("maxFileLimit")}</p>
+            {isUploading ? (
+              <div className="space-y-3 py-1">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-9 h-9 rounded-lg bg-surface-raised border border-border flex items-center justify-center shrink-0 shadow-xs">
+                      <CircleNotch size={18} className="animate-spin text-accent" weight="bold" />
+                    </div>
+                    <div className="text-left min-w-0">
+                      <p className="text-xs font-bold text-primary truncate max-w-[220px]" title={uploadingFileName}>
+                        {uploadingFileName || tWorkspace("uploadingDocument")}
+                      </p>
+                      <p className="text-[10.5px] text-muted mt-0.5">
+                        {uploadingFileSize ? `${uploadingFileSize} • ` : ""}
+                        {uploadStatus === "processing"
+                          ? tWorkspace("processingDocument")
+                          : tWorkspace("uploadingDocument")}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-xs font-bold text-primary shrink-0">
+                    {uploadProgress}%
+                  </span>
+                </div>
+
+                <div className="w-full">
+                  {uploadStatus === "processing" ? (
+                    <progress className="progress w-full"></progress>
+                  ) : (
+                    <progress className="progress w-full" value={uploadStatus === "success" ? 100 : uploadProgress} max="100"></progress>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div>
+                <div className="w-9 h-9 rounded-full bg-accent/15 text-accent flex items-center justify-center mx-auto mb-2 transition-transform group-hover:scale-110">
+                  {isDossierLocked ? (
+                    <LockKey size={20} weight="bold" />
+                  ) : (
+                    <UploadSimple size={20} weight="bold" />
+                  )}
+                </div>
+                <p className="font-semibold text-xs text-primary">
+                  {isDossierLocked
+                    ? tWorkspace("uploadDropzoneLocked")
+                    : selectedOperation === "replace"
+                    ? tWorkspace("uploadDropzoneReplace")
+                    : tWorkspace("uploadDropzoneNew")}
+                </p>
+                <p className="text-[10.5px] text-muted mt-1">{tWorkspace("maxFileLimit")}</p>
+              </div>
+            )}
           </div>
 
           <div className="text-xs font-semibold text-primary flex items-center gap-1.5 truncate">

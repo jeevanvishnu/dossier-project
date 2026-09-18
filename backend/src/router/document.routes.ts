@@ -1,6 +1,5 @@
 import { Router } from "express";
 import { protect } from "../middleware/auth.middleware";
-import { checkProjectRole } from "../middleware/projectAuth.middleware";
 import { uploadMiddleware } from "../middleware/upload.middleware";
 import {
   uploadDocument,
@@ -17,7 +16,6 @@ const router = Router();
 router.get(
   "/:id/documents",
   protect,
-  checkProjectRole("owner", "editor", "viewer"),
   getAllProjectDocuments
 );
 
@@ -25,7 +23,6 @@ router.get(
 router.post(
   "/:id/documents/:nodeId",
   protect,
-  checkProjectRole("owner", "editor"),
   uploadMiddleware,
   uploadDocument
 );
@@ -34,7 +31,6 @@ router.post(
 router.get(
   "/:id/documents/:nodeId",
   protect,
-  checkProjectRole("owner", "editor", "viewer"),
   getDocumentByNode
 );
 
@@ -42,7 +38,6 @@ router.get(
 router.put(
   "/:id/documents/:nodeId/dates",
   protect,
-  checkProjectRole("owner", "editor"),
   updateDocumentDates
 );
 
@@ -50,7 +45,6 @@ router.put(
 router.delete(
   "/:id/documents/:nodeId",
   protect,
-  checkProjectRole("owner", "editor"),
   deleteDocumentByNode
 );
 
@@ -58,7 +52,6 @@ router.delete(
 router.post(
   "/:id/seed-sorbit",
   protect,
-  checkProjectRole("owner", "editor"),
   seedSorbitDossier
 );
 

@@ -279,16 +279,34 @@ export async function deleteDocumentByNode(req: Request, res: Response): Promise
       return;
     }
 
-    const activeDoc = await db.query.projectDocuments.findFirst({
-      where: and(
-        eq(projectDocuments.projectId, projectId),
-        eq(projectDocuments.nodeId, nodeId),
-        eq(projectDocuments.status, "active")
-      ),
-    });
+    const docIdParam = req.query.docId || req.body?.docId;
+    let activeDoc = null;
+
+    if (docIdParam && !isNaN(parseInt(String(docIdParam), 10))) {
+      const parsedId = parseInt(String(docIdParam), 10);
+      activeDoc = await db.query.projectDocuments.findFirst({
+        where: and(
+          eq(projectDocuments.projectId, projectId),
+          eq(projectDocuments.id, parsedId)
+        ),
+      });
+    }
 
     if (!activeDoc) {
-      res.status(404).json({ success: false, message: `Active document for node '${nodeId}' not found.` });
+      activeDoc = await db.query.projectDocuments.findFirst({
+        where: and(
+          eq(projectDocuments.projectId, projectId),
+          eq(projectDocuments.nodeId, nodeId),
+          eq(projectDocuments.status, "active")
+        ),
+      });
+    }
+
+    if (!activeDoc) {
+      res.status(200).json({
+        success: true,
+        message: `No active document found at node '${nodeId}' to delete.`,
+      });
       return;
     }
 
@@ -307,7 +325,7 @@ export async function deleteDocumentByNode(req: Request, res: Response): Promise
         .insert(projectDocuments)
         .values({
           projectId,
-          nodeId,
+          nodeId: activeDoc.nodeId || nodeId,
           originalName: activeDoc.originalName,
           imageKitUrl: null,
           imageKitFileId: null,
@@ -322,7 +340,7 @@ export async function deleteDocumentByNode(req: Request, res: Response): Promise
       await tx.insert(auditLogs).values({
         projectId,
         logType: "WARNING",
-        message: `Deleted active document '${activeDoc.originalName}' from node '${nodeId}' and created eCTD tombstone record.`,
+        message: `Deleted active document '${activeDoc.originalName}' from node '${activeDoc.nodeId || nodeId}' and created eCTD tombstone record.`,
         userCredentials: req.user ? `${req.user.email} (${req.user.role})` : "System",
       });
 
@@ -332,7 +350,7 @@ export async function deleteDocumentByNode(req: Request, res: Response): Promise
     if (activeDoc.imageKitFileId) {
       try {
         await deleteFromImageKit(activeDoc.imageKitFileId);
-      } catch (ikErr) {
+      } catch (ikErr: any) {
         console.warn(`[Delete Document Warning] Failed to delete file ${activeDoc.imageKitFileId} from ImageKit`, ikErr);
       }
     }
@@ -344,7 +362,7 @@ export async function deleteDocumentByNode(req: Request, res: Response): Promise
     });
   } catch (error: any) {
     console.error("[Delete Document Error]", error);
-    res.status(500).json({ success: false, message: "Failed to delete document" });
+    res.status(500).json({ success: false, message: error.message || "Failed to delete document" });
   }
 }
 

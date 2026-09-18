@@ -141,6 +141,6 @@ export function generateEaeuManifestXml(
     docDetails.ele("hcsdo:OperationAtribute").txt(operation).up();
   }
 
-  return root.end({ prettyPrint: true });
+  return "\uFEFF" + root.end({ prettyPrint: true });
 }
 

@@ -24,11 +24,33 @@ if (isProduction && !frontendUrl) {
   console.warn("⚠️ FRONTEND_URL environment variable is not defined in production mode!");
 }
 
-const allowedOrigin = frontendUrl || "http://localhost:3000";
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://localhost:3001",
+  "http://127.0.0.1:3000",
+  "http://127.0.0.1:3001",
+];
+
+if (frontendUrl) {
+  allowedOrigins.push(frontendUrl);
+}
 
 app.use(
   cors({
-    origin: allowedOrigin,
+    origin: (origin, callback) => {
+      // Allow requests with no origin (like mobile apps, curl, Postman, server-to-server)
+      if (!origin) return callback(null, true);
+
+      if (
+        allowedOrigins.includes(origin) ||
+        origin.endsWith(".vercel.app") ||
+        !isProduction
+      ) {
+        return callback(null, true);
+      }
+
+      return callback(new Error("CORS policy: Not allowed by CORS"), false);
+    },
     credentials: true,
   })
 );

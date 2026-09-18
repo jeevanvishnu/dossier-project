@@ -108,7 +108,7 @@
     "db:sync": "tsx src/db/sync_schema.ts",
     "db:seed": "tsx src/db/seed.ts",
     "db:studio": "drizzle-kit studio",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "tsx src/fixtures/folder-paths.test.ts"
   },
   "keywords": [],
   "author": "",

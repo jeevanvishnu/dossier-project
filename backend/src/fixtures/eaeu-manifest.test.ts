@@ -44,6 +44,30 @@ export function runEaeuManifestTests() {
     getEctdFolderPathFn: getEctdFolderPath,
   });
 
+  // Assertion 0: BOM and Namespaces
+  if (!xmlOutput.startsWith("\uFEFF")) {
+    throw new Error("TEST FAILED: XML output must start with UTF-8 BOM \\uFEFF");
+  }
+  console.log("✅ Passed Assertion 0a: XML starts with BOM \\uFEFF");
+
+  const requiredAttributes = [
+    'xmlns:doc="urn:EEC:R:DrugRegistrationDocDossierContentDetails:v1.1.0"',
+    'xmlns:bdt="urn:EEC:M:BaseDataTypes:v0.4.11"',
+    'xmlns:ccdo="urn:EEC:M:ComplexDataObjects:v0.4.11"',
+    'xmlns:csdo="urn:EEC:M:SimpleDataObjects:v0.4.11"',
+    'xmlns:hcsdo="urn:EEC:M:HC:SimpleDataObjects:v1.0.17"',
+    'xmlns:hccdo="urn:EEC:M:HC:ComplexDataObjects:v1.0.17"',
+    'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"',
+    'xsi:schemaLocation="urn:EEC:R:DrugRegistrationDocDossierContentDetails:v1.1.0 EEC_R_DrugRegistrationDocDossierContentDetails_v1.1.0.xsd"'
+  ];
+
+  for (const attr of requiredAttributes) {
+    if (!xmlOutput.includes(attr)) {
+      throw new Error(`TEST FAILED: Missing required root attribute: ${attr}`);
+    }
+  }
+  console.log("✅ Passed Assertion 0b: All 7 required namespaces + schemaLocation present on root element");
+
   // Assertion 1: Root Metadata Nodes
   const expectedCountryTag = '<csdo:UnifiedCountryCode codeListId="P.CLS.019">KZ</csdo:UnifiedCountryCode>';
   const expectedKindTag = '<hcsdo:RegistrationKindCode>01</hcsdo:RegistrationKindCode>';

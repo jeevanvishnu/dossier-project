@@ -74,23 +74,12 @@ export function getEctdFolderPath(nodeId: string, _countryStr?: string | null, d
   if (!nodeId) return "m1";
 
   const cleanCode = nodeId.replace(/-\d{5}$/, "").trim();
-  if (cleanCode === "1.0") return "m1\\1.0";
-  if (["1.2", "1.2.1", "1.2.2", "1.2.3", "1.2.5"].includes(cleanCode)) return "m1\\1.2";
-
   const parts = cleanCode.split(".").filter(Boolean);
-  if (parts.length === 0) return "m1";
-
-  const mainModuleNum = parts[0];
-  const modulePrefix = `m${mainModuleNum}`;
-  const pathParts: string[] = [modulePrefix];
-
-  let currentSection = mainModuleNum;
-  for (let i = 1; i < parts.length; i++) {
-    currentSection += `.${parts[i]}`;
-    pathParts.push(currentSection);
+  if (parts.length > 0) {
+    return `m${parts[0]}`;
   }
 
-  return pathParts.join("\\");
+  return "m1";
 }
 
 export interface CompilationResult {

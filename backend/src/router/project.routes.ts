@@ -1,6 +1,5 @@
 import { Router } from "express";
 import { protect, authorize } from "../middleware/auth.middleware";
-import { checkProjectRole } from "../middleware/projectAuth.middleware";
 import {
   getProjects,
   createProject,
@@ -20,19 +19,19 @@ router.get("/", protect, getProjects);
 router.post("/", protect, authorize("admin", "user", "superadmin"), createProject);
 
 // Get dossier project metadata
-router.get("/:id/dossier-data", protect, checkProjectRole("owner", "editor", "viewer"), getDossierData);
+router.get("/:id/dossier-data", protect, getDossierData);
 
 // Update dossier project metadata
-router.put("/:id/dossier-data", protect, checkProjectRole("owner", "editor"), updateDossierData);
+router.put("/:id/dossier-data", protect, updateDossierData);
 
 // Delete (reset) dossier configuration only
-router.delete("/:id/dossier-config/:dossierConfigId", protect, checkProjectRole("owner", "editor"), deleteDossierConfig);
-router.delete("/:id/dossier-config", protect, checkProjectRole("owner", "editor"), deleteDossierConfig);
+router.delete("/:id/dossier-config/:dossierConfigId", protect, deleteDossierConfig);
+router.delete("/:id/dossier-config", protect, deleteDossierConfig);
 
 // Update project details directly
-router.put("/:id", protect, checkProjectRole("owner", "editor"), updateProject);
+router.put("/:id", protect, updateProject);
 
 // Delete project and all associated records
-router.delete("/:id", protect, checkProjectRole("owner", "editor"), deleteProject);
+router.delete("/:id", protect, deleteProject);
 
 export default router;
