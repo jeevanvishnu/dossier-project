@@ -14,6 +14,7 @@ export const users = pgTable("users", {
   email: varchar("email", { length: 255 }).notNull().unique(),
   password: text("password").notNull(),
   role: roleEnum("role").default("user").notNull(),
+  isBlocked: boolean("is_blocked").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [

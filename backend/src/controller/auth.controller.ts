@@ -83,6 +83,16 @@ export async function signIn(req: Request, res: Response): Promise<void> {
       return;
     }
 
+    // 3.5 Check if user is blocked
+    if (user.isBlocked) {
+      console.warn(`[SIGNIN] 🚫 Blocked user attempted signin: ${email}`);
+      res.status(403).json({
+        success: false,
+        message: "Your account has been suspended or blocked. Please contact an administrator.",
+      });
+      return;
+    }
+
     // 4. Create new refresh token family & DB session
     const familyId = randomUUID();
     const now = new Date();

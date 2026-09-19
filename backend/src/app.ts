@@ -13,6 +13,7 @@ import memberRoutes from "./router/member.routes";
 import documentRoutes from "./router/document.routes";
 import auditRoutes from "./router/audit.routes";
 import compilationRoutes from "./router/compilation.routes";
+import userRoutes from "./router/user.routes";
 
 const app = express();
 
@@ -62,6 +63,7 @@ app.use(cookieParser());
 
 // ─── API Routes ──────────────────────────────────────────────────────────────
 app.use("/api/auth", authRouter);
+app.use("/api/admin", userRoutes);
 
 // eCTD Project & Dossier Management Routes
 app.use("/api/projects", projectRoutes);

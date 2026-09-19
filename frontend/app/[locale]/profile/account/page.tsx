@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useMemo } from "react";
 import { AppShell } from "../../../components/AppShell";
+import { useAuth } from "../../../context/AuthContext";
 import { useTranslations } from "next-intl";
 import {
   UploadSimple,
@@ -12,6 +13,7 @@ import {
   Trash,
   ToggleLeft,
   ToggleRight,
+  CheckCircle,
   UserGear,
 } from "@phosphor-icons/react";
 import { toast } from "sonner";
@@ -19,11 +21,40 @@ import { toast } from "sonner";
 export default function AccountSettingsPage() {
   const tProfile = useTranslations("profile");
   const tCommon = useTranslations("common");
+  const { user: authUser } = useAuth();
+  const isAdmin = authUser?.role === "admin" || authUser?.role === "superadmin";
+
   const [activeTab, setActiveTab] = useState<"account" | "users">("account");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // User List Management State (Admin View)
-  const [users, setUsers] = useState([
+  // Current logged in user profile data (used for user-side single view)
+  const currentUserData = useMemo(() => {
+    if (authUser) {
+      const nameParts = authUser.name ? authUser.name.trim().split(" ") : ["John", "Doe"];
+      const firstName = nameParts[0] || "John";
+      const lastName = nameParts.slice(1).join(" ") || "Doe";
+      const loginHandle = authUser.email ? authUser.email.split("@")[0] : "john.doe";
+      return {
+        id: `USR-${100 + (authUser.id || 1)}`,
+        firstName,
+        lastName,
+        loginHandle,
+        role: authUser.role ? authUser.role : "User",
+        active: true,
+      };
+    }
+    return {
+      id: "USR-101",
+      firstName: "John",
+      lastName: "Doe",
+      loginHandle: "john.doe",
+      role: "User",
+      active: true,
+    };
+  }, [authUser]);
+
+  // Admin View State: full user list management
+  const [adminUsers, setAdminUsers] = useState([
     {
       id: "USR-101",
       lastName: "Saparov",
@@ -37,7 +68,7 @@ export default function AccountSettingsPage() {
       lastName: "Zhumagaliyeva",
       firstName: "Daniya",
       loginHandle: "d.zhumagaliyeva",
-      role: "User",
+      role: "User Specialist",
       active: true,
     },
     {
@@ -45,7 +76,7 @@ export default function AccountSettingsPage() {
       lastName: "Tulegenov",
       firstName: "Murat",
       loginHandle: "m.tulegenov",
-      role: "User",
+      role: "User Specialist",
       active: false,
     },
   ]);
@@ -55,7 +86,7 @@ export default function AccountSettingsPage() {
     firstName: "",
     lastName: "",
     loginHandle: "",
-    role: "User",
+    role: "User Specialist",
   });
 
   // Photo Upload State
@@ -78,31 +109,32 @@ export default function AccountSettingsPage() {
     corporatePhone: "+7 (7172) 79-88-00",
   });
 
-  const handleToggleUserActive = (userId: string) => {
-    setUsers((prev) =>
+  // Admin Handlers
+  const handleToggleAdminUserActive = (userId: string) => {
+    setAdminUsers((prev) =>
       prev.map((u) => (u.id === userId ? { ...u, active: !u.active } : u))
     );
     toast.success(tProfile("userUpdatedToast", { id: userId }));
   };
 
-  const handleDeleteUser = (userId: string) => {
-    setUsers((prev) => prev.filter((u) => u.id !== userId));
+  const handleDeleteAdminUser = (userId: string) => {
+    setAdminUsers((prev) => prev.filter((u) => u.id !== userId));
     toast.error(tProfile("userDeletedToast", { id: userId }));
   };
 
   const handleAddUserSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const created = {
-      id: `USR-${100 + users.length + 1}`,
+      id: `USR-${100 + adminUsers.length + 1}`,
       firstName: newUser.firstName,
       lastName: newUser.lastName,
       loginHandle: newUser.loginHandle,
       role: newUser.role,
       active: true,
     };
-    setUsers([...users, created]);
+    setAdminUsers([...adminUsers, created]);
     setShowAddUserModal(false);
-    setNewUser({ firstName: "", lastName: "", loginHandle: "", role: "User" });
+    setNewUser({ firstName: "", lastName: "", loginHandle: "", role: "User Specialist" });
     toast.success(tProfile("userCreatedToast", { handle: created.loginHandle }));
   };
 
@@ -152,6 +184,8 @@ export default function AccountSettingsPage() {
     toast.success(tProfile("companySuccess"));
   };
 
+  const displayUsers = isAdmin ? adminUsers : [currentUserData];
+
   return (
     <AppShell>
       <div className="space-y-6">
@@ -185,7 +219,7 @@ export default function AccountSettingsPage() {
             }`}
           >
             <Users size={16} />
-            <span>{tProfile("tabUsers")}</span>
+            <span>{isAdmin ? tProfile("tabUsersAdmin") : tProfile("tabUsers")}</span>
           </button>
         </div>
 
@@ -205,7 +239,9 @@ export default function AccountSettingsPage() {
                   {avatarPreview ? (
                     <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
                   ) : (
-                    <span className="font-lexend font-bold text-2xl text-accent">AZ</span>
+                    <span className="font-lexend font-bold text-2xl text-accent">
+                      {`${currentUserData.firstName[0] || ""}${currentUserData.lastName[0] || ""}`.toUpperCase() || "U"}
+                    </span>
                   )}
                 </div>
 
@@ -373,17 +409,19 @@ export default function AccountSettingsPage() {
               <div className="flex items-center gap-2">
                 <Users size={20} className="text-accent" />
                 <h2 className="font-lexend font-bold text-base text-primary">
-                  {tProfile("usersTableTitle")}
+                  {isAdmin ? tProfile("usersTableTitleAdmin") : tProfile("usersTableTitle")}
                 </h2>
               </div>
 
-              <button
-                onClick={() => setShowAddUserModal(true)}
-                className="px-3 py-1.5 bg-accent hover:bg-accent-hover text-white font-bold text-xs rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer"
-              >
-                <Plus size={16} />
-                <span>{tProfile("addUserBtn")}</span>
-              </button>
+              {isAdmin && (
+                <button
+                  onClick={() => setShowAddUserModal(true)}
+                  className="px-3 py-1.5 bg-accent hover:bg-accent-hover text-white font-bold text-xs rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Plus size={16} />
+                  <span>{tProfile("addUserBtn")}</span>
+                </button>
+              )}
             </div>
 
             <div className="overflow-x-auto">
@@ -391,65 +429,76 @@ export default function AccountSettingsPage() {
                 <thead className="bg-bg text-primary uppercase font-bold text-[10px] tracking-wider border-b border-border">
                   <tr>
                     <th className="py-3.5 px-4">{tProfile("colUserId")}</th>
-                    <th className="py-3.5 px-4">{tProfile("colLastName")}</th>
                     <th className="py-3.5 px-4">{tProfile("colFirstName")}</th>
+                    <th className="py-3.5 px-4">{tProfile("colLastName")}</th>
                     <th className="py-3.5 px-4">{tProfile("colLoginHandle")}</th>
                     <th className="py-3.5 px-4">{tProfile("colRole")}</th>
-                    <th className="py-3.5 px-4">{tProfile("colActiveToggle")}</th>
-                    <th className="py-3.5 px-4 text-right">{tProfile("colActions")}</th>
+                    <th className="py-3.5 px-4">
+                      {isAdmin ? tProfile("colActiveToggle") : tProfile("colActiveStatus")}
+                    </th>
+                    {isAdmin && <th className="py-3.5 px-4 text-right">{tProfile("colActions")}</th>}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {users.map((u) => (
+                  {displayUsers.map((u) => (
                     <tr key={u.id} className="hover:bg-surface-raised transition-colors">
                       <td className="py-3.5 px-4 font-mono font-bold text-accent">{u.id}</td>
-                      <td className="py-3.5 px-4 font-semibold text-primary">{u.lastName}</td>
                       <td className="py-3.5 px-4 font-semibold text-primary">{u.firstName}</td>
+                      <td className="py-3.5 px-4 font-semibold text-primary">{u.lastName}</td>
                       <td className="py-3.5 px-4 font-mono text-secondary">@{u.loginHandle}</td>
                       <td className="py-3.5 px-4">
                         <span
                           className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                            u.role === "Admin"
+                            u.role === "Admin" || u.role === "admin"
                               ? "bg-accent/15 text-accent border border-accent/30"
                               : "bg-bg text-secondary border border-border"
                           }`}
                         >
-                          {u.role === "Admin" ? tCommon("roleAdmin") : tCommon("roleUser")}
+                          {u.role === "Admin" || u.role === "admin" ? tCommon("roleAdmin") : (u.role === "User Specialist" ? "USER SPECIALIST" : tCommon("roleUser"))}
                         </span>
                       </td>
                       <td className="py-3.5 px-4">
-                        <button
-                          onClick={() => handleToggleUserActive(u.id)}
-                          className="flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
-                        >
-                          {u.active ? (
-                            <>
-                              <ToggleRight size={22} className="text-emerald-500" />
-                              <span className="text-emerald-500">{tProfile("statusActive")}</span>
-                            </>
-                          ) : (
-                            <>
-                              <ToggleLeft size={22} className="text-muted" />
-                              <span className="text-muted">{tProfile("statusDisabled")}</span>
-                            </>
-                          )}
-                        </button>
+                        {isAdmin ? (
+                          <button
+                            onClick={() => handleToggleAdminUserActive(u.id)}
+                            className="flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
+                          >
+                            {u.active ? (
+                              <>
+                                <ToggleRight size={22} className="text-emerald-500" />
+                                <span className="text-emerald-500">{tProfile("statusActive")}</span>
+                              </>
+                            ) : (
+                              <>
+                                <ToggleLeft size={22} className="text-muted" />
+                                <span className="text-muted">{tProfile("statusDisabled")}</span>
+                              </>
+                            )}
+                          </button>
+                        ) : (
+                          <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-500">
+                            <CheckCircle size={18} weight="fill" className="text-emerald-500 shrink-0" />
+                            <span>{tProfile("statusActive")}</span>
+                          </div>
+                        )}
                       </td>
-                      <td className="py-3.5 px-4 text-right space-x-2">
-                        <button
-                          onClick={() => toast.success(`Continued session for user ${u.loginHandle}`)}
-                          className="px-2.5 py-1 text-[10px] font-bold bg-bg hover:bg-surface-raised text-accent border border-border rounded cursor-pointer"
-                        >
-                          {tProfile("btnContinue")}
-                        </button>
-                        <button
-                          onClick={() => handleDeleteUser(u.id)}
-                          className="p-1 text-red-500 hover:bg-red-500/10 rounded transition-colors cursor-pointer"
-                          title={tCommon("delete")}
-                        >
-                          <Trash size={16} />
-                        </button>
-                      </td>
+                      {isAdmin && (
+                        <td className="py-3.5 px-4 text-right space-x-2">
+                          <button
+                            onClick={() => toast.success(`Continued session for user ${u.loginHandle}`)}
+                            className="px-2.5 py-1 text-[10px] font-bold bg-bg hover:bg-surface-raised text-accent border border-border rounded cursor-pointer"
+                          >
+                            {tProfile("btnContinue")}
+                          </button>
+                          <button
+                            onClick={() => handleDeleteAdminUser(u.id)}
+                            className="p-1 text-red-500 hover:bg-red-500/10 rounded transition-colors cursor-pointer"
+                            title={tCommon("delete")}
+                          >
+                            <Trash size={16} />
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
@@ -458,7 +507,7 @@ export default function AccountSettingsPage() {
           </div>
         )}
 
-        {showAddUserModal && (
+        {isAdmin && showAddUserModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
             <div className="bg-surface border border-border rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
               <div className="flex items-center justify-between border-b border-border pb-3">
@@ -513,7 +562,7 @@ export default function AccountSettingsPage() {
                     onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
                     className="w-full bg-bg border border-border rounded-lg p-2 text-primary outline-none"
                   >
-                    <option value="User">{tProfile("roleUserOption")}</option>
+                    <option value="User Specialist">{tProfile("roleUserOption")}</option>
                     <option value="Admin">{tProfile("roleAdminOption")}</option>
                   </select>
                 </div>
