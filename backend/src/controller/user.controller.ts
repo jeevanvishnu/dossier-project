@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
 import { UserManagementService } from "../services/user.service";
+import { parseIdParam } from "../utils/params.util";
 import {
   createUserSchema,
-  createBulkUsersSchema,
   updateUserSchema,
   listUsersQuerySchema,
 } from "../validators/user.validator";
@@ -22,6 +22,14 @@ export async function createUser(req: Request, res: Response): Promise<void> {
     return;
   }
 
+  if (req.user?.role !== "superadmin" && parsed.data.role && parsed.data.role !== "user") {
+    res.status(403).json({
+      success: false,
+      message: "Standard admins can only create users with the 'user' role.",
+    });
+    return;
+  }
+
   try {
     const result = await UserManagementService.createUser(parsed.data);
     res.status(201).json({
@@ -35,37 +43,6 @@ export async function createUser(req: Request, res: Response): Promise<void> {
     res.status(statusCode).json({
       success: false,
       message: error.message || "Failed to create user",
-    });
-  }
-}
-
-/**
- * POST /api/admin/users/bulk
- * Create multiple users at once (up to 50) and send welcome emails.
- */
-export async function createBulkUsers(req: Request, res: Response): Promise<void> {
-  const parsed = createBulkUsersSchema.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(422).json({
-      success: false,
-      message: "Validation failed",
-      errors: parsed.error.flatten().fieldErrors,
-    });
-    return;
-  }
-
-  try {
-    const result = await UserManagementService.createBulkUsers(parsed.data.users);
-    res.status(207).json({
-      success: true,
-      message: `Processed ${result.totalProcessed} users: ${result.succeededCount} created, ${result.failedCount} failed.`,
-      data: result,
-    });
-  } catch (error: any) {
-    console.error("[USER_CONTROLLER] Error creating bulk users:", error.message);
-    res.status(500).json({
-      success: false,
-      message: error.message || "Failed to process bulk user creation",
     });
   }
 }
@@ -105,7 +82,7 @@ export async function listUsers(req: Request, res: Response): Promise<void> {
  * Get single user by ID.
  */
 export async function getUserById(req: Request, res: Response): Promise<void> {
-  const userId = parseInt(req.params.id, 10);
+  const userId = parseIdParam(req.params.id);
   if (isNaN(userId)) {
     res.status(400).json({ success: false, message: "Invalid user ID" });
     return;
@@ -131,7 +108,7 @@ export async function getUserById(req: Request, res: Response): Promise<void> {
  * Update user details (name, email, role).
  */
 export async function updateUser(req: Request, res: Response): Promise<void> {
-  const userId = parseInt(req.params.id, 10);
+  const userId = parseIdParam(req.params.id);
   if (isNaN(userId)) {
     res.status(400).json({ success: false, message: "Invalid user ID" });
     return;
@@ -143,6 +120,14 @@ export async function updateUser(req: Request, res: Response): Promise<void> {
       success: false,
       message: "Validation failed",
       errors: parsed.error.flatten().fieldErrors,
+    });
+    return;
+  }
+
+  if (req.user?.role !== "superadmin" && parsed.data.role === "superadmin") {
+    res.status(403).json({
+      success: false,
+      message: "Only superadmins can promote users to the 'superadmin' role.",
     });
     return;
   }
@@ -173,7 +158,7 @@ export async function updateUser(req: Request, res: Response): Promise<void> {
  * Block a user and revoke all their active sessions.
  */
 export async function blockUser(req: Request, res: Response): Promise<void> {
-  const userId = parseInt(req.params.id, 10);
+  const userId = parseIdParam(req.params.id);
   if (isNaN(userId)) {
     res.status(400).json({ success: false, message: "Invalid user ID" });
     return;
@@ -209,7 +194,7 @@ export async function blockUser(req: Request, res: Response): Promise<void> {
  * Unblock a user.
  */
 export async function unblockUser(req: Request, res: Response): Promise<void> {
-  const userId = parseInt(req.params.id, 10);
+  const userId = parseIdParam(req.params.id);
   if (isNaN(userId)) {
     res.status(400).json({ success: false, message: "Invalid user ID" });
     return;
@@ -236,7 +221,7 @@ export async function unblockUser(req: Request, res: Response): Promise<void> {
  * Permanently delete a user.
  */
 export async function deleteUser(req: Request, res: Response): Promise<void> {
-  const userId = parseInt(req.params.id, 10);
+  const userId = parseIdParam(req.params.id);
   if (isNaN(userId)) {
     res.status(400).json({ success: false, message: "Invalid user ID" });
     return;

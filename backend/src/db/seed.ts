@@ -16,14 +16,14 @@ interface UserSeed {
 
 const USERS_TO_SEED: UserSeed[] = [
   {
-    email: "admindossier@gmail.com",
-    rawPassword: "testadmin@2244",
+    email: process.env.SEED_ADMIN_EMAIL || "admindossier@gmail.com",
+    rawPassword: process.env.SEED_ADMIN_PASSWORD || "testadmin@2244",
     role: "admin",
     name: "Admin Dossier",
   },
   {
-    email: "testuser@gmail.com",
-    rawPassword: "testuser@2244",
+    email: process.env.SEED_USER_EMAIL || "testuser@gmail.com",
+    rawPassword: process.env.SEED_USER_PASSWORD || "testuser@2244",
     role: "user",
     name: "Test User",
   },
@@ -47,7 +47,6 @@ async function seedUsers() {
         const [updated] = await db
           .update(users)
           .set({
-            password: hashedPassword,
             role: userData.role,
             name: existingUser.name || userData.name,
             updatedAt: new Date(),
@@ -82,7 +81,7 @@ async function seedUsers() {
       }
     }
 
-    console.log(`✅ Loaded ${BACKEND_ECTD_TREE_SEED.length} top-level eCTD modules into backend seed taxonomy.`);
+    console.log(`✅ Verified ${BACKEND_ECTD_TREE_SEED.length} top-level eCTD modules available in backend seed taxonomy.`);
     process.exit(0);
   } catch (error: any) {
     console.error("❌ Error seeding users:", error);
@@ -91,5 +90,3 @@ async function seedUsers() {
 }
 
 seedUsers();
-
-

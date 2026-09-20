@@ -1,4 +1,7 @@
-﻿import { Request, Response, NextFunction } from "express";
+import { Request, Response, NextFunction } from "express";
+import { eq } from "drizzle-orm";
+import { db } from "../db/db";
+import { users } from "../db/schema";
 import { verifyAccessToken } from "../generateJwtToken/token.util";
 
 // ─── Extend Express Request to carry decoded user ──────────────────────────
@@ -11,7 +14,7 @@ declare global {
 }
 
 // ─── Protect Middleware ─────────────────────────────────────────────────────
-export function protect(req: Request, res: Response, next: NextFunction): void {
+export async function protect(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
     // 1. Read token from httpOnly cookie (preferred) OR Authorization header
     const tokenFromCookie  = req.cookies?.accessToken as string | undefined;
@@ -31,15 +34,33 @@ export function protect(req: Request, res: Response, next: NextFunction): void {
       return;
     }
 
-    // 2. Verify token
+    // 2. Verify token signature & expiry
     const decoded = verifyAccessToken(token) as {
       id: number;
       email: string;
       role: string;
     };
 
-    req.user = decoded;
-    console.log(`[AUTH] ✅ Authenticated user id=${decoded.id} role=${decoded.role}`);
+    // 3. Query user from database to ensure user is active and not blocked
+    const [user] = await db
+      .select({ id: users.id, email: users.email, role: users.role, isBlocked: users.isBlocked })
+      .from(users)
+      .where(eq(users.id, decoded.id))
+      .limit(1);
+
+    if (!user || user.isBlocked) {
+      console.warn(`[AUTH] 🚫 Access denied — user id=${decoded.id} is suspended/blocked.`);
+      res.status(401).json({
+        success: false,
+        message: "Your account has been suspended or blocked. Please contact an administrator.",
+      });
+      return;
+    }
+
+    req.user = { id: user.id, email: user.email, role: user.role };
+    if (process.env.NODE_ENV !== "production") {
+      console.log(`[AUTH] ✅ Authenticated user id=${user.id} role=${user.role}`);
+    }
     next();
   } catch (error: any) {
     const isExpired = error?.name === "TokenExpiredError";

@@ -1,7 +1,6 @@
 import { Router } from "express";
 import {
   createUser,
-  createBulkUsers,
   listUsers,
   getUserById,
   updateUser,
@@ -13,14 +12,13 @@ import { protect, authorize } from "../middleware/auth.middleware";
 
 const router = Router();
 
-// Apply Authentication Guard and Admin Role Guard to all admin user routes
+// Apply Authentication & Admin Authorization Guard to all endpoints
 router.use(protect);
 router.use(authorize("admin", "superadmin"));
 
-// ─── User Management Endpoints ────────────────────────────────────────────────
-router.post("/users", createUser);
-router.post("/users/bulk", createBulkUsers);
+// ─── Admin User Management Endpoints ──────────────────────────────────────────
 router.get("/users", listUsers);
+router.post("/users", createUser);
 router.get("/users/:id", getUserById);
 router.patch("/users/:id", updateUser);
 router.patch("/users/:id/block", blockUser);

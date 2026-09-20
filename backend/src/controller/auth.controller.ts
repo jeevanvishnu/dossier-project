@@ -295,6 +295,10 @@ export async function refreshAccessToken(req: Request, res: Response): Promise<v
         return { status: 403, errorType: "USER_NOT_FOUND" };
       }
 
+      if (user.isBlocked) {
+        return { status: 403, errorType: "USER_BLOCKED" };
+      }
+
       const newAccessToken = generateAccessToken({
         id: user.id,
         email: user.email,
@@ -318,6 +322,7 @@ export async function refreshAccessToken(req: Request, res: Response): Promise<v
         REUSE_DETECTED: "Invalid or reused refresh token. Session revoked for security.",
         EXPIRED: "Refresh token expired. Please sign in again.",
         USER_NOT_FOUND: "User not found.",
+        USER_BLOCKED: "Your account has been suspended or blocked.",
       };
 
       res.status(403).json({

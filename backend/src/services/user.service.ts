@@ -11,14 +11,14 @@ import {
 } from "../validators/user.validator";
 
 /**
- * Generate a strong random temporary password if none is provided.
+ * Generate a password combining the email prefix and a random hash code (e.g. john@4f8a1d).
  */
-function generateRandomPassword(length = 12): string {
-  const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
-  let pwd = "";
-  for (let i = 0; i < length; i++) {
-    const randomIndex = crypto.randomInt(0, chars.length);
-    pwd += chars[randomIndex];
+function generateUserPassword(email: string): string {
+  const emailPrefix = email.split("@")[0].replace(/[^a-zA-Z0-9]/g, "") || "user";
+  const randomHash = crypto.randomBytes(3).toString("hex"); // 6 hex characters
+  let pwd = `${emailPrefix}@${randomHash}`;
+  if (pwd.length < 8) {
+    pwd += crypto.randomBytes(2).toString("hex");
   }
   return pwd;
 }
@@ -39,8 +39,8 @@ export class UserManagementService {
       throw new Error(`User with email "${input.email}" already exists.`);
     }
 
-    // 2. Determine password to use
-    const plainPassword = input.password || generateRandomPassword();
+    // 2. Determine password to use (email prefix + hash code if auto-generated)
+    const plainPassword = input.password || generateUserPassword(input.email);
     const hashedPassword = await bcrypt.hash(plainPassword, 12);
 
     // 3. Insert user into DB
@@ -63,61 +63,28 @@ export class UserManagementService {
         updatedAt: users.updatedAt,
       });
 
-    // 4. Send Welcome Email (Non-blocking background send)
-    sendWelcomeEmail({
-      to: createdUser.email,
-      name: createdUser.name,
-      email: createdUser.email,
-      plainPassword,
-      role: createdUser.role,
-    }).catch((err) => {
-      console.error(`[USER_SERVICE] Error background-sending welcome email to ${createdUser.email}:`, err);
-    });
+    // 4. Send Welcome Email (Awaited with automatic test fallback)
+    try {
+      const emailResult = await sendWelcomeEmail({
+        to: createdUser.email,
+        name: createdUser.name,
+        email: createdUser.email,
+        plainPassword,
+        role: createdUser.role,
+      });
+
+      if (!emailResult.success) {
+        console.warn(
+          `[USER_SERVICE] ⚠️ Welcome email could not be delivered to ${createdUser.email}: ${emailResult.error}`
+        );
+      }
+    } catch (err: any) {
+      console.error(`[USER_SERVICE] Error sending welcome email to ${createdUser.email}:`, err?.message);
+    }
 
     return {
       user: createdUser,
       generatedPassword: input.password ? undefined : plainPassword,
-    };
-  }
-
-  /**
-   * Create multiple users in bulk (up to 50 users at once).
-   */
-  static async createBulkUsers(userInputs: CreateUserInput[]) {
-    const results: Array<{
-      email: string;
-      status: "created" | "failed";
-      user?: object;
-      error?: string;
-    }> = [];
-
-    let succeededCount = 0;
-    let failedCount = 0;
-
-    for (const input of userInputs) {
-      try {
-        const result = await this.createUser(input);
-        results.push({
-          email: input.email,
-          status: "created",
-          user: result.user,
-        });
-        succeededCount++;
-      } catch (err: any) {
-        results.push({
-          email: input.email,
-          status: "failed",
-          error: err.message || "Failed to create user",
-        });
-        failedCount++;
-      }
-    }
-
-    return {
-      totalProcessed: userInputs.length,
-      succeededCount,
-      failedCount,
-      results,
     };
   }
 
