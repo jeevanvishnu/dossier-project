@@ -1,4 +1,7 @@
 import { Request, Response } from "express";
+import { db } from "../db/db";
+import { companyMembers } from "../db/schema";
+import { eq, sql, and } from "drizzle-orm";
 import { UserManagementService } from "../services/user.service";
 import { parseIdParam } from "../utils/params.util";
 import {
@@ -31,7 +34,60 @@ export async function createUser(req: Request, res: Response): Promise<void> {
   }
 
   try {
+    const creatorUser = req.user;
+    let companyId: number | null = null;
+    let maxUsers: number = 0;
+    let storageGb: number = 5;
+
+    if (creatorUser && creatorUser.role !== "superadmin") {
+      const [adminMembership] = await db
+        .select()
+        .from(companyMembers)
+        .where(eq(companyMembers.userId, creatorUser.id))
+        .limit(1);
+
+      if (!adminMembership) {
+        res.status(403).json({ success: false, message: "Standard admin is not associated with any company." });
+        return;
+      }
+
+      companyId = adminMembership.companyId;
+      maxUsers = adminMembership.maxUsers;
+      storageGb = adminMembership.storageGb;
+
+      const countResult = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(companyMembers)
+        .where(
+          and(
+            eq(companyMembers.companyId, companyId),
+            eq(companyMembers.role, "user")
+          )
+        );
+      
+      const currentCount = Number(countResult[0]?.count || 0);
+
+      if (currentCount >= maxUsers) {
+        res.status(400).json({
+          success: false,
+          message: `Company user limit reached. Max users allowed: ${maxUsers}`,
+        });
+        return;
+      }
+    }
+
     const result = await UserManagementService.createUser(parsed.data);
+
+    if (companyId !== null) {
+      await db.insert(companyMembers).values({
+        companyId,
+        userId: result.user.id,
+        role: result.user.role === "admin" ? "admin" : "user",
+        maxUsers,
+        storageGb,
+      });
+    }
+
     res.status(201).json({
       success: true,
       message: "User created successfully. Welcome email has been queued.",
@@ -90,6 +146,16 @@ export async function getUserById(req: Request, res: Response): Promise<void> {
 
   try {
     const user = await UserManagementService.getUserById(userId);
+
+    // Prevent non-superadmins from viewing superadmin details
+    if (user.role === "superadmin" && req.user?.role !== "superadmin") {
+      res.status(403).json({
+        success: false,
+        message: "Access to superadmin details is forbidden",
+      });
+      return;
+    }
+
     res.status(200).json({
       success: true,
       data: { user },

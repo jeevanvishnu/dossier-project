@@ -27,6 +27,12 @@ const USERS_TO_SEED: UserSeed[] = [
     role: "user",
     name: "Test User",
   },
+  {
+    email: process.env.SEED_SUPERADMIN_EMAIL || "superadmin@gmail.com",
+    rawPassword: process.env.SEED_SUPERADMIN_PASSWORD || "testsuperadmin@2244",
+    role: "superadmin",
+    name: "Super Admin",
+  },
 ];
 
 async function seedUsers() {

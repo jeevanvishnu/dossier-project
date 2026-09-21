@@ -29,11 +29,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       // Route guard for standard users attempting to access admin-only routes
       if (!isLoading && isAuthenticated && user) {
-        const isAdmin = user.role === "admin" || user.role === "superadmin";
+        const roleLower = user.role?.toLowerCase();
+        const isAdmin = roleLower === "admin" || roleLower === "superadmin";
         const adminOnlyRoutes = ["/tour", "/journal", "/dashboard/users", "/dashboard/audit"];
         const isAccessingAdminRoute = adminOnlyRoutes.some(
           (route) => pathname === route || pathname?.startsWith(route + "/")
         );
+
+        const isSuperAdminRoute = pathname?.startsWith("/super-admin");
+
+        if (isSuperAdminRoute && roleLower !== "superadmin") {
+          console.warn(`[AppShell] Access denied to ${pathname} for role '${user.role}'. Redirecting to /dashboard.`);
+          router.replace("/dashboard");
+          return;
+        }
 
         if (!isAdmin && isAccessingAdminRoute) {
           console.warn(`[AppShell] Access denied to ${pathname} for role '${user.role}'. Redirecting to /dashboard.`);
@@ -66,6 +75,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     if (pathname.startsWith("/profile/account")) return tApp("breadcrumbAccount");
     if (pathname.startsWith("/journal")) return tApp("breadcrumbJournal");
     if (pathname.startsWith("/tour")) return tApp("breadcrumbTour");
+    if (pathname.startsWith("/super-admin/companies")) return "Companies";
+    if (pathname.startsWith("/super-admin/company-users")) return "Company Users";
     return tApp("breadcrumbWorkspace");
   };
 

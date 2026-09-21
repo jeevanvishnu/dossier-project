@@ -1,16 +1,12 @@
 import { Request, Response } from "express";
 import { db } from "../db/db";
-import { projects, dossierConfig, projectMembers, auditLogs, packageArchives, projectDocuments } from "../db/schema";
+import { projects, dossierConfig, projectMembers, auditLogs, packageArchives, projectDocuments, companyMembers } from "../db/schema";
 import { createProjectSchema, updateDossierDataSchema } from "../validators/project.validator";
 import { parseIdParam, resolveProjectId } from "../utils/params.util";
 import { deleteFromImageKit } from "../services/imagekit.service";
-import { eq, and, desc, isNotNull, sql } from "drizzle-orm";
+import { eq, and, desc, isNotNull, sql, count } from "drizzle-orm";
 
 import crypto from "crypto";
-
-function generateProjectCode(): string {
-  return crypto.randomUUID();
-}
 
 /**
  * GET /api/projects
@@ -19,17 +15,19 @@ function generateProjectCode(): string {
 export async function getProjects(req: Request, res: Response): Promise<void> {
   try {
     const page = Math.max(1, parseInt(req.query.page as string) || 1);
-    const limit = Math.max(1, parseInt(req.query.limit as string) || 10);
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 10));
     const offset = (page - 1) * limit;
 
-    const projectsList = await db.query.projects.findMany({
-      with: { dossierConfig: true },
-      orderBy: [desc(projects.createdAt)],
-      limit,
-      offset,
-    });
+    const [projectsList, countResult] = await Promise.all([
+      db.query.projects.findMany({
+        with: { dossierConfig: true },
+        orderBy: [desc(projects.createdAt)],
+        limit,
+        offset,
+      }),
+      db.select({ count: count() }).from(projects),
+    ]);
 
-    const countResult = await db.select({ count: sql<number>`count(*)` }).from(projects);
     const totalCount = Number(countResult[0]?.count || 0);
 
     res.status(200).json({
@@ -63,13 +61,26 @@ export async function createProject(req: Request, res: Response): Promise<void> 
     }
 
     const input = parseResult.data;
-    const projectCode = generateProjectCode();
+    const projectCode = crypto.randomUUID();
     const currentUser = req.user;
 
     const result = await db.transaction(async (tx) => {
+      let companyId: number | null = null;
+      if (currentUser && currentUser.id) {
+        const [membership] = await tx
+          .select({ companyId: companyMembers.companyId })
+          .from(companyMembers)
+          .where(eq(companyMembers.userId, currentUser.id))
+          .limit(1);
+        if (membership) {
+          companyId = membership.companyId;
+        }
+      }
+
       const [newProject] = await tx
         .insert(projects)
         .values({
+          companyId,
           projectCode,
           productName: input.productName,
           dosageForm: input.dosageForm,

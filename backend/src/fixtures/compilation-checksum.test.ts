@@ -4,6 +4,7 @@ import * as crypto from "crypto";
 
 const mockProject: Project = {
   id: 1,
+  companyId: null,
   projectCode: "PRJ-TEST",
   productName: "TestProduct",
   dosageForm: "Solution",

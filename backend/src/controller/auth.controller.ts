@@ -1,9 +1,9 @@
 import { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import { randomUUID } from "node:crypto";
-import { eq, or, lt } from "drizzle-orm";
+import { eq, or, lt, and, isNull, gt, count } from "drizzle-orm";
 import { db } from "../db/db";
-import { users, refreshSessions } from "../db/schema";
+import { users, refreshSessions, companyMembers } from "../db/schema";
 import { signInSchema, changePasswordSchema } from "../validators/auth.validator";
 import {
   generateAccessToken,
@@ -33,6 +33,9 @@ const COOKIE_OPTS_REFRESH = {
   path: "/api/auth/refresh", // Scoped exclusively to refresh endpoint
   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
 };
+
+// Dummy hash for constant-time comparison to prevent timing side-channel email enumeration attacks
+const DUMMY_HASH = "$2b$12$K8/z.wE54mE51wXhW4q4.e58K9y/5W8b3m.E51wXhW4q4.e58K9y/";
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  POST /api/auth/signin
@@ -64,6 +67,8 @@ export async function signIn(req: Request, res: Response): Promise<void> {
       .limit(1);
 
     if (!user) {
+      // Execute constant-time bcrypt compare to prevent timing side-channel attacks
+      await bcrypt.compare(password, DUMMY_HASH);
       console.warn(`[SIGNIN] ⚠️ Invalid credentials for email: ${email}`);
       res.status(401).json({
         success: false,
@@ -72,7 +77,17 @@ export async function signIn(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    // 3. Verify password
+    // 3. Check if user is blocked before verifying password
+    if (user.isBlocked) {
+      console.warn(`[SIGNIN] 🚫 Blocked user attempted signin: ${email}`);
+      res.status(403).json({
+        success: false,
+        message: "Your account has been suspended or blocked. Please contact an administrator.",
+      });
+      return;
+    }
+
+    // 4. Verify password
     const passwordMatch = await bcrypt.compare(password, user.password);
     if (!passwordMatch) {
       console.warn(`[SIGNIN] ⚠️ Invalid password for email: ${email}`);
@@ -83,14 +98,37 @@ export async function signIn(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    // 3.5 Check if user is blocked
-    if (user.isBlocked) {
-      console.warn(`[SIGNIN] 🚫 Blocked user attempted signin: ${email}`);
-      res.status(403).json({
-        success: false,
-        message: "Your account has been suspended or blocked. Please contact an administrator.",
-      });
-      return;
+    // 3.6 Enforce maxUsers concurrent session limit for company admins
+    if (user.role === "admin") {
+      const [membership] = await db
+        .select({ maxUsers: companyMembers.maxUsers })
+        .from(companyMembers)
+        .where(eq(companyMembers.userId, user.id))
+        .limit(1);
+
+      if (membership) {
+        const [{ activeCount }] = await db
+          .select({ activeCount: count() })
+          .from(refreshSessions)
+          .where(
+            and(
+              eq(refreshSessions.userId, user.id),
+              isNull(refreshSessions.revokedAt),
+              gt(refreshSessions.expiresAt, new Date())
+            )
+          );
+
+        if (Number(activeCount) >= membership.maxUsers) {
+          console.warn(
+            `[SIGNIN] 🚫 Concurrent session limit reached for user: ${email} (${activeCount}/${membership.maxUsers})`
+          );
+          res.status(429).json({
+            success: false,
+            message: `Max concurrent session limit reached (${membership.maxUsers}). Please log out from another device first.`,
+          });
+          return;
+        }
+      }
     }
 
     // 4. Create new refresh token family & DB session

@@ -31,8 +31,9 @@ export async function getPackageArchives(req: Request, res: Response): Promise<v
 }
 
 export async function compileProjectPackage(req: Request, res: Response): Promise<void> {
+  let projectId: number | null = null;
   try {
-    const projectId = await resolveProjectId(req.params.id);
+    projectId = await resolveProjectId(req.params.id);
     if (!projectId) {
       res.status(400).json({ success: false, message: "Invalid project ID" });
       return;
@@ -116,7 +117,7 @@ export async function compileProjectPackage(req: Request, res: Response): Promis
       const [archiveRecord] = await tx
         .insert(packageArchives)
         .values({
-          projectId,
+          projectId: projectId!,
           fullName: compilation.fullName,
           size: compilation.size,
           xmlChecksum: compilation.xmlChecksum,
@@ -126,7 +127,7 @@ export async function compileProjectPackage(req: Request, res: Response): Promis
         .returning();
 
       await tx.insert(auditLogs).values({
-        projectId,
+        projectId: projectId!,
         logType: "SUCCESS",
         message: `Compiled eCTD archive '${compilation.fullName}'. ZIP MD5: ${compilation.zipChecksum}, XML MD5: ${compilation.xmlChecksum}, Size: ${compilation.size} bytes.`,
         userCredentials: req.user ? `${req.user.email} (${req.user.role})` : "System",
@@ -143,7 +144,6 @@ export async function compileProjectPackage(req: Request, res: Response): Promis
   } catch (error: any) {
     console.error("[Compilation Controller Error]", error);
 
-    const projectId = await resolveProjectId(req.params.id);
     if (projectId) {
       try {
         await db.insert(auditLogs).values({

@@ -1,6 +1,6 @@
 import bcrypt from "bcrypt";
 import crypto from "crypto";
-import { eq, ilike, or, and, count, desc } from "drizzle-orm";
+import { eq, ilike, or, and, count, desc, ne } from "drizzle-orm";
 import { db } from "../db/db";
 import { users, refreshSessions } from "../db/schema";
 import { sendWelcomeEmail } from "./email.service";
@@ -11,16 +11,43 @@ import {
 } from "../validators/user.validator";
 
 /**
- * Generate a password combining the email prefix and a random hash code (e.g. john@4f8a1d).
+ * Generate a strong password with short email name (e.g. "jeevanvishnu" -> "Jeevan"),
+ * followed by special characters, letters, and numbers (e.g. Jeevan#%Ae92 or Jeevan@#ae84).
  */
 function generateUserPassword(email: string): string {
-  const emailPrefix = email.split("@")[0].replace(/[^a-zA-Z0-9]/g, "") || "user";
-  const randomHash = crypto.randomBytes(3).toString("hex"); // 6 hex characters
-  let pwd = `${emailPrefix}@${randomHash}`;
-  if (pwd.length < 8) {
-    pwd += crypto.randomBytes(2).toString("hex");
+  const localPart = email.split("@")[0] || "user";
+  // Extract alphabetic name part from the email prefix (e.g. "jeevanvishnu21" -> "jeevanvishnu")
+  let rawName =
+    localPart.split(/[._\-]/)[0].replace(/[^a-zA-Z]/g, "") ||
+    localPart.replace(/[^a-zA-Z0-9]/g, "") ||
+    "User";
+
+  // Cut to max 6 characters if longer (e.g. "jeevanvishnu" -> "jeevan")
+  if (rawName.length > 6) {
+    rawName = rawName.slice(0, 6);
   }
-  return pwd;
+
+  // Capitalize first letter (e.g. "Jeevan")
+  const shortName =
+    rawName.charAt(0).toUpperCase() + rawName.slice(1).toLowerCase();
+
+  // Special character combinations (e.g., #%, @#, $%, %&, !#)
+  const specialPairs = ["#%", "@#", "$%", "%&", "!#", "@$"];
+  const upperChars = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+  const lowerChars = "abcdefghijkmnopqrstuvwxyz";
+  const digits = "23456789";
+
+  const getRandomChar = (pool: string) =>
+    pool[crypto.randomInt(0, pool.length)];
+
+  const specialPair = specialPairs[crypto.randomInt(0, specialPairs.length)];
+  const upper = getRandomChar(upperChars);
+  const lower = getRandomChar(lowerChars);
+  const num1 = getRandomChar(digits);
+  const num2 = getRandomChar(digits);
+
+  // Output format: Jeevan#%Ae92
+  return `${shortName}${specialPair}${upper}${lower}${num1}${num2}`;
 }
 
 export class UserManagementService {
@@ -51,6 +78,8 @@ export class UserManagementService {
         email: input.email,
         password: hashedPassword,
         role: input.role || "user",
+        imageUrl: input.imageUrl || null,
+        imageKitFileId: input.imageKitFileId || null,
         isBlocked: false,
       })
       .returning({
@@ -58,6 +87,8 @@ export class UserManagementService {
         name: users.name,
         email: users.email,
         role: users.role,
+        imageUrl: users.imageUrl,
+        imageKitFileId: users.imageKitFileId,
         isBlocked: users.isBlocked,
         createdAt: users.createdAt,
         updatedAt: users.updatedAt,
@@ -261,6 +292,9 @@ export class UserManagementService {
     const offset = (page - 1) * limit;
 
     const conditions = [];
+
+    // Filter out superadmins
+    conditions.push(ne(users.role, "superadmin"));
 
     // Filter by search (name or email)
     if (query.search) {

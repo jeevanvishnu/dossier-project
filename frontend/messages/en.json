@@ -166,6 +166,7 @@
     "submitSignUp": "Request Workspace Account",
     "adminRole": "Admin Role",
     "userRole": "User Role",
+    "superAdminRole": "Super Admin Role",
     "loginTitle": "ECTC Unified Portal Login",
     "loginSub": "Kazakhstan Pharmaceutical & Medical Regulatory Submission Platform",
     "authenticating": "Authenticating...",

@@ -1,6 +1,6 @@
 import { Resend } from "resend";
 
-const getResendClient = (): Resend | null => {
+export const getResendClient = (): Resend | null => {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
     console.warn("[EMAIL] ⚠️ RESEND_API_KEY is not defined in environment variables. Email sending disabled.");
@@ -103,7 +103,13 @@ export async function sendWelcomeEmail({
         fromEmail.includes("resend.dev") &&
         error.message?.includes("only send testing emails")
       ) {
-        const testRecipient = process.env.RESEND_TEST_RECIPIENT || "jeevanvishnu18@gmail.com";
+        const testRecipient = process.env.RESEND_TEST_RECIPIENT;
+        if (!testRecipient) {
+          console.warn(
+            `[EMAIL] ⚠️ Resend sandbox restriction active, but RESEND_TEST_RECIPIENT is not set. Unable to deliver email to ${email}.`
+          );
+          return { success: false, error: "Resend sandbox active and RESEND_TEST_RECIPIENT env var is not configured." };
+        }
         console.warn(
           `[EMAIL] ⚠️ Resend sandbox restriction active. Delivering welcome credentials for ${email} to test owner address (${testRecipient}).`
         );

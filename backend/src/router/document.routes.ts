@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { protect } from "../middleware/auth.middleware";
+import { protect, authorize } from "../middleware/auth.middleware";
 import { uploadMiddleware } from "../middleware/upload.middleware";
 import {
   uploadDocument,
@@ -48,10 +48,11 @@ router.delete(
   deleteDocumentByNode
 );
 
-// Seed project with Russian client Sorbit dossier documents
+// Seed project with Russian client Sorbit dossier documents (SuperAdmin only)
 router.post(
   "/:id/seed-sorbit",
   protect,
+  authorize("superadmin"),
   seedSorbitDossier
 );
 

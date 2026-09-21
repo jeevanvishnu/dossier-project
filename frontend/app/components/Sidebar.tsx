@@ -13,6 +13,8 @@ import {
   ListBullets,
   SignOut,
   Pill,
+  Buildings,
+  UsersThree,
 } from "@phosphor-icons/react";
 import { SupportWidget } from "./SupportWidget";
 import { useAuth } from "../context/AuthContext";
@@ -25,7 +27,8 @@ export function Sidebar() {
   const router = useRouter();
   const { user, logout } = useAuth();
 
-  const isAdmin = user?.role === "admin" || user?.role === "superadmin";
+  const roleLower = user?.role?.toLowerCase();
+  const isAdmin = roleLower === "admin" || roleLower === "superadmin";
 
   const systemTourItem = { name: tNav("systemTour"), href: "/tour", icon: Compass };
   const activityLogItem = { name: tNav("activityLog"), href: "/journal", icon: ListBullets };
@@ -39,9 +42,17 @@ export function Sidebar() {
     { name: tNav("accountSettings"), href: "/profile/account", icon: UserGear },
   ];
 
-  const navItems = isAdmin
-    ? [systemTourItem, ...userNavItems, activityLogItem]
-    : userNavItems;
+  const superAdminNavItems = [
+    { name: tNav("dashboard"), href: "/dashboard", icon: SquaresFour },
+    { name: "Companies", href: "/super-admin/companies", icon: Buildings },
+    { name: "Company Users", href: "/super-admin/company-users", icon: UsersThree },
+  ];
+
+  const navItems = roleLower === "superadmin"
+    ? superAdminNavItems
+    : isAdmin
+      ? [systemTourItem, ...userNavItems, activityLogItem]
+      : userNavItems;
 
   const handleLogout = async () => {
     try {

@@ -73,11 +73,10 @@ export default function LoginPage() {
               setRoleSelect("admin");
               setEmail("admin@ectc.kz");
             }}
-            className={`flex-1 py-1.5 text-xs font-bold rounded-lg flex items-center justify-center gap-1.5 transition-colors ${
-              roleSelect === "admin"
+            className={`flex-1 py-1.5 text-xs font-bold rounded-lg flex items-center justify-center gap-1.5 transition-colors ${roleSelect === "admin"
                 ? "bg-accent text-white"
                 : "text-secondary hover:text-primary"
-            }`}
+              }`}
           >
             <ShieldCheck size={16} />
             <span>{tAuth("adminRole")}</span>
@@ -88,11 +87,10 @@ export default function LoginPage() {
               setRoleSelect("user");
               setEmail("specialist@pharma.kz");
             }}
-            className={`flex-1 py-1.5 text-xs font-bold rounded-lg flex items-center justify-center gap-1.5 transition-colors ${
-              roleSelect === "user"
+            className={`flex-1 py-1.5 text-xs font-bold rounded-lg flex items-center justify-center gap-1.5 transition-colors ${roleSelect === "user"
                 ? "bg-accent text-white"
                 : "text-secondary hover:text-primary"
-            }`}
+              }`}
           >
             <UserCheck size={16} />
             <span>{tAuth("userRole")}</span>

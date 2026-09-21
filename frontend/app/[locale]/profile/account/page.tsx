@@ -36,8 +36,9 @@ import { handleApiError } from "../../../lib/axios";
 export default function AccountSettingsPage() {
   const tProfile = useTranslations("profile");
   const { user: authUser } = useAuth();
-  const isAdmin = authUser?.role === "admin" || authUser?.role === "superadmin";
-  const isSuperAdmin = authUser?.role === "superadmin";
+  const roleLower = authUser?.role?.toLowerCase();
+  const isAdmin = roleLower === "admin" || roleLower === "superadmin";
+  const isSuperAdmin = roleLower === "superadmin";
 
   const [activeTab, setActiveTab] = useState<"account" | "users">("account");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -146,7 +147,7 @@ export default function AccountSettingsPage() {
   //  Fetch Users from Backend REST API
   // ───────────────────────────────────────────────────────────────────────────
   const fetchUsers = useCallback(async () => {
-    if (!isAdmin) return;
+    if (!authUser) return;
     setLoadingUsers(true);
     try {
       const isBlockedParam =
@@ -167,13 +168,13 @@ export default function AccountSettingsPage() {
     } finally {
       setLoadingUsers(false);
     }
-  }, [isAdmin, page, limit, debouncedSearch, roleFilter, blockedFilter]);
+  }, [authUser, page, limit, debouncedSearch, roleFilter, blockedFilter]);
 
   useEffect(() => {
-    if (activeTab === "users" && isAdmin) {
+    if (activeTab === "users" && authUser) {
       fetchUsers();
     }
-  }, [fetchUsers, activeTab, isAdmin]);
+  }, [fetchUsers, activeTab, authUser]);
 
   // ───────────────────────────────────────────────────────────────────────────
   //  Handlers: Admin User Actions
@@ -375,17 +376,15 @@ export default function AccountSettingsPage() {
             <span>{tProfile("tabAccountSettings")}</span>
           </button>
 
-          {isAdmin && (
-            <button
-              onClick={() => setActiveTab("users")}
-              className={`px-4 py-2 text-xs font-bold rounded-xl transition-colors flex items-center gap-2 shrink-0 cursor-pointer ${
-                activeTab === "users" ? "bg-accent text-white" : "text-secondary hover:text-primary"
-              }`}
-            >
-              <Users size={16} />
-              <span>User Management (Admin)</span>
-            </button>
-          )}
+          <button
+            onClick={() => setActiveTab("users")}
+            className={`px-4 py-2 text-xs font-bold rounded-xl transition-colors flex items-center gap-2 shrink-0 cursor-pointer ${
+              activeTab === "users" ? "bg-accent text-white" : "text-secondary hover:text-primary"
+            }`}
+          >
+            <Users size={16} />
+            <span>User Management</span>
+          </button>
         </div>
 
         {/* ACCOUNT SETTINGS TAB */}
@@ -570,7 +569,7 @@ export default function AccountSettingsPage() {
                 <Users size={20} className="text-accent" />
                 <div>
                   <h2 className="font-lexend font-bold text-base text-primary">
-                    {isAdmin ? "User Accounts Management" : tProfile("usersTableTitle")}
+                    User List Management Table
                   </h2>
                   <p className="text-xs text-secondary">
                     Total {pagination.total} registered users
@@ -671,7 +670,7 @@ export default function AccountSettingsPage() {
                 <tbody className="divide-y divide-border">
                   {loadingUsers ? (
                     <tr>
-                      <td colSpan={7} className="py-12 text-center text-secondary">
+                      <td colSpan={isAdmin ? 7 : 6} className="py-12 text-center text-secondary">
                         <div className="flex flex-col items-center justify-center gap-2">
                           <ArrowsClockwise size={24} className="animate-spin text-accent" />
                           <span>Loading users from database...</span>
@@ -680,7 +679,7 @@ export default function AccountSettingsPage() {
                     </tr>
                   ) : usersList.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="py-12 text-center text-secondary">
+                      <td colSpan={isAdmin ? 7 : 6} className="py-12 text-center text-secondary">
                         No user accounts match the current query.
                       </td>
                     </tr>
@@ -759,7 +758,7 @@ export default function AccountSettingsPage() {
                             )}
                           </td>
                           <td className="py-3.5 px-4 text-xs text-secondary font-mono">
-                            {new Date(u.createdAt).toLocaleDateString("en-GB")}
+                            {u.createdAt ? new Date(u.createdAt).toLocaleDateString("en-GB") : "—"}
                           </td>
                           {isAdmin && (
                             <td className="py-3.5 px-4 text-right space-x-1.5">
@@ -791,7 +790,7 @@ export default function AccountSettingsPage() {
             </div>
 
             {/* Pagination Controls */}
-            {isAdmin && pagination.totalPages > 1 && (
+            {pagination.totalPages > 1 && (
               <div className="p-4 border-t border-border flex items-center justify-between bg-bg/50">
                 <span className="text-xs text-secondary">
                   Page <strong className="text-primary">{pagination.page}</strong> of{" "}

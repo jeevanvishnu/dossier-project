@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { db } from "../db/db";
 import { auditLogs } from "../db/schema";
 import { resolveProjectId, getSingleParam } from "../utils/params.util";
-import { eq, desc, ilike, and, or } from "drizzle-orm";
+import { eq, desc, ilike, and, or, count } from "drizzle-orm";
 
 export async function getAuditLogs(req: Request, res: Response): Promise<void> {
   try {
@@ -33,23 +33,30 @@ export async function getAuditLogs(req: Request, res: Response): Promise<void> {
         )
       );
       
-      logs = await db.query.auditLogs.findMany({
-        where: whereClause,
-        orderBy: [desc(auditLogs.formationDate)],
-        limit,
-        offset,
-      });
-      const allMatching = await db.query.auditLogs.findMany({ where: whereClause, columns: { id: true } });
-      totalCount = allMatching.length;
+      const [logsData, [{ total }]] = await Promise.all([
+        db.query.auditLogs.findMany({
+          where: whereClause,
+          orderBy: [desc(auditLogs.formationDate)],
+          limit,
+          offset,
+        }),
+        db.select({ total: count() }).from(auditLogs).where(whereClause),
+      ]);
+      logs = logsData;
+      totalCount = Number(total || 0);
     } else {
-      logs = await db.query.auditLogs.findMany({
-        where: eq(auditLogs.projectId, projectId),
-        orderBy: [desc(auditLogs.formationDate)],
-        limit,
-        offset,
-      });
-      const allMatching = await db.query.auditLogs.findMany({ where: eq(auditLogs.projectId, projectId), columns: { id: true } });
-      totalCount = allMatching.length;
+      const whereClause = eq(auditLogs.projectId, projectId);
+      const [logsData, [{ total }]] = await Promise.all([
+        db.query.auditLogs.findMany({
+          where: whereClause,
+          orderBy: [desc(auditLogs.formationDate)],
+          limit,
+          offset,
+        }),
+        db.select({ total: count() }).from(auditLogs).where(whereClause),
+      ]);
+      logs = logsData;
+      totalCount = Number(total || 0);
     }
 
     res.status(200).json({
@@ -80,6 +87,7 @@ export async function exportAuditLogsCsv(req: Request, res: Response): Promise<v
     const logs = await db.query.auditLogs.findMany({
       where: eq(auditLogs.projectId, projectId),
       orderBy: [desc(auditLogs.formationDate)],
+      limit: 10000,
     });
 
     const filename = `audit_logs_project_${projectId}_${Date.now()}.csv`;

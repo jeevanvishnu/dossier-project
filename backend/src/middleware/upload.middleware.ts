@@ -3,14 +3,19 @@ import { Request, Response, NextFunction } from "express";
 
 const multiOrSingleUpload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB Limit
-}).any();
+  limits: { fileSize: 50 * 1024 * 1024, files: 1 }, // 50MB Limit, max 1 file
+}).fields([
+  { name: "file", maxCount: 1 },
+  { name: "document", maxCount: 1 },
+  { name: "attachment", maxCount: 1 },
+  { name: "avatar", maxCount: 1 },
+]);
 
 /**
  * Multer parses file names from the HTTP Content-Disposition header as Latin-1 (ISO-8859-1).
  * This wrapper re-decodes req.file.originalname as UTF-8 so that non-ASCII names
  * (Cyrillic, Chinese, etc.) are stored correctly instead of appearing garbled.
- * Supports any field name ('file', 'document', 'attachment', etc.).
+ * Supports specific allowed field names ('file', 'document', 'attachment', 'avatar').
  */
 export function uploadMiddleware(req: Request, res: Response, next: NextFunction): void {
   multiOrSingleUpload(req, res, (err: any) => {
@@ -35,9 +40,16 @@ export function uploadMiddleware(req: Request, res: Response, next: NextFunction
       return;
     }
 
-    // Normalize single file from req.files if req.file is not set directly
-    if (!req.file && req.files && Array.isArray(req.files) && req.files.length > 0) {
-      req.file = req.files[0];
+    // Normalize single file from req.files dictionary if req.file is not set directly
+    if (!req.file && req.files) {
+      if (Array.isArray(req.files) && req.files.length > 0) {
+        req.file = req.files[0];
+      } else if (typeof req.files === "object") {
+        const fileArray = Object.values(req.files as Record<string, Express.Multer.File[]>).flat();
+        if (fileArray.length > 0) {
+          req.file = fileArray[0];
+        }
+      }
     }
 
     // Re-decode filename: multer reads Content-Disposition as Latin-1; convert to UTF-8

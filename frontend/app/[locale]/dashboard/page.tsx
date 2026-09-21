@@ -9,68 +9,58 @@ import {
   LockKey,
   Files,
   CreditCard,
-  Infinity as InfinityIcon,
-  PencilSimple,
-  Trash,
-  X,
+  Users,
+  HardDrive,
   CheckCircle,
+  Warning,
 } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
+import { useAuth } from "../../context/AuthContext";
+import { api } from "../../lib/axios";
+import { SuperAdminDashboard } from "../../components/dashboard/SuperAdminDashboard";
+
+interface DashboardStats {
+  maxUsers: number;
+  storageGb: number;
+  usedStorageBytes: number;
+}
 
 export default function DashboardPage() {
   const tDash = useTranslations("dashboard");
   const tCommon = useTranslations("common");
+  const { user } = useAuth();
 
-  const [gaugeAnimated, setGaugeAnimated] = useState(false);
-  const [gaugePercent, setGaugePercent] = useState(0);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [loadingStats, setLoadingStats] = useState(true);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setGaugeAnimated(true);
-    }, 150);
-
-    const startTime = performance.now();
-    const duration = 2400; // Slow, unhurried 2.4s sweep
-
-    const animateCount = (now: number) => {
-      const elapsed = now - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      const easeProgress = 1 - Math.pow(1 - progress, 3);
-      setGaugePercent(Math.round(easeProgress * 100));
-
-      if (progress < 1) {
-        requestAnimationFrame(animateCount);
-      }
-    };
-
-    const countTimer = setTimeout(() => {
-      requestAnimationFrame(animateCount);
-    }, 150);
-
-    return () => {
-      clearTimeout(timer);
-      clearTimeout(countTimer);
-    };
-  }, []);
+    if (user && user.role !== "superadmin") {
+      api
+        .get("/dashboard/stats")
+        .then((res) => {
+          if (res.data?.success) {
+            setStats({
+              maxUsers: res.data.maxUsers,
+              storageGb: res.data.storageGb,
+              usedStorageBytes: res.data.usedStorageBytes,
+            });
+          }
+        })
+        .catch((err) => {
+          console.error("Failed to load dashboard stats:", err);
+        })
+        .finally(() => {
+          setLoadingStats(false);
+        });
+    }
+  }, [user]);
 
   const [dossierCounts] = useState({
     pinned: 0,
     inProgress: 7,
     total: 7,
   });
-
-  const [activeTariff, setActiveTariff] = useState({
-    name: "Tariff OWN (MUP) (Unlimited)",
-    isUnlimited: true,
-    storageLimit: "Unlimited",
-    recordsLimit: "Unlimited",
-    status: "Active Plan",
-  });
-
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [editTariffName, setEditTariffName] = useState(activeTariff.name);
 
   const [announcements] = useState([
     {
@@ -99,48 +89,33 @@ export default function DashboardPage() {
     toast.success(tDash("manualCardBtn"));
   };
 
-  const handleSaveTariffEdit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setActiveTariff((prev) => ({ ...prev, name: editTariffName }));
-    setIsEditModalOpen(false);
-    toast.success(tCommon("save"));
-  };
+  if (user?.role === "superadmin") {
+    return <SuperAdminDashboard />;
+  }
 
-  const handleConfirmDeleteTariff = () => {
-    setActiveTariff({
-      name: "No Active Tariff",
-      isUnlimited: false,
-      storageLimit: "0 GB",
-      recordsLimit: "0 Records",
-      status: "Inactive",
-    });
-    setIsDeleteModalOpen(false);
-    toast.error(tDash("clearTariffStatus"));
-  };
+  // Calculate storage usage percentage
+  const storageLimitBytes = (stats?.storageGb ?? 1) * 1024 * 1024 * 1024;
+  const usedBytes = stats?.usedStorageBytes ?? 0;
+  const rawGaugePercent = Math.min(
+    100,
+    Math.round((usedBytes / storageLimitBytes) * 100)
+  );
 
-  const handleResetTariff = () => {
-    setActiveTariff({
-      name: "Tariff OWN (MUP) (Unlimited)",
-      isUnlimited: true,
-      storageLimit: "Unlimited",
-      recordsLimit: "Unlimited",
-      status: "Active Plan",
-    });
-    setEditTariffName("Tariff OWN (MUP) (Unlimited)");
-    toast.success(tDash("restoreTariff"));
-  };
+  // Format used storage display
+  const usedMB = (usedBytes / (1024 * 1024)).toFixed(1);
+  const usedGB = (usedBytes / (1024 * 1024 * 1024)).toFixed(2);
+  const formattedUsedStorage =
+    usedBytes >= 1024 * 1024 * 1024 ? `${usedGB} GB` : `${usedMB} MB`;
 
   return (
     <AppShell>
       <div className="space-y-6">
-
-        {/* Top Header Section: Current Tariff Plan Widget & Redesigned User Notification Area */}
+        {/* Top Header Section: Tariff & Limits Widget + Announcements */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-
-          {/* Current Tariff Plan Widget */}
+          {/* Current Tariff Plan & Enforced Limits Widget */}
           <div className="lg:col-span-7 bg-surface border border-border rounded-2xl p-6 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow relative">
             <div>
-              {/* Header & Top Right Action Buttons */}
+              {/* Header */}
               <div className="flex items-center justify-between pb-3 border-b border-border mb-4">
                 <div className="flex items-center gap-2.5">
                   <div className="w-9 h-9 rounded-xl bg-accent/15 border border-accent/30 text-accent flex items-center justify-center shadow-xs">
@@ -151,125 +126,133 @@ export default function DashboardPage() {
                       {tDash("activeTariff")}
                     </h3>
                     <span className="text-[11px] font-semibold text-emerald-500 flex items-center gap-1">
-                      <CheckCircle size={13} weight="fill" /> {activeTariff.status === "Active Plan" ? tDash("activePlan") : activeTariff.status}
+                      <CheckCircle size={13} weight="fill" /> {tDash("activePlan")}
                     </span>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => {
-                      setEditTariffName(activeTariff.name);
-                      setIsEditModalOpen(true);
-                    }}
-                    title="Edit/Modify tariff parameters"
-                    className="px-2.5 py-1.5 rounded-xl bg-bg hover:bg-surface-raised border border-border text-secondary hover:text-accent transition-colors flex items-center gap-1.5 text-xs font-medium shadow-2xs"
-                  >
-                    <PencilSimple size={16} />
-                    <span className="hidden sm:inline">{tCommon("edit")}</span>
-                  </button>
-                  <button
-                    onClick={() => setIsDeleteModalOpen(true)}
-                    title="Delete or clear current tariff configuration"
-                    className="px-2.5 py-1.5 rounded-xl bg-bg hover:bg-red-500/10 border border-border text-secondary hover:text-red-500 transition-colors flex items-center gap-1.5 text-xs font-medium shadow-2xs"
-                  >
-                    <Trash size={16} />
-                    <span className="hidden sm:inline">{tCommon("delete")}</span>
-                  </button>
-                </div>
+                {rawGaugePercent >= 90 && (
+                  <span className="px-2.5 py-1 rounded-full bg-red-500/15 border border-red-500/30 text-red-500 font-semibold text-[11px] flex items-center gap-1">
+                    <Warning size={14} weight="fill" /> High Storage Usage
+                  </span>
+                )}
               </div>
 
-              {activeTariff.isUnlimited ? (
-                <div className="bg-bg border border-border rounded-xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <div className="space-y-1.5 text-center sm:text-left">
-                    <span className="text-[10px] font-semibold text-muted uppercase tracking-wider">{tDash("activeTariff")}</span>
+              {/* Body */}
+              <div className="bg-bg border border-border rounded-xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="space-y-3 text-center sm:text-left">
+                  <div>
+                    <span className="text-[10px] font-semibold text-muted uppercase tracking-wider">
+                      Subscription Plan
+                    </span>
                     <h2 className="font-lexend font-bold text-base md:text-lg text-primary">
-                      {activeTariff.name}
+                      Company Admin Plan
                     </h2>
-                    <p className="text-xs text-secondary leading-relaxed font-normal">
-                      {tDash("welcomeSub")}
-                    </p>
                   </div>
 
-                  {/* Speedometer Gauge Meter Widget */}
-                  {(() => {
-                    const needleAngle = 5 + (gaugePercent / 100) * 170;
-                    const dashOffset = 151 * (1 - gaugePercent / 100);
-                    const isRed = gaugePercent <= 50;
-                    const strokeColor = isRed ? "#ef4444" : "#10b981";
-                    const glowColor = isRed ? "rgba(239, 68, 68, 0.6)" : "rgba(16, 185, 129, 0.6)";
-                    const textColorClass = isRed ? "text-red-400" : "text-emerald-400";
+                  <div className="flex flex-wrap items-center gap-4 text-xs">
+                    <div className="flex items-center gap-1.5 text-secondary">
+                      <Users size={16} className="text-accent" />
+                      <span>
+                        Max Users:{" "}
+                        <strong className="text-primary font-semibold">
+                          {loadingStats ? "..." : stats?.maxUsers ?? 1}
+                        </strong>
+                      </span>
+                    </div>
 
-                    return (
-                      <div className="flex flex-col items-center justify-center text-accent shrink-0 text-center">
-                        <div className="relative w-36 h-22 shrink-0 flex flex-col items-center justify-center pt-1">
-                          <svg className="w-full h-full" viewBox="0 0 140 90">
-                            {/* Background Arc Track */}
-                            <path
-                              d="M 22 75 A 48 48 0 0 1 118 75"
-                              fill="none"
-                              stroke="#262d3d"
-                              strokeWidth="14"
-                              strokeLinecap="round"
-                            />
-                            {/* Active Filled Progress Arc: Red (0-50%) -> Green (50-100%) */}
-                            <path
-                              d="M 22 75 A 48 48 0 0 1 118 75"
-                              fill="none"
-                              stroke={strokeColor}
-                              strokeWidth="14"
-                              strokeLinecap="round"
-                              style={{
-                                strokeDasharray: 151,
-                                strokeDashoffset: dashOffset,
-                                transition: "stroke 0.4s ease, filter 0.4s ease",
-                                filter: `drop-shadow(0px 0px 8px ${glowColor})`,
-                              }}
-                            />
-                            {/* Red Needle Dial Rotating from 0% (5deg) to 100% (175deg) */}
-                            <line
-                              x1="70"
-                              y1="75"
-                              x2="28"
-                              y2="75"
-                              stroke="#ef4444"
-                              strokeWidth="3.5"
-                              strokeLinecap="round"
-                              transform={`rotate(${needleAngle}, 70, 75)`}
-                            />
-                            {/* Pivot Center Dot */}
-                            <circle cx="70" cy="75" r="5.5" fill="#ef4444" />
-                            <circle cx="70" cy="75" r="2.5" fill="#ffffff" />
-                          </svg>
-                          <div className="flex items-center gap-1 -mt-1">
-                            <InfinityIcon size={14} weight="bold" className="text-accent" />
-                            <span className={`text-[10px] font-black tracking-wider transition-colors duration-300 ${textColorClass}`}>
-                              {gaugePercent}% {gaugePercent === 100 ? "FULL" : ""}
-                            </span>
-                          </div>
+                    <div className="flex items-center gap-1.5 text-secondary">
+                      <HardDrive size={16} className="text-accent" />
+                      <span>
+                        Storage Capacity:{" "}
+                        <strong className="text-primary font-semibold">
+                          {loadingStats ? "..." : `${stats?.storageGb ?? 1} GB`}
+                        </strong>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Speedometer Gauge Meter Widget */}
+                {(() => {
+                  const needleAngle = 5 + (rawGaugePercent / 100) * 170;
+                  const dashOffset = 151 * (1 - rawGaugePercent / 100);
+                  const isRed = rawGaugePercent >= 90;
+                  const strokeColor = isRed ? "#ef4444" : "#10b981";
+                  const glowColor = isRed
+                    ? "rgba(239, 68, 68, 0.6)"
+                    : "rgba(16, 185, 129, 0.6)";
+                  const textColorClass = isRed
+                    ? "text-red-400"
+                    : "text-emerald-400";
+
+                  return (
+                    <div className="flex flex-col items-center justify-center shrink-0 text-center">
+                      <div className="relative w-36 h-22 shrink-0 flex flex-col items-center justify-center pt-1">
+                        <svg className="w-full h-full" viewBox="0 0 140 90">
+                          {/* Background Arc Track */}
+                          <path
+                            d="M 22 75 A 48 48 0 0 1 118 75"
+                            fill="none"
+                            stroke="#262d3d"
+                            strokeWidth="14"
+                            strokeLinecap="round"
+                          />
+                          {/* Active Filled Progress Arc: Green -> Red if >= 90% */}
+                          <path
+                            d="M 22 75 A 48 48 0 0 1 118 75"
+                            fill="none"
+                            stroke={strokeColor}
+                            strokeWidth="14"
+                            strokeLinecap="round"
+                            style={{
+                              strokeDasharray: 151,
+                              strokeDashoffset: dashOffset,
+                              transition: "stroke 0.4s ease, filter 0.4s ease",
+                              filter: `drop-shadow(0px 0px 8px ${glowColor})`,
+                            }}
+                          />
+                          {/* Needle Dial */}
+                          <line
+                            x1="70"
+                            y1="75"
+                            x2="28"
+                            y2="75"
+                            stroke={isRed ? "#ef4444" : "#10b981"}
+                            strokeWidth="3.5"
+                            strokeLinecap="round"
+                            transform={`rotate(${needleAngle}, 70, 75)`}
+                          />
+                          {/* Pivot Center Dot */}
+                          <circle
+                            cx="70"
+                            cy="75"
+                            r="5.5"
+                            fill={isRed ? "#ef4444" : "#10b981"}
+                          />
+                          <circle cx="70" cy="75" r="2.5" fill="#ffffff" />
+                        </svg>
+                        <div className="flex items-center gap-1 -mt-1">
+                          <span
+                            className={`text-[11px] font-black tracking-wider transition-colors duration-300 ${textColorClass}`}
+                          >
+                            {rawGaugePercent}%
+                          </span>
                         </div>
-                        <span className="text-[9px] text-muted font-medium mt-1">
-                          {tDash("storageUsed")} (Unlimited)
-                        </span>
                       </div>
-                    );
-                  })()}
-                </div>
-              ) : (
-                <div className="bg-bg border border-dashed border-red-500/30 rounded-xl p-5 flex flex-col items-center justify-center text-center space-y-2">
-                  <span className="text-xs font-medium text-red-600 dark:text-red-400">{tDash("clearTariffStatus")}</span>
-                  <button
-                    onClick={handleResetTariff}
-                    className="text-xs text-accent underline font-medium hover:text-accent-hover"
-                  >
-                    {tDash("restoreTariff")}
-                  </button>
-                </div>
-              )}
+                      <span className="text-[10px] text-muted font-medium mt-1">
+                        {loadingStats
+                          ? "Loading storage..."
+                          : `${formattedUsedStorage} / ${stats?.storageGb ?? 1} GB`}
+                      </span>
+                    </div>
+                  );
+                })()}
+              </div>
             </div>
           </div>
 
-          {/* Redesigned User Notification Area */}
+          {/* User Notification Area */}
           <div className="lg:col-span-5 bg-surface border border-border rounded-2xl p-6 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
             <div>
               <div className="flex items-center justify-between pb-3 border-b border-border mb-4">
@@ -289,17 +272,28 @@ export default function DashboardPage() {
               </div>
 
               {announcements.map((item) => {
-                const titleLabel = tDash.has(item.titleKey as any) ? tDash(item.titleKey as any) : item.titleDefault;
-                const contentLabel = tDash.has(item.contentKey as any) ? tDash(item.contentKey as any) : item.contentDefault;
+                const titleLabel = tDash.has(item.titleKey as any)
+                  ? tDash(item.titleKey as any)
+                  : item.titleDefault;
+                const contentLabel = tDash.has(item.contentKey as any)
+                  ? tDash(item.contentKey as any)
+                  : item.contentDefault;
                 return (
-                  <div key={item.id} className="bg-bg border border-border p-3.5 rounded-xl hover:border-accent/30 transition-colors">
+                  <div
+                    key={item.id}
+                    className="bg-bg border border-border p-3.5 rounded-xl hover:border-accent/30 transition-colors"
+                  >
                     <div className="flex items-center justify-between gap-2 mb-1">
-                      <span className="text-xs font-semibold text-primary truncate max-w-[200px]">{titleLabel}</span>
+                      <span className="text-xs font-semibold text-primary truncate max-w-[200px]">
+                        {titleLabel}
+                      </span>
                       <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-accent/15 text-accent shrink-0">
                         {item.category}
                       </span>
                     </div>
-                    <p className="text-[11px] text-secondary leading-snug line-clamp-2 font-normal">{contentLabel}</p>
+                    <p className="text-[11px] text-secondary leading-snug line-clamp-2 font-normal">
+                      {contentLabel}
+                    </p>
                     <div className="mt-2 text-[9px] text-muted font-medium flex items-center justify-between border-t border-border/40 pt-1.5">
                       <span>Ref ID: {item.id}</span>
                       <span>{item.date}</span>
@@ -309,13 +303,11 @@ export default function DashboardPage() {
               })}
             </div>
           </div>
-
         </div>
 
         {/* 3-Card Header Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-
-          {/* Card 1: My dossiers */}
+          {/* Card 1: Active Dossiers */}
           <div className="bg-surface border border-border rounded-2xl p-6 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
             <div>
               <h3 className="font-lexend font-semibold text-base md:text-lg text-primary text-center mb-6">
@@ -328,7 +320,9 @@ export default function DashboardPage() {
                     <div className="w-8 h-8 rounded-lg bg-accent text-white flex items-center justify-center shadow-xs shrink-0">
                       <PushPin size={18} weight="fill" />
                     </div>
-                    <span className="text-sm font-medium text-primary">{tDash("dossierPinned")}</span>
+                    <span className="text-sm font-medium text-primary">
+                      {tDash("dossierPinned")}
+                    </span>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-secondary/30 font-light">|</span>
@@ -343,7 +337,9 @@ export default function DashboardPage() {
                     <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center shadow-xs shrink-0">
                       <LockKey size={18} weight="fill" />
                     </div>
-                    <span className="text-sm font-medium text-primary">{tCommon("inReview")}</span>
+                    <span className="text-sm font-medium text-primary">
+                      {tCommon("inReview")}
+                    </span>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-secondary/30 font-light">|</span>
@@ -358,7 +354,9 @@ export default function DashboardPage() {
                     <div className="w-8 h-8 rounded-lg bg-slate-700 text-white flex items-center justify-center shadow-xs shrink-0">
                       <Files size={18} weight="fill" />
                     </div>
-                    <span className="text-sm font-medium text-primary">{tDash("totalContracts")}</span>
+                    <span className="text-sm font-medium text-primary">
+                      {tDash("totalContracts")}
+                    </span>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-secondary/30 font-light">|</span>
@@ -380,7 +378,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Card 2: Running out of space on your tariff? */}
+          {/* Card 2: Manage Subscriptions */}
           <div className="bg-surface border border-border rounded-2xl p-6 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
             <div>
               <h3 className="font-lexend font-semibold text-base md:text-lg text-primary text-center mb-4 leading-snug">
@@ -406,7 +404,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Card 3: Don't forget to study the manual! */}
+          {/* Card 3: Manual */}
           <div className="bg-surface border border-border rounded-2xl p-6 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
             <div>
               <h3 className="font-lexend font-semibold text-base md:text-lg text-primary text-center mb-4 leading-snug">
@@ -431,103 +429,8 @@ export default function DashboardPage() {
               </button>
             </div>
           </div>
-
         </div>
-
       </div>
-
-      {/* Edit Tariff Modal */}
-      {isEditModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-surface border border-border rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between pb-3 border-b border-border">
-              <div className="flex items-center gap-2 text-primary font-lexend font-bold">
-                <PencilSimple size={20} className="text-accent" />
-                <span>{tDash("editTariffTitle")}</span>
-              </div>
-              <button
-                onClick={() => setIsEditModalOpen(false)}
-                className="p-1 rounded-lg text-secondary hover:text-primary hover:bg-bg transition-colors"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <form onSubmit={handleSaveTariffEdit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-primary mb-1">
-                  {tDash("editTariffLabel")}
-                </label>
-                <input
-                  type="text"
-                  value={editTariffName}
-                  onChange={(e) => setEditTariffName(e.target.value)}
-                  className="w-full bg-bg border border-border rounded-xl px-3 py-2 text-xs text-primary focus:outline-none focus:border-accent"
-                  required
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsEditModalOpen(false)}
-                  className="px-4 py-2 bg-bg hover:bg-surface-raised border border-border rounded-xl text-xs text-secondary font-medium transition-colors"
-                >
-                  {tCommon("cancel")}
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-accent hover:bg-accent-hover text-white rounded-xl text-xs font-semibold transition-colors shadow-xs"
-                >
-                  {tCommon("save")}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Delete Tariff Modal */}
-      {isDeleteModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-surface border border-border rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between pb-3 border-b border-border">
-              <div className="flex items-center gap-2 text-red-500 font-lexend font-bold">
-                <Trash size={20} />
-                <span>{tDash("clearTariffTitle")}</span>
-              </div>
-              <button
-                onClick={() => setIsDeleteModalOpen(false)}
-                className="p-1 rounded-lg text-secondary hover:text-primary hover:bg-bg transition-colors"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            <p className="text-xs text-secondary leading-relaxed">
-              {tDash("clearTariffConfirm")} (
-              <strong className="text-primary font-semibold">{activeTariff.name}</strong>)?
-            </p>
-
-            <div className="flex items-center justify-end gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setIsDeleteModalOpen(false)}
-                className="px-4 py-2 bg-bg hover:bg-surface-raised border border-border rounded-xl text-xs text-secondary font-medium transition-colors"
-              >
-                {tCommon("cancel")}
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmDeleteTariff}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-semibold transition-colors shadow-xs"
-              >
-                {tCommon("delete")}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </AppShell>
   );
 }

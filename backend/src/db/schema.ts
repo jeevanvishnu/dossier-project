@@ -14,11 +14,41 @@ export const users = pgTable("users", {
   email: varchar("email", { length: 255 }).notNull().unique(),
   password: text("password").notNull(),
   role: roleEnum("role").default("user").notNull(),
+  imageUrl: text("image_url"),
+  imageKitFileId: text("imagekit_file_id"),
   isBlocked: boolean("is_blocked").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [
   index("idx_users_email").on(table.email),
+]);
+
+export const companies = pgTable("companies", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  email: varchar("email", { length: 255 }).notNull(),
+  mobile: varchar("mobile", { length: 50 }),
+  address: text("address"),
+  imageUrl: text("image_url"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const companyMembers = pgTable("company_members", {
+  id: serial("id").primaryKey(),
+  companyId: integer("company_id")
+    .references(() => companies.id, { onDelete: "cascade" })
+    .notNull(),
+  userId: integer("user_id")
+    .references(() => users.id, { onDelete: "cascade" })
+    .notNull(),
+  role: text("role").default("admin").notNull(), // or enum
+  maxUsers: integer("max_users").default(10).notNull(),
+  storageGb: integer("storage_gb").default(5).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("idx_company_members_company_id").on(table.companyId),
+  index("idx_company_members_user_id").on(table.userId),
 ]);
 
 export const refreshSessions = pgTable("refresh_sessions", {
@@ -42,6 +72,7 @@ export const refreshSessions = pgTable("refresh_sessions", {
 
 export const projects = pgTable("projects", {
   id: serial("id").primaryKey(),
+  companyId: integer("company_id").references(() => companies.id, { onDelete: "cascade" }),
   projectCode: varchar("project_code", { length: 100 }).notNull().unique(),
   productName: text("product_name").notNull(),
   dosageForm: text("dosage_form"),
@@ -146,6 +177,23 @@ export const packageArchives = pgTable("package_archives", {
 export const usersRelations = relations(users, ({ many }) => ({
   refreshSessions: many(refreshSessions),
   projectMembers: many(projectMembers),
+  companyMembers: many(companyMembers),
+}));
+
+export const companiesRelations = relations(companies, ({ many }) => ({
+  members: many(companyMembers),
+  projects: many(projects),
+}));
+
+export const companyMembersRelations = relations(companyMembers, ({ one }) => ({
+  company: one(companies, {
+    fields: [companyMembers.companyId],
+    references: [companies.id],
+  }),
+  user: one(users, {
+    fields: [companyMembers.userId],
+    references: [users.id],
+  }),
 }));
 
 export const refreshSessionsRelations = relations(refreshSessions, ({ one }) => ({
@@ -156,6 +204,10 @@ export const refreshSessionsRelations = relations(refreshSessions, ({ one }) => 
 }));
 
 export const projectsRelations = relations(projects, ({ one, many }) => ({
+  company: one(companies, {
+    fields: [projects.companyId],
+    references: [companies.id],
+  }),
   dossierConfig: one(dossierConfig, {
     fields: [projects.id],
     references: [dossierConfig.projectId],
@@ -230,4 +282,10 @@ export type NewAuditLog = typeof auditLogs.$inferInsert;
 
 export type PackageArchive = typeof packageArchives.$inferSelect;
 export type NewPackageArchive = typeof packageArchives.$inferInsert;
+
+export type Company = typeof companies.$inferSelect;
+export type NewCompany = typeof companies.$inferInsert;
+
+export type CompanyMember = typeof companyMembers.$inferSelect;
+export type NewCompanyMember = typeof companyMembers.$inferInsert;
 

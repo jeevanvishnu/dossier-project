@@ -1,42 +1,23 @@
 import { generateEaeuManifestXml, mapNodeIdToEaeuCode } from "../services/eaeu-manifest.service";
 import { getEctdFolderPath, sanitizeFileName, sanitizeSequence } from "../services/compilation.service";
 import { SORBIT_DOSSIER_FIXTURE } from "./sorbitDossier.fixture";
-import { Project, DossierConfig, ProjectDocument } from "../db/schema";
+import { Project, DossierConfig, ProjectDocument, projects, dossierConfig } from "../db/schema";
 import { CTD_DOC_CODES, getCtdDocCodeEntry } from "../constants/ctdDocCodes";
+import { db } from "../db/db";
 
-const mockProject: Project = {
-  id: 1,
-  projectCode: "PRJ-SORBIT-001",
-  productName: "Сорбит ЕАЭС",
-  dosageForm: "Solution",
-  productType: "Generic",
-  manufacturer: "Pharma Co",
-  mahHolder: "MAH Co",
-  responsibleUser: "Engineer",
-  tariff: "Standard",
-  additionalFeature: null,
-  status: "Active",
-  isProjectSaved: true,
-  version: 1,
-  createdAt: new Date(),
-  updatedAt: new Date(),
-};
+export async function runEaeuManifestTests() {
+  console.log("🧪 Fetching real project and dossier config data from database...\n");
+  const dbProjects = await db.select().from(projects).limit(1);
+  const dbConfigs = await db.select().from(dossierConfig).limit(1);
 
-const mockConfig: DossierConfig = {
-  id: 1,
-  projectId: 1,
-  submissionCountry: "KZ",
-  role: "Applicant",
-  procedureType: "National",
-  typeOfProcedure: "Registration",
-  applicationNumber: "KZ-2025-001",
-  dossierSequence: "Sequence 0000",
-  isDossierSaved: true,
-  dossierDetails: null,
-};
+  if (!dbProjects.length || !dbConfigs.length) {
+    throw new Error("TEST FAILED: No project or dossier config data found in database. Please seed the database first.");
+  }
+  
+  const mockProject = dbProjects[0];
+  const mockConfig = dbConfigs[0];
 
-export function runEaeuManifestTests() {
-  console.log("🧪 Running EAEU Manifest XML Builder Tests with Sorbit Dossier Fixture...\n");
+  console.log("🧪 Running EAEU Manifest XML Builder Tests with DB Data and Sorbit Dossier Fixture...\n");
 
   const xmlOutput = generateEaeuManifestXml(mockProject, mockConfig, SORBIT_DOSSIER_FIXTURE, {
     sanitizeFileNameFn: sanitizeFileName,
@@ -226,5 +207,5 @@ export function runEaeuManifestTests() {
 }
 
 if (require.main === module) {
-  runEaeuManifestTests();
+  runEaeuManifestTests().catch(console.error);
 }

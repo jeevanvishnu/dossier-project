@@ -12,17 +12,18 @@ import { protect, authorize } from "../middleware/auth.middleware";
 
 const router = Router();
 
-// Apply Authentication & Admin Authorization Guard to all endpoints
+// Apply Authentication Guard to all endpoints
 router.use(protect);
-router.use(authorize("admin", "superadmin"));
 
-// ─── Admin User Management Endpoints ──────────────────────────────────────────
-router.get("/users", listUsers);
-router.post("/users", createUser);
-router.get("/users/:id", getUserById);
-router.patch("/users/:id", updateUser);
-router.patch("/users/:id/block", blockUser);
-router.patch("/users/:id/unblock", unblockUser);
-router.delete("/users/:id", deleteUser);
+// ─── Read Endpoints (Admin & SuperAdmin Only) ──────────────────────────────────
+router.get("/users", authorize("admin", "superadmin"), listUsers);
+router.get("/users/:id", authorize("admin", "superadmin"), getUserById);
+
+// ─── Admin-Only Mutation Endpoints ─────────────────────────────────────────────
+router.post("/users", authorize("admin", "superadmin"), createUser);
+router.patch("/users/:id", authorize("admin", "superadmin"), updateUser);
+router.patch("/users/:id/block", authorize("admin", "superadmin"), blockUser);
+router.patch("/users/:id/unblock", authorize("admin", "superadmin"), unblockUser);
+router.delete("/users/:id", authorize("admin", "superadmin"), deleteUser);
 
 export default router;

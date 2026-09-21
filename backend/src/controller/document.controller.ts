@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { db } from "../db/db";
 import { projectDocuments, auditLogs, dossierConfig } from "../db/schema";
 import { uploadToImageKit, deleteFromImageKit } from "../services/imagekit.service";
+import { StorageService } from "../services/storage.service";
 import { compileEctdPackage, sanitizeSequence } from "../services/compilation.service";
 import { calculateMD5 } from "../utils/crypto.util";
 import { resolveProjectId, getSingleParam } from "../utils/params.util";
@@ -134,6 +135,25 @@ export async function uploadDocument(req: Request, res: Response): Promise<void>
 
   const md5Checksum = calculateMD5(file.buffer);
   let uploadedFileId: string | null = null;
+
+  // Enforce company storage limit before uploading to cloud storage
+  if (req.user?.id) {
+    const bytesToAdd =
+      operation === "replace" && existingActive
+        ? Math.max(0, file.size - existingActive.fileSize)
+        : file.size;
+
+    try {
+      await StorageService.assertStorageAvailable(req.user.id, bytesToAdd);
+    } catch (storageErr: any) {
+      console.warn(`[UPLOAD] 🚫 Storage limit exceeded for user id=${req.user.id}: ${storageErr.message}`);
+      res.status(507).json({
+        success: false,
+        message: storageErr.message,
+      });
+      return;
+    }
+  }
 
   try {
     const ikResult = await uploadToImageKit(
@@ -303,8 +323,8 @@ export async function deleteDocumentByNode(req: Request, res: Response): Promise
     }
 
     if (!activeDoc) {
-      res.status(200).json({
-        success: true,
+      res.status(404).json({
+        success: false,
         message: `No active document found at node '${nodeId}' to delete.`,
       });
       return;
@@ -368,6 +388,14 @@ export async function deleteDocumentByNode(req: Request, res: Response): Promise
 
 export async function seedSorbitDossier(req: Request, res: Response): Promise<void> {
   try {
+    if (process.env.NODE_ENV === "production") {
+      res.status(403).json({
+        success: false,
+        message: "Seeding demo dossier data is disabled in production environments.",
+      });
+      return;
+    }
+
     const projectId = await resolveProjectId(req.params.id);
     if (!projectId) {
       res.status(400).json({ success: false, message: "Invalid project ID" });
@@ -489,7 +517,7 @@ export async function updateDocumentDates(req: Request, res: Response): Promise<
             status: "active",
             operation: "new",
             fileSize: 0,
-            md5Checksum: "MD5",
+            md5Checksum: null,
             issueDate: issueDate ? new Date(issueDate) : null,
             expirationDate: expirationDate ? new Date(expirationDate) : null,
           })

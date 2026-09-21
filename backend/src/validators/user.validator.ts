@@ -12,6 +12,8 @@ export const createUserSchema = z.object({
     .min(8, "Password must be at least 8 characters long")
     .optional(),
   role: z.enum(["user", "admin", "superadmin"]).default("user"),
+  imageUrl: z.string().optional().nullable(),
+  imageKitFileId: z.string().optional().nullable(),
 });
 
 export const updateUserSchema = z.object({
@@ -23,6 +25,8 @@ export const updateUserSchema = z.object({
     .email("Please provide a valid email address")
     .optional(),
   role: z.enum(["user", "admin", "superadmin"]).optional(),
+  imageUrl: z.string().optional().nullable(),
+  imageKitFileId: z.string().optional().nullable(),
 });
 
 export const listUsersQuerySchema = z.object({

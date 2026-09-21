@@ -45,9 +45,14 @@ function scheduleSessionCleanup() {
 }
 
 // Start Server
-app.listen(PORT, async () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
-  console.log(`📊 Health check available at http://localhost:${PORT}/health`);
+async function startServer() {
   await runBootMigrations();
   scheduleSessionCleanup();
-});
+  app.listen(PORT, () => {
+    console.log(`🚀 Server running on http://localhost:${PORT}`);
+    console.log(`📊 Health check available at http://localhost:${PORT}/health`);
+  });
+}
+
+startServer();
+
