@@ -7,8 +7,7 @@ export function runFolderPathsTest() {
 
   const xmlFilePath = path.join(__dirname, 'sorbit_extracted.xml');
   if (!fs.existsSync(xmlFilePath)) {
-    console.warn('⚠️ SKIP: sorbit_extracted.xml optional reference file not present, skipping folder path XML comparison.');
-    return;
+    throw new Error('TEST FAILED: sorbit_extracted.xml reference file not found in fixtures directory.');
   }
 
   const xmlContent = fs.readFileSync(xmlFilePath, 'utf8');

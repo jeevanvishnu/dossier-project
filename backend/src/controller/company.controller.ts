@@ -284,6 +284,7 @@ export async function listCompanyMembers(req: Request, res: Response): Promise<v
       .from(companyMembers)
       .innerJoin(users, eq(companyMembers.userId, users.id))
       .innerJoin(companies, eq(companyMembers.companyId, companies.id))
+      .where(eq(companyMembers.role, "admin"))
       .orderBy(companyMembers.createdAt);
 
     res.status(200).json({

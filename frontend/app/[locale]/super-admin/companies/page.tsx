@@ -6,6 +6,7 @@ import { api } from "@/app/lib/axios";
 import { Plus, Buildings, Trash, PencilSimple } from "@phosphor-icons/react";
 import { AddCompanyModal } from "@/app/components/super-admin/AddCompanyModal";
 import { toast } from "sonner";
+import { CompaniesTableSkeleton } from "@/app/components/ui/Skeleton";
 
 export default function CompaniesPage() {
   const [companies, setCompanies] = useState<any[]>([]);
@@ -92,11 +93,7 @@ export default function CompaniesPage() {
               </thead>
               <tbody className="divide-y divide-border">
                 {loading ? (
-                  <tr>
-                    <td colSpan={5} className="px-6 py-8 text-center text-white/70">
-                      Loading...
-                    </td>
-                  </tr>
+                  <CompaniesTableSkeleton rows={5} />
                 ) : companies.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="px-6 py-8 text-center text-white/70">

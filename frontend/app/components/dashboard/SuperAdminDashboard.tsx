@@ -13,6 +13,8 @@ import {
 } from "@phosphor-icons/react";
 import { SuperAdminCharts } from "./SuperAdminCharts";
 
+import { SuperAdminDashboardSkeleton } from "../ui/Skeleton";
+
 export function SuperAdminDashboard() {
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -45,10 +47,7 @@ export function SuperAdminDashboard() {
   if (loading) {
     return (
       <AppShell>
-        <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3">
-          <div className="w-9 h-9 border-4 border-accent border-t-transparent rounded-full animate-spin" />
-          <p className="text-xs font-medium text-secondary">Loading financial & platform metrics...</p>
-        </div>
+        <SuperAdminDashboardSkeleton />
       </AppShell>
     );
   }

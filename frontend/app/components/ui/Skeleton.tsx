@@ -111,3 +111,160 @@ export const WorkspaceSkeleton: React.FC = () => {
     </div>
   );
 };
+
+export const SuperAdminDashboardSkeleton: React.FC = () => {
+  return (
+    <div className="space-y-6 pb-12 animate-pulse">
+      {/* Header Bar Skeleton */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <Skeleton className="h-8 w-72" />
+            <Skeleton className="h-6 w-24 rounded-full" />
+          </div>
+          <Skeleton className="h-4 w-96 mt-2" />
+        </div>
+        <Skeleton className="h-9 w-32 rounded-xl" />
+      </div>
+
+      {/* Core Platform Account & Infra KPIs */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {Array.from({ length: 4 }).map((_, idx) => (
+          <div key={idx} className="bg-surface border border-border p-5 rounded-2xl shadow-sm flex items-center gap-4">
+            <Skeleton className="w-12 h-12 rounded-xl shrink-0" />
+            <div className="space-y-2 flex-1">
+              <Skeleton className="h-3 w-28" />
+              <Skeleton className="h-7 w-16" />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Financial Charts Skeleton */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 bg-surface border border-border p-5 rounded-2xl shadow-sm space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <Skeleton className="h-6 w-48" />
+              <Skeleton className="h-3.5 w-64" />
+            </div>
+            <div className="flex gap-2">
+              <Skeleton className="h-7 w-20 rounded-lg" />
+              <Skeleton className="h-7 w-20 rounded-lg" />
+            </div>
+          </div>
+          <Skeleton className="h-[280px] w-full rounded-xl" />
+        </div>
+
+        <div className="bg-surface border border-border p-5 rounded-2xl shadow-sm space-y-4">
+          <div className="space-y-1">
+            <Skeleton className="h-6 w-36" />
+            <Skeleton className="h-3.5 w-44" />
+          </div>
+          <div className="flex justify-center items-center py-4">
+            <Skeleton className="w-44 h-44 rounded-full border-8 border-surface-raised" />
+          </div>
+          <div className="space-y-2 pt-2">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-3/4" />
+          </div>
+        </div>
+      </div>
+
+      {/* Demographics & Role Split Skeletons */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-2">
+        {Array.from({ length: 2 }).map((_, idx) => (
+          <div key={idx} className="bg-surface border border-border p-5 rounded-2xl shadow-sm space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-1">
+                <Skeleton className="h-5 w-44" />
+                <Skeleton className="h-3.5 w-32" />
+              </div>
+              <Skeleton className="h-4 w-20" />
+            </div>
+            <div className="space-y-3 pt-2">
+              {Array.from({ length: 5 }).map((_, rIdx) => (
+                <div key={rIdx} className="flex justify-between items-center py-2 border-b border-border/40">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-4 w-16" />
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+export const CompaniesTableSkeleton: React.FC<{ rows?: number }> = ({ rows = 5 }) => {
+  return (
+    <>
+      {Array.from({ length: rows }).map((_, idx) => (
+        <tr key={idx} className="border-b border-border/50 animate-pulse">
+          <td className="px-6 py-4">
+            <div className="flex items-center gap-3">
+              <Skeleton className="w-10 h-10 rounded-lg shrink-0" />
+              <div className="space-y-1.5">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-3 w-16" />
+              </div>
+            </div>
+          </td>
+          <td className="px-6 py-4">
+            <Skeleton className="h-4 w-40" />
+          </td>
+          <td className="px-6 py-4">
+            <Skeleton className="h-4 w-28" />
+          </td>
+          <td className="px-6 py-4">
+            <Skeleton className="h-4 w-36" />
+          </td>
+          <td className="px-6 py-4 text-right">
+            <div className="flex items-center justify-end gap-2">
+              <Skeleton className="w-8 h-8 rounded-lg" />
+              <Skeleton className="w-8 h-8 rounded-lg" />
+            </div>
+          </td>
+        </tr>
+      ))}
+    </>
+  );
+};
+
+export const CompanyUsersTableSkeleton: React.FC<{ rows?: number }> = ({ rows = 5 }) => {
+  return (
+    <>
+      {Array.from({ length: rows }).map((_, idx) => (
+        <tr key={idx} className="border-b border-border/50 animate-pulse">
+          <td className="px-6 py-4">
+            <div className="flex items-center gap-3">
+              <Skeleton className="w-10 h-10 rounded-full shrink-0" />
+              <div className="space-y-1.5">
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-3 w-40" />
+              </div>
+            </div>
+          </td>
+          <td className="px-6 py-4">
+            <Skeleton className="h-6 w-28 rounded-lg" />
+          </td>
+          <td className="px-6 py-4">
+            <div className="flex items-center gap-4">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-4 w-24" />
+            </div>
+          </td>
+          <td className="px-6 py-4 text-right">
+            <div className="flex items-center justify-end gap-2">
+              <Skeleton className="w-8 h-8 rounded-lg" />
+              <Skeleton className="w-8 h-8 rounded-lg" />
+            </div>
+          </td>
+        </tr>
+      ))}
+    </>
+  );
+};
+

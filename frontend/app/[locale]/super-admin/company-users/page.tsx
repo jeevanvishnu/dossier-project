@@ -6,6 +6,7 @@ import { api } from "@/app/lib/axios";
 import { Plus, UserGear, Trash, Database, Users, PencilSimple } from "@phosphor-icons/react";
 import { AddCompanyUserModal } from "@/app/components/super-admin/AddCompanyUserModal";
 import { toast } from "sonner";
+import { CompanyUsersTableSkeleton } from "@/app/components/ui/Skeleton";
 
 export default function CompanyUsersPage() {
   const [members, setMembers] = useState<any[]>([]);
@@ -59,7 +60,7 @@ export default function CompanyUsersPage() {
     <AppShell>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold font-lexend text-primary">Company Users (Admins)</h2>
+          <h2 className="text-xl font-bold font-lexend text-primary">Company Admin</h2>
           <button
             onClick={handleOpenAddModal}
             className="px-4 py-2 bg-accent hover:bg-accent-hover text-white text-sm font-semibold rounded-xl flex items-center gap-2 transition-colors shadow-xs cursor-pointer"
@@ -82,11 +83,7 @@ export default function CompanyUsersPage() {
               </thead>
               <tbody className="divide-y divide-border">
                 {loading ? (
-                  <tr>
-                    <td colSpan={4} className="px-6 py-8 text-center text-white/70">
-                      Loading...
-                    </td>
-                  </tr>
+                  <CompanyUsersTableSkeleton rows={5} />
                 ) : members.length === 0 ? (
                   <tr>
                     <td colSpan={4} className="px-6 py-8 text-center text-white/70">

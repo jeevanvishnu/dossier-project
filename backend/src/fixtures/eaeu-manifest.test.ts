@@ -187,6 +187,41 @@ export async function runEaeuManifestTests() {
   }
   console.log("✅ Passed Assertion 5: Doc Code 25001 sits directly in m1 root (m1\\<filename>) with NO \\1.1\\ subfolder");
 
+  // Assertion 6: Regression test for docCode 01013 (Node 1.4.1 sits in m1\1.4 with space separator and no 1.4.1\ subfolder)
+  const testDoc01013: ProjectDocument = {
+    id: 101,
+    projectId: 1,
+    nodeId: "1.4.1",
+    docCode: "01013",
+    docType: "01013",
+    originalName: "Information on registration in other countries.pdf",
+    sequence: "0000",
+    uploadedAt: new Date(),
+    status: "active",
+    operation: "new",
+    issueDate: null,
+    expirationDate: null,
+    imageKitUrl: "https://ik.imagekit.io/ectd/test/doc01013.pdf",
+    imageKitFileId: "file_01013",
+    fileSize: 1024,
+    md5Checksum: "01013md5checksum01013md5checksum01",
+  };
+
+  const xml01013 = generateEaeuManifestXml(mockProject, mockConfig, [testDoc01013], {
+    sanitizeFileNameFn: sanitizeFileName,
+    sanitizeSequenceFn: sanitizeSequence,
+    getEctdFolderPathFn: getEctdFolderPath,
+  });
+
+  const expected01013PathTag = `<hcsdo:DrugAttributeEnumText DrugAttributeKindEnumCode="05">m1\\1.4\\1.4.1 Information on registration in other countries.pdf</hcsdo:DrugAttributeEnumText>`;
+  if (!xml01013.includes(expected01013PathTag)) {
+    throw new Error(`TEST FAILED: docCode 01013 path tag mismatch!\nExpected: ${expected01013PathTag}\nGenerated XML:\n${xml01013}`);
+  }
+  if (xml01013.includes("1.4.1\\") || xml01013.includes("1.4.1.")) {
+    throw new Error(`TEST FAILED: docCode 01013 contains invented subfolder 1.4.1\\ or trailing period 1.4.1.!\n${xml01013}`);
+  }
+  console.log("✅ Passed Assertion 6: Doc Code 01013 sits in m1\\1.4 with exact path 'm1\\1.4\\1.4.1 Information on registration in other countries.pdf' (NO \\1.4.1\\ subfolder, NO dot after 1.4.1)");
+
   console.log("\n🎉 ALL EAEU MANIFEST SCHEME & VERIFICATION TESTS PASSED SUCCESSFULLY!\n");
 
   // Display required outputs for user inspection

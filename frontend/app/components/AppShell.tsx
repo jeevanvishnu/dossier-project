@@ -76,7 +76,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     if (pathname.startsWith("/journal")) return tApp("breadcrumbJournal");
     if (pathname.startsWith("/tour")) return tApp("breadcrumbTour");
     if (pathname.startsWith("/super-admin/companies")) return "Companies";
-    if (pathname.startsWith("/super-admin/company-users")) return "Company Users";
+    if (pathname.startsWith("/super-admin/company-users")) return "Company Admin";
     return tApp("breadcrumbWorkspace");
   };
 
