@@ -8,7 +8,7 @@ import { verifyAccessToken } from "../generateJwtToken/token.util";
 declare global {
   namespace Express {
     interface Request {
-      user?: { id: number; email: string; role: string };
+      user?: { id: string; email: string; role: string; companyId: string | null };
     }
   }
 }
@@ -36,9 +36,10 @@ export async function protect(req: Request, res: Response, next: NextFunction): 
 
     // 2. Verify token signature & expiry
     const decoded = verifyAccessToken(token) as {
-      id: number;
+      id: string;
       email: string;
       role: string;
+      companyId?: string | null;
     };
 
     // 3. Query user from database to ensure user is active and not blocked
@@ -57,7 +58,7 @@ export async function protect(req: Request, res: Response, next: NextFunction): 
       return;
     }
 
-    req.user = { id: user.id, email: user.email, role: user.role };
+    req.user = { id: user.id, email: user.email, role: user.role, companyId: decoded.companyId ?? null };
     if (process.env.NODE_ENV !== "production") {
       console.log(`[AUTH] ✅ Authenticated user id=${user.id} role=${user.role}`);
     }

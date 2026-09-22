@@ -21,6 +21,7 @@ import {
   ShieldCheck,
   Warning,
   UploadSimple,
+  DownloadSimple,
 } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { Virtuoso } from "react-virtuoso";
@@ -97,6 +98,7 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
   const tDocTitles = useTranslations("documentTitles");
   const tErrors = useTranslations("errors");
   const tToasts = useTranslations("toasts");
+  const locale = useLocale();
 
   const getNodeTitle = (node: CTDNode) => {
     const key = node.id.replace(/[\.\-]/g, "_");
@@ -147,6 +149,12 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
   const [isLoadingDoc, setIsLoadingDoc] = useState<boolean>(false);
   const [isDossierLocked, setIsDossierLocked] = useState<boolean>(false);
   const [isLockModalOpen, setIsLockModalOpen] = useState<boolean>(false);
+  const [isDuplicateWarningOpen, setIsDuplicateWarningOpen] = useState<boolean>(false);
+  const [duplicateWarningData, setDuplicateWarningData] = useState<{
+    lastCompiledAt?: string;
+    lastPackageName?: string;
+    downloadUrl?: string;
+  } | null>(null);
 
   const handleToggleLock = () => {
     setIsLockModalOpen(true);
@@ -196,7 +204,20 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
         toast.error(tErrors("noDocsToCompile"), { id: "zip-download-toast" });
       }
     } catch (err: any) {
-      handleApiError(err, tErrors("failedDownloadZip"), { id: "zip-download-toast" });
+      if (
+        err?.response?.status === 409 &&
+        err?.response?.data?.code === "NO_CHANGES_SINCE_LAST_COMPILE"
+      ) {
+        toast.dismiss("zip-download-toast");
+        setDuplicateWarningData({
+          lastCompiledAt: err.response.data.lastCompiledAt,
+          lastPackageName: err.response.data.lastPackageName,
+          downloadUrl: err.response.data.downloadUrl,
+        });
+        setIsDuplicateWarningOpen(true);
+      } else {
+        handleApiError(err, tErrors("failedDownloadZip"), { id: "zip-download-toast" });
+      }
     } finally {
       setIsDownloadingZip(false);
     }
@@ -788,15 +809,14 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
             onDragOver={isDossierLocked || isUploading ? undefined : handleDrag}
             onDragLeave={isDossierLocked || isUploading ? undefined : handleDrag}
             onDrop={isDossierLocked || isUploading ? undefined : handleDrop}
-            className={`border-2 border-dashed rounded-xl p-5 text-center transition-all relative ${
-              isDossierLocked
+            className={`border-2 border-dashed rounded-xl p-5 text-center transition-all relative ${isDossierLocked
                 ? "border-border bg-surface-raised/40 opacity-60 cursor-not-allowed"
                 : isUploading
-                ? "border-accent/50 bg-accent/5 dark:bg-accent/10 shadow-sm"
-                : dragActive
-                ? "border-accent bg-accent/10 scale-[1.01]"
-                : "border-border bg-bg/50 hover:border-accent/70 hover:bg-surface-raised/50"
-            }`}
+                  ? "border-accent/50 bg-accent/5 dark:bg-accent/10 shadow-sm"
+                  : dragActive
+                    ? "border-accent bg-accent/10 scale-[1.01]"
+                    : "border-border bg-bg/50 hover:border-accent/70 hover:bg-surface-raised/50"
+              }`}
           >
             <input
               type="file"
@@ -849,8 +869,8 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
                   {isDossierLocked
                     ? tWorkspace("uploadDropzoneLocked")
                     : selectedOperation === "replace"
-                    ? tWorkspace("uploadDropzoneReplace")
-                    : tWorkspace("uploadDropzoneNew")}
+                      ? tWorkspace("uploadDropzoneReplace")
+                      : tWorkspace("uploadDropzoneNew")}
                 </p>
                 <p className="text-[10.5px] text-muted mt-1">{tWorkspace("maxFileLimit")}</p>
               </div>
@@ -1192,6 +1212,90 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
                   <Trash size={14} weight="bold" />
                 )}
                 <span>{isDeletingFile ? (tWorkspace("deletingDoc") || "Deleting...") : (tWorkspace("deleteConfirmBtn") || "Delete Document")}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Duplicate XML Compilation Warning Modal */}
+      {isDuplicateWarningOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-slate-800 bg-amber-50/70 dark:bg-amber-950/30">
+              <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
+                <Warning size={22} weight="bold" />
+                <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100">
+                  {tWorkspace("duplicateCompileWarningTitle")}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsDuplicateWarningOpen(false)}
+                className="p-1 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+              >
+                <X size={16} weight="bold" />
+              </button>
+            </div>
+
+            {/* Content Body */}
+            <div className="p-5 space-y-4 text-xs text-slate-600 dark:text-slate-300">
+              <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-lg space-y-1.5 text-amber-900 dark:text-amber-200">
+                <p className="font-bold text-[11px] uppercase tracking-wider text-amber-700 dark:text-amber-300">
+                  {tWorkspace("duplicateCompileWarningSubtitle")}
+                </p>
+                <p className="text-xs leading-relaxed">
+                  {tWorkspace("duplicateCompileWarningBody", {
+                    date: duplicateWarningData?.lastCompiledAt
+                      ? new Date(duplicateWarningData.lastCompiledAt).toLocaleString(locale === "ru" ? "ru-RU" : "en-US")
+                      : "recently",
+                  })}
+                </p>
+              </div>
+
+              {duplicateWarningData?.lastPackageName && (
+                <div className="p-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 rounded-lg space-y-2 text-slate-700 dark:text-slate-300">
+                  <div className="flex justify-between items-center text-[11.5px]">
+                    <span className="font-medium text-slate-400">Previous Package:</span>
+                    <span className="font-mono font-bold text-slate-900 dark:text-slate-100 truncate max-w-[210px]" title={duplicateWarningData.lastPackageName}>
+                      {duplicateWarningData.lastPackageName}
+                    </span>
+                  </div>
+                  {duplicateWarningData.lastCompiledAt && (
+                    <div className="flex justify-between items-center text-[11.5px]">
+                      <span className="font-medium text-slate-400">Compiled Date:</span>
+                      <span className="font-mono text-slate-900 dark:text-slate-100">
+                        {new Date(duplicateWarningData.lastCompiledAt).toLocaleString(locale === "ru" ? "ru-RU" : "en-US")}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
+              {duplicateWarningData?.downloadUrl && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (duplicateWarningData.downloadUrl) {
+                      window.open(duplicateWarningData.downloadUrl, "_blank");
+                    }
+                    setIsDuplicateWarningOpen(false);
+                  }}
+                  className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white transition-colors cursor-pointer flex items-center gap-1.5 shadow-xs"
+                >
+                  <DownloadSimple size={14} weight="bold" />
+                  <span>{tWorkspace("duplicateCompileDownloadExistingBtn")}</span>
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setIsDuplicateWarningOpen(false)}
+                className="px-4 py-1.5 rounded-lg text-xs font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+              >
+                {tWorkspace("duplicateCompileDismissBtn")}
               </button>
             </div>
           </div>

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { X, UploadSimple, Trash, Buildings, EnvelopeSimple, Phone, MapPin } from "@phosphor-icons/react";
+import { X, UploadSimple, Trash, Buildings, EnvelopeSimple, Phone, MapPin, Calendar, Camera } from "@phosphor-icons/react";
 import { api, handleApiError } from "../../lib/axios";
 import { toast } from "sonner";
 
@@ -10,6 +10,8 @@ export interface CompanyData {
   mobile?: string | null;
   address?: string | null;
   imageUrl?: string | null;
+  subscriptionStartDate?: string | Date | null;
+  subscriptionEndDate?: string | Date | null;
 }
 
 interface CompanyModalProps {
@@ -18,6 +20,13 @@ interface CompanyModalProps {
   onSuccess: () => void;
   companyToEdit?: CompanyData | null;
 }
+
+const formatDateForInput = (dateVal?: string | Date | null) => {
+  if (!dateVal) return "";
+  const d = new Date(dateVal);
+  if (isNaN(d.getTime())) return "";
+  return d.toISOString().split("T")[0];
+};
 
 export function CompanyModal({ isOpen, onClose, onSuccess, companyToEdit }: CompanyModalProps) {
   const isEditing = Boolean(companyToEdit);
@@ -28,6 +37,8 @@ export function CompanyModal({ isOpen, onClose, onSuccess, companyToEdit }: Comp
     mobile: "",
     address: "",
     imageUrl: "",
+    subscriptionStartDate: new Date().toISOString().split("T")[0],
+    subscriptionEndDate: "",
   });
   const [loading, setLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -40,9 +51,19 @@ export function CompanyModal({ isOpen, onClose, onSuccess, companyToEdit }: Comp
         mobile: companyToEdit.mobile || "",
         address: companyToEdit.address || "",
         imageUrl: companyToEdit.imageUrl || "",
+        subscriptionStartDate: formatDateForInput(companyToEdit.subscriptionStartDate) || new Date().toISOString().split("T")[0],
+        subscriptionEndDate: formatDateForInput(companyToEdit.subscriptionEndDate),
       });
     } else {
-      setFormData({ name: "", email: "", mobile: "", address: "", imageUrl: "" });
+      setFormData({
+        name: "",
+        email: "",
+        mobile: "",
+        address: "",
+        imageUrl: "",
+        subscriptionStartDate: new Date().toISOString().split("T")[0],
+        subscriptionEndDate: "",
+      });
     }
   }, [companyToEdit, isOpen]);
 
@@ -83,6 +104,9 @@ export function CompanyModal({ isOpen, onClose, onSuccess, companyToEdit }: Comp
     try {
       const payload: any = { ...formData };
       if (!payload.imageUrl) delete payload.imageUrl;
+      if (!payload.subscriptionEndDate) {
+        payload.subscriptionEndDate = null;
+      }
 
       if (isEditing && companyToEdit?.id) {
         const res = await api.patch(`/admin/companies/${companyToEdit.id}`, payload);
@@ -97,7 +121,15 @@ export function CompanyModal({ isOpen, onClose, onSuccess, companyToEdit }: Comp
           toast.success("Company created successfully");
           onSuccess();
           onClose();
-          setFormData({ name: "", email: "", mobile: "", address: "", imageUrl: "" });
+          setFormData({
+            name: "",
+            email: "",
+            mobile: "",
+            address: "",
+            imageUrl: "",
+            subscriptionStartDate: new Date().toISOString().split("T")[0],
+            subscriptionEndDate: "",
+          });
         }
       }
     } catch (err: any) {
@@ -109,7 +141,7 @@ export function CompanyModal({ isOpen, onClose, onSuccess, companyToEdit }: Comp
 
   return (
     <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-surface border border-border rounded-2xl p-7 max-w-lg w-full shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200">
+      <div className="bg-surface border border-border rounded-2xl p-7 max-w-lg w-full shadow-2xl space-y-5 animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between pb-4 border-b border-border/60">
           <div>
             <h2 className="text-xl font-bold font-lexend text-primary">
@@ -128,6 +160,51 @@ export function CompanyModal({ isOpen, onClose, onSuccess, companyToEdit }: Comp
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Logo Upload (Circular) */}
+          <div className="flex flex-col items-center justify-center pt-1 pb-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageFileChange}
+              className="hidden"
+            />
+            <div className="relative group">
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                className="w-24 h-24 rounded-full border-2 border-dashed border-border hover:border-accent bg-bg flex items-center justify-center overflow-hidden cursor-pointer transition-all shadow-inner group-hover:ring-4 group-hover:ring-accent/20"
+                title="Upload Company Logo"
+              >
+                {formData.imageUrl ? (
+                  <img
+                    src={formData.imageUrl}
+                    alt="Company Logo"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center text-secondary group-hover:text-accent transition-colors">
+                    <Camera size={28} />
+                    <span className="text-[10px] font-medium mt-1">Upload</span>
+                  </div>
+                )}
+              </div>
+
+              {formData.imageUrl && (
+                <button
+                  type="button"
+                  onClick={handleRemoveImage}
+                  className="absolute -top-1 -right-1 p-1.5 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-md transition-transform hover:scale-110"
+                  title="Remove Logo"
+                >
+                  <Trash size={14} weight="bold" />
+                </button>
+              )}
+            </div>
+            <p className="text-[11px] text-secondary mt-2">
+              Company Logo <span className="text-muted">(Optional)</span>
+            </p>
+          </div>
+
           <div className="space-y-1.5">
             <label className="block text-xs font-semibold text-primary ml-1">Company Name <span className="text-red-400">*</span></label>
             <div className="relative">
@@ -182,6 +259,41 @@ export function CompanyModal({ isOpen, onClose, onSuccess, companyToEdit }: Comp
             </div>
           </div>
 
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="block text-xs font-semibold text-primary ml-1">Subscription Start Date</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Calendar size={18} className="text-secondary" />
+                </div>
+                <input
+                  type="date"
+                  name="subscriptionStartDate"
+                  value={formData.subscriptionStartDate}
+                  onChange={handleChange}
+                  className="w-full bg-surface-raised/50 border border-border rounded-xl pl-10 pr-4 py-2.5 text-sm text-primary focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent focus:bg-bg transition-all"
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <label className="block text-xs font-semibold text-primary ml-1">
+                Subscription End Date <span className="text-secondary font-normal">(Optional)</span>
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Calendar size={18} className="text-secondary" />
+                </div>
+                <input
+                  type="date"
+                  name="subscriptionEndDate"
+                  value={formData.subscriptionEndDate}
+                  onChange={handleChange}
+                  className="w-full bg-surface-raised/50 border border-border rounded-xl pl-10 pr-4 py-2.5 text-sm text-primary focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent focus:bg-bg transition-all"
+                />
+              </div>
+            </div>
+          </div>
+
           <div className="space-y-1.5">
             <label className="block text-xs font-semibold text-primary ml-1">Address</label>
             <div className="relative">
@@ -199,49 +311,7 @@ export function CompanyModal({ isOpen, onClose, onSuccess, companyToEdit }: Comp
             </div>
           </div>
 
-          <div className="space-y-1.5">
-            <label className="block text-xs font-semibold text-primary ml-1">Company Logo <span className="text-secondary font-normal">(Optional)</span></label>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleImageFileChange}
-              className="hidden"
-            />
 
-            {formData.imageUrl ? (
-              <div className="flex items-center gap-4 p-3 bg-surface-raised/30 border border-border/80 rounded-xl hover:border-border transition-colors">
-                <div className="w-14 h-14 rounded-lg bg-surface border border-border flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
-                  <img src={formData.imageUrl} alt="Preview" className="w-full h-full object-cover" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-primary truncate">Logo Selected</p>
-                  <p className="text-xs text-secondary mt-0.5">Custom image uploaded</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleRemoveImage}
-                  className="p-2 text-secondary hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-red-400/50 group"
-                  title="Remove logo"
-                >
-                  <Trash size={18} className="group-hover:scale-110 transition-transform" />
-                </button>
-              </div>
-            ) : (
-              <div
-                onClick={() => fileInputRef.current?.click()}
-                className="border-2 border-dashed border-border/60 hover:border-accent bg-surface-raised/30 hover:bg-accent/5 rounded-xl p-5 text-center cursor-pointer transition-all flex flex-col items-center justify-center gap-2 group"
-              >
-                <div className="p-3 rounded-full bg-bg border border-border/50 group-hover:bg-accent/10 group-hover:border-accent/30 transition-colors">
-                  <UploadSimple size={24} className="text-secondary group-hover:text-accent transition-colors" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-primary group-hover:text-accent transition-colors">Click to upload logo</p>
-                  <p className="text-[11px] text-secondary mt-1">SVG, PNG, JPG or WEBP (Max 5MB)</p>
-                </div>
-              </div>
-            )}
-          </div>
 
           <div className="flex items-center justify-end gap-3 pt-5 border-t border-border/60 mt-6">
             <button

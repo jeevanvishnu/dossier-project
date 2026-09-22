@@ -38,6 +38,7 @@ export const listUsersQuerySchema = z.object({
     .enum(["true", "false"])
     .transform((val) => val === "true")
     .optional(),
+  companyId: z.string().optional(),
 });
 
 export type CreateUserInput = z.infer<typeof createUserSchema>;

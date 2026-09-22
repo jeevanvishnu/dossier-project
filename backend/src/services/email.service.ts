@@ -28,6 +28,16 @@ export async function sendWelcomeEmail({
   plainPassword,
   role,
 }: SendWelcomeEmailParams): Promise<{ success: boolean; id?: string; error?: string }> {
+  console.log(`
+============================================================
+📧 WELCOME EMAIL CREDENTIALS:
+   To:       ${to}
+   Email:    ${email}
+   Password: ${plainPassword}
+   Role:     ${role}
+============================================================
+  `);
+
   const resend = getResendClient();
   if (!resend) {
     const errorMsg = "RESEND_API_KEY is not configured in backend/.env. Please add RESEND_API_KEY=re_xxx to enable email sending.";

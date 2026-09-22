@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { db } from "../db/db";
 import { companies, companyMembers, users } from "../db/schema";
 import { eq, sql, and } from "drizzle-orm";
-import { parseIdParam } from "../utils/params.util";
+import { getSingleParam } from "../utils/params.util";
 import {
   createCompanySchema,
   updateCompanySchema,
@@ -26,6 +26,17 @@ export async function createCompany(req: Request, res: Response): Promise<void> 
   }
 
   try {
+    const [existingCompany] = await db
+      .select()
+      .from(companies)
+      .where(eq(companies.email, parsed.data.email))
+      .limit(1);
+
+    if (existingCompany) {
+      res.status(409).json({ success: false, message: "this email is already exists" });
+      return;
+    }
+
     const [newCompany] = await db
       .insert(companies)
       .values(parsed.data)
@@ -63,7 +74,7 @@ export async function createCompany(req: Request, res: Response): Promise<void> 
           </div>
         `,
       });
-      
+
       if (error) {
         console.error("[COMPANY_CONTROLLER] Failed to send welcome email:", error);
       } else {
@@ -96,8 +107,8 @@ export async function listCompanies(req: Request, res: Response): Promise<void> 
 }
 
 export async function updateCompany(req: Request, res: Response): Promise<void> {
-  const companyId = parseIdParam(req.params.id);
-  if (isNaN(companyId)) {
+  const companyId = getSingleParam(req.params.id);
+  if (!companyId) {
     res.status(400).json({ success: false, message: "Invalid company ID" });
     return;
   }
@@ -136,8 +147,8 @@ export async function updateCompany(req: Request, res: Response): Promise<void> 
 }
 
 export async function deleteCompany(req: Request, res: Response): Promise<void> {
-  const companyId = parseIdParam(req.params.id);
-  if (isNaN(companyId)) {
+  const companyId = getSingleParam(req.params.id);
+  if (!companyId) {
     res.status(400).json({ success: false, message: "Invalid company ID" });
     return;
   }
@@ -284,7 +295,11 @@ export async function listCompanyMembers(req: Request, res: Response): Promise<v
       .from(companyMembers)
       .innerJoin(users, eq(companyMembers.userId, users.id))
       .innerJoin(companies, eq(companyMembers.companyId, companies.id))
-      .where(eq(companyMembers.role, "admin"))
+      .where(
+        req.user?.role !== "superadmin" && req.user?.companyId != null
+          ? and(eq(companyMembers.role, "admin"), eq(companyMembers.companyId, req.user.companyId))
+          : eq(companyMembers.role, "admin")
+      )
       .orderBy(companyMembers.createdAt);
 
     res.status(200).json({
@@ -298,8 +313,8 @@ export async function listCompanyMembers(req: Request, res: Response): Promise<v
 }
 
 export async function updateCompanyMember(req: Request, res: Response): Promise<void> {
-  const memberId = parseIdParam(req.params.id);
-  if (isNaN(memberId)) {
+  const memberId = getSingleParam(req.params.id);
+  if (!memberId) {
     res.status(400).json({ success: false, message: "Invalid member ID" });
     return;
   }
@@ -333,6 +348,11 @@ export async function updateCompanyMember(req: Request, res: Response): Promise<
 
     if (!existingMember) {
       res.status(404).json({ success: false, message: "Company admin not found" });
+      return;
+    }
+
+    if (req.user?.role !== "superadmin" && existingMember.companyId !== req.user?.companyId) {
+      res.status(403).json({ success: false, message: "Forbidden: You do not have access to this company member." });
       return;
     }
 
@@ -434,22 +454,33 @@ export async function updateCompanyMember(req: Request, res: Response): Promise<
 }
 
 export async function deleteCompanyMember(req: Request, res: Response): Promise<void> {
-  const memberId = parseIdParam(req.params.id);
-  if (isNaN(memberId)) {
+  const memberId = getSingleParam(req.params.id);
+  if (!memberId) {
     res.status(400).json({ success: false, message: "Invalid member ID" });
     return;
   }
 
   try {
+    const [existingMember] = await db
+      .select()
+      .from(companyMembers)
+      .where(eq(companyMembers.id, memberId))
+      .limit(1);
+
+    if (!existingMember) {
+      res.status(404).json({ success: false, message: "Company member not found" });
+      return;
+    }
+
+    if (req.user?.role !== "superadmin" && existingMember.companyId !== req.user?.companyId) {
+      res.status(403).json({ success: false, message: "Forbidden: You do not have access to this company member." });
+      return;
+    }
+
     const [deletedMember] = await db
       .delete(companyMembers)
       .where(eq(companyMembers.id, memberId))
       .returning();
-
-    if (!deletedMember) {
-      res.status(404).json({ success: false, message: "Company member not found" });
-      return;
-    }
 
     res.status(200).json({
       success: true,

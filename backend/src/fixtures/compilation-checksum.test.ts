@@ -3,7 +3,7 @@ import { Project, DossierConfig, ProjectDocument } from "../db/schema";
 import * as crypto from "crypto";
 
 const mockProject: Project = {
-  id: 1,
+  id: "00000000-0000-0000-0000-000000000001",
   companyId: null,
   projectCode: "PRJ-TEST",
   productName: "TestProduct",
@@ -22,8 +22,8 @@ const mockProject: Project = {
 };
 
 const mockConfig: DossierConfig = {
-  id: 1,
-  projectId: 1,
+  id: "00000000-0000-0000-0000-000000000001",
+  projectId: "00000000-0000-0000-0000-000000000001",
   submissionCountry: "KZ",
   role: "Applicant",
   procedureType: "National",
@@ -37,8 +37,8 @@ const mockConfig: DossierConfig = {
 async function runTests() {
   console.log("🧪 Running Compilation Checksum Test...\n");
   const doc1: ProjectDocument = {
-    id: 101,
-    projectId: 1,
+    id: "00000000-0000-0000-0000-000000000101",
+    projectId: "00000000-0000-0000-0000-000000000001",
     nodeId: "1.1",
     docCode: "25001",
     docType: "25001",
@@ -56,8 +56,8 @@ async function runTests() {
   };
 
   const doc2: ProjectDocument = {
-    id: 102,
-    projectId: 1,
+    id: "00000000-0000-0000-0000-000000000102",
+    projectId: "00000000-0000-0000-0000-000000000001",
     nodeId: "1.1",
     docCode: "25001",
     docType: "25001",

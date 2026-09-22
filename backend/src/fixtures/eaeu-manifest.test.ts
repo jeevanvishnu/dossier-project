@@ -122,8 +122,8 @@ export async function runEaeuManifestTests() {
 
   // Assertion 4: Verification of Doc Code 13001 with Cyrillic 'Р' in folder path
   const testDoc13001: ProjectDocument = {
-    id: 99,
-    projectId: 1,
+    id: "00000000-0000-0000-0000-000000000099",
+    projectId: "00000000-0000-0000-0000-000000000001",
     nodeId: "3.2.P",
     docCode: "13001",
     docType: "13001",
@@ -154,8 +154,8 @@ export async function runEaeuManifestTests() {
   }
   // Assertion 5: Regression test for docCode 25001 (Module 1 TOC sits directly in m1 without subfolder)
   const testDoc25001: ProjectDocument = {
-    id: 100,
-    projectId: 1,
+    id: "00000000-0000-0000-0000-000000000100",
+    projectId: "00000000-0000-0000-0000-000000000001",
     nodeId: "1.1",
     docCode: "25001",
     docType: "25001",
@@ -189,8 +189,8 @@ export async function runEaeuManifestTests() {
 
   // Assertion 6: Regression test for docCode 01013 (Node 1.4.1 sits in m1\1.4 with space separator and no 1.4.1\ subfolder)
   const testDoc01013: ProjectDocument = {
-    id: 101,
-    projectId: 1,
+    id: "00000000-0000-0000-0000-000000000101",
+    projectId: "00000000-0000-0000-0000-000000000001",
     nodeId: "1.4.1",
     docCode: "01013",
     docType: "01013",

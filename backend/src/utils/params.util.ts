@@ -20,16 +20,16 @@ export function parseIdParam(param: string | string[] | undefined): number {
 }
 
 /**
- * Helper to resolve numeric project ID from numeric ID or unique projectCode UUID.
+ * Helper to resolve project ID (UUID) from UUID or unique projectCode.
  */
-export async function resolveProjectId(param: string | string[] | undefined): Promise<number | null> {
+export async function resolveProjectId(param: string | string[] | undefined): Promise<string | null> {
   const rawStr = getSingleParam(param);
   if (!rawStr) return null;
 
-  // If purely numeric digits, parse directly as number
-  if (/^\d+$/.test(rawStr)) {
-    const parsedId = parseInt(rawStr, 10);
-    return isNaN(parsedId) ? null : parsedId;
+  // Check if it's already a valid UUID
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (uuidRegex.test(rawStr)) {
+    return rawStr;
   }
 
   // Lookup by exact or case-insensitive unique projectCode

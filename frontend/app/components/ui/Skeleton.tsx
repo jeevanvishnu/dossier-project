@@ -251,10 +251,10 @@ export const CompanyUsersTableSkeleton: React.FC<{ rows?: number }> = ({ rows = 
             <Skeleton className="h-6 w-28 rounded-lg" />
           </td>
           <td className="px-6 py-4">
-            <div className="flex items-center gap-4">
-              <Skeleton className="h-4 w-24" />
-              <Skeleton className="h-4 w-24" />
-            </div>
+            <Skeleton className="h-4 w-24" />
+          </td>
+          <td className="px-6 py-4">
+            <Skeleton className="h-4 w-24" />
           </td>
           <td className="px-6 py-4 text-right">
             <div className="flex items-center justify-end gap-2">

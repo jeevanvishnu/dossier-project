@@ -91,9 +91,9 @@ export function AddCompanyUserModal({ isOpen, onClose, onSuccess, memberToEdit }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ 
-      ...prev, 
-      [name]: name === "maxUsers" || name === "storageGb" ? parseInt(value) || 0 : value 
+    setFormData((prev) => ({
+      ...prev,
+      [name]: name === "maxUsers" || name === "storageGb" ? parseInt(value) || 0 : value
     }));
   };
 
@@ -103,11 +103,11 @@ export function AddCompanyUserModal({ isOpen, onClose, onSuccess, memberToEdit }
       toast.error("Please select a company");
       return;
     }
-    
+
     setLoading(true);
 
     try {
-      const payload: any = { 
+      const payload: any = {
         ...formData,
         companyId: parseInt(formData.companyId)
       };
@@ -167,7 +167,7 @@ export function AddCompanyUserModal({ isOpen, onClose, onSuccess, memberToEdit }
               className="hidden"
             />
             <div className="relative group">
-              <div 
+              <div
                 onClick={() => fileInputRef.current?.click()}
                 className="w-20 h-20 rounded-full border-2 border-dashed border-border hover:border-accent bg-bg flex items-center justify-center overflow-hidden cursor-pointer transition-all shadow-inner group-hover:ring-4 group-hover:ring-accent/20"
                 title="Upload Profile Picture"

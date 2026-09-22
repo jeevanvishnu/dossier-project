@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { db } from "../db/db";
 import { projectMembers, users, auditLogs } from "../db/schema";
 import { addMemberSchema } from "../validators/project.validator";
-import { parseIdParam, resolveProjectId } from "../utils/params.util";
+import { getSingleParam, resolveProjectId } from "../utils/params.util";
 import { eq, and } from "drizzle-orm";
 
 export async function addProjectMember(req: Request, res: Response): Promise<void> {
@@ -104,9 +104,9 @@ export async function getProjectMembers(req: Request, res: Response): Promise<vo
 export async function removeProjectMember(req: Request, res: Response): Promise<void> {
   try {
     const projectId = await resolveProjectId(req.params.id);
-    const memberId = parseIdParam(req.params.memberId);
+    const memberId = getSingleParam(req.params.memberId);
 
-    if (!projectId || isNaN(memberId)) {
+    if (!projectId || !memberId) {
       res.status(400).json({ success: false, message: "Invalid IDs provided" });
       return;
     }

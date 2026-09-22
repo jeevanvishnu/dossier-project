@@ -1,8 +1,8 @@
 import bcrypt from "bcrypt";
 import crypto from "crypto";
-import { eq, ilike, or, and, count, desc, ne } from "drizzle-orm";
+import { eq, ilike, or, and, count, desc, ne, inArray } from "drizzle-orm";
 import { db } from "../db/db";
-import { users, refreshSessions } from "../db/schema";
+import { users, refreshSessions, companyMembers } from "../db/schema";
 import { sendWelcomeEmail } from "./email.service";
 import {
   CreateUserInput,
@@ -94,6 +94,15 @@ export class UserManagementService {
         updatedAt: users.updatedAt,
       });
 
+    console.log(`
+============================================================
+🔑 NEW USER CREATED — LOGIN CREDENTIALS:
+   Email:    ${createdUser.email}
+   Password: ${plainPassword}
+   Role:     ${createdUser.role}
+============================================================
+`);
+
     // 4. Send Welcome Email (Awaited with automatic test fallback)
     try {
       const emailResult = await sendWelcomeEmail({
@@ -122,7 +131,7 @@ export class UserManagementService {
   /**
    * Update user details (name, email, role).
    */
-  static async updateUser(userId: number, patch: UpdateUserInput) {
+  static async updateUser(userId: string, patch: UpdateUserInput) {
     // 1. Fetch user
     const [user] = await db
       .select()
@@ -173,7 +182,7 @@ export class UserManagementService {
   /**
    * Block a user and immediately invalidate all active refresh sessions.
    */
-  static async blockUser(userId: number) {
+  static async blockUser(userId: string) {
     const now = new Date();
 
     const result = await db.transaction(async (tx) => {
@@ -215,7 +224,7 @@ export class UserManagementService {
   /**
    * Unblock a user.
    */
-  static async unblockUser(userId: number) {
+  static async unblockUser(userId: string) {
     const [unblockedUser] = await db
       .update(users)
       .set({
@@ -244,7 +253,7 @@ export class UserManagementService {
   /**
    * Permanently delete a user (cascade deletes refresh sessions and project memberships).
    */
-  static async deleteUser(userId: number) {
+  static async deleteUser(userId: string) {
     const [deletedUser] = await db
       .delete(users)
       .where(eq(users.id, userId))
@@ -261,7 +270,7 @@ export class UserManagementService {
   /**
    * Get single user details by ID.
    */
-  static async getUserById(userId: number) {
+  static async getUserById(userId: string) {
     const [user] = await db
       .select({
         id: users.id,
@@ -312,6 +321,15 @@ export class UserManagementService {
     // Filter by blocked status
     if (query.isBlocked !== undefined) {
       conditions.push(eq(users.isBlocked, query.isBlocked));
+    }
+
+    // Filter by company membership if companyId is provided
+    if (query.companyId != null) {
+      const companyUserSubquery = db
+        .select({ userId: companyMembers.userId })
+        .from(companyMembers)
+        .where(eq(companyMembers.companyId, query.companyId));
+      conditions.push(inArray(users.id, companyUserSubquery));
     }
 
     const whereClause = conditions.length > 0 ? and(...conditions) : undefined;

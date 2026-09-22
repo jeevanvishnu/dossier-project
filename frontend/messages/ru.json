@@ -712,7 +712,12 @@
     "placeholderConcentration": "55.0 % v/v",
     "selectOrType": "Выберите или введите...",
     "placeholderICD10": "B35.1 (Tinea unguium)",
-    "searchHistoryLogs": "Поиск в истории логов..."
+    "searchHistoryLogs": "Поиск в истории логов...",
+    "duplicateCompileWarningTitle": "Изменения не обнаружены",
+    "duplicateCompileWarningSubtitle": "XML-пакет уже актуален",
+    "duplicateCompileWarningBody": "Пакет XML досье уже был сформирован {date}. С момента последней сборки новые документы или изменения не вносились.",
+    "duplicateCompileDownloadExistingBtn": "Скачать существующий пакет",
+    "duplicateCompileDismissBtn": "Понятно"
   },
   "status": {
     "active": "Активный",

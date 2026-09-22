@@ -18,18 +18,19 @@ export function hashToken(token: string): string {
 
 // ─── Access Token  (short-lived: 15 min) ───────────────────────────────────
 export function generateAccessToken(payload: {
-  id: number;
+  id: string;
   email: string;
   role: string;
+  companyId: string | null;
 }): string {
   return jwt.sign(payload, ACCESS_TOKEN_SECRET!, { expiresIn: "15m" } as SignOptions);
 }
 
 // ─── Refresh Token  (long-lived: 7 days) ───────────────────────────────────
 export function generateRefreshToken(payload: {
-  id: number;
+  id: string;
   familyId: string;
-  sessionId: number;
+  sessionId: string;
 }): string {
   return jwt.sign(payload, REFRESH_TOKEN_SECRET!, { expiresIn: "7d" } as SignOptions);
 }

@@ -3,12 +3,26 @@ import { db } from "../db/db";
 import { companyMembers } from "../db/schema";
 import { eq, sql, and } from "drizzle-orm";
 import { UserManagementService } from "../services/user.service";
-import { parseIdParam } from "../utils/params.util";
+import { getSingleParam } from "../utils/params.util";
 import {
   createUserSchema,
   updateUserSchema,
   listUsersQuerySchema,
 } from "../validators/user.validator";
+
+async function assertUserInCallerCompany(
+  caller: { role: string; companyId: string | null } | undefined,
+  targetUserId: string
+): Promise<boolean> {
+  if (!caller || caller.role === "superadmin") return true;
+  if (caller.companyId == null) return false;
+  const [membership] = await db
+    .select({ id: companyMembers.id })
+    .from(companyMembers)
+    .where(and(eq(companyMembers.userId, targetUserId), eq(companyMembers.companyId, caller.companyId)))
+    .limit(1);
+  return !!membership;
+}
 
 /**
  * POST /api/admin/users
@@ -35,7 +49,7 @@ export async function createUser(req: Request, res: Response): Promise<void> {
 
   try {
     const creatorUser = req.user;
-    let companyId: number | null = null;
+    let companyId: string | null = null;
     let maxUsers: number = 0;
     let storageGb: number = 5;
 
@@ -119,7 +133,11 @@ export async function listUsers(req: Request, res: Response): Promise<void> {
   }
 
   try {
-    const result = await UserManagementService.listUsers(parsed.data);
+    const queryInput = {
+      ...parsed.data,
+      companyId: req.user?.role !== "superadmin" ? (req.user?.companyId ?? undefined) : parsed.data.companyId,
+    };
+    const result = await UserManagementService.listUsers(queryInput);
     res.status(200).json({
       success: true,
       data: result,
@@ -138,13 +156,18 @@ export async function listUsers(req: Request, res: Response): Promise<void> {
  * Get single user by ID.
  */
 export async function getUserById(req: Request, res: Response): Promise<void> {
-  const userId = parseIdParam(req.params.id);
-  if (isNaN(userId)) {
+  const userId = getSingleParam(req.params.id);
+  if (!userId) {
     res.status(400).json({ success: false, message: "Invalid user ID" });
     return;
   }
 
   try {
+    if (!(await assertUserInCallerCompany(req.user, userId))) {
+      res.status(403).json({ success: false, message: "Forbidden: User does not belong to your company." });
+      return;
+    }
+
     const user = await UserManagementService.getUserById(userId);
 
     // Prevent non-superadmins from viewing superadmin details
@@ -174,8 +197,8 @@ export async function getUserById(req: Request, res: Response): Promise<void> {
  * Update user details (name, email, role).
  */
 export async function updateUser(req: Request, res: Response): Promise<void> {
-  const userId = parseIdParam(req.params.id);
-  if (isNaN(userId)) {
+  const userId = getSingleParam(req.params.id);
+  if (!userId) {
     res.status(400).json({ success: false, message: "Invalid user ID" });
     return;
   }
@@ -199,6 +222,11 @@ export async function updateUser(req: Request, res: Response): Promise<void> {
   }
 
   try {
+    if (!(await assertUserInCallerCompany(req.user, userId))) {
+      res.status(403).json({ success: false, message: "Forbidden: User does not belong to your company." });
+      return;
+    }
+
     const updatedUser = await UserManagementService.updateUser(userId, parsed.data);
     res.status(200).json({
       success: true,
@@ -224,8 +252,8 @@ export async function updateUser(req: Request, res: Response): Promise<void> {
  * Block a user and revoke all their active sessions.
  */
 export async function blockUser(req: Request, res: Response): Promise<void> {
-  const userId = parseIdParam(req.params.id);
-  if (isNaN(userId)) {
+  const userId = getSingleParam(req.params.id);
+  if (!userId) {
     res.status(400).json({ success: false, message: "Invalid user ID" });
     return;
   }
@@ -240,6 +268,11 @@ export async function blockUser(req: Request, res: Response): Promise<void> {
   }
 
   try {
+    if (!(await assertUserInCallerCompany(req.user, userId))) {
+      res.status(403).json({ success: false, message: "Forbidden: User does not belong to your company." });
+      return;
+    }
+
     const blockedUser = await UserManagementService.blockUser(userId);
     res.status(200).json({
       success: true,
@@ -260,13 +293,18 @@ export async function blockUser(req: Request, res: Response): Promise<void> {
  * Unblock a user.
  */
 export async function unblockUser(req: Request, res: Response): Promise<void> {
-  const userId = parseIdParam(req.params.id);
-  if (isNaN(userId)) {
+  const userId = getSingleParam(req.params.id);
+  if (!userId) {
     res.status(400).json({ success: false, message: "Invalid user ID" });
     return;
   }
 
   try {
+    if (!(await assertUserInCallerCompany(req.user, userId))) {
+      res.status(403).json({ success: false, message: "Forbidden: User does not belong to your company." });
+      return;
+    }
+
     const unblockedUser = await UserManagementService.unblockUser(userId);
     res.status(200).json({
       success: true,
@@ -287,8 +325,8 @@ export async function unblockUser(req: Request, res: Response): Promise<void> {
  * Permanently delete a user.
  */
 export async function deleteUser(req: Request, res: Response): Promise<void> {
-  const userId = parseIdParam(req.params.id);
-  if (isNaN(userId)) {
+  const userId = getSingleParam(req.params.id);
+  if (!userId) {
     res.status(400).json({ success: false, message: "Invalid user ID" });
     return;
   }
@@ -303,6 +341,11 @@ export async function deleteUser(req: Request, res: Response): Promise<void> {
   }
 
   try {
+    if (!(await assertUserInCallerCompany(req.user, userId))) {
+      res.status(403).json({ success: false, message: "Forbidden: User does not belong to your company." });
+      return;
+    }
+
     const deletedUser = await UserManagementService.deleteUser(userId);
     res.status(200).json({
       success: true,

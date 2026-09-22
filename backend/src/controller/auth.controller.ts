@@ -3,7 +3,7 @@ import bcrypt from "bcrypt";
 import { randomUUID } from "node:crypto";
 import { eq, or, lt, and, isNull, gt, count } from "drizzle-orm";
 import { db } from "../db/db";
-import { users, refreshSessions, companyMembers } from "../db/schema";
+import { users, refreshSessions, companyMembers, companies } from "../db/schema";
 import { signInSchema, changePasswordSchema } from "../validators/auth.validator";
 import {
   generateAccessToken,
@@ -87,6 +87,37 @@ export async function signIn(req: Request, res: Response): Promise<void> {
       return;
     }
 
+    // 3.5 Check company subscription expiration for non-superadmins
+    let userCompanyId: string | null = null;
+    if (user.role !== "superadmin") {
+      const [userCompany] = await db
+        .select({
+          companyId: companyMembers.companyId,
+          subscriptionEndDate: companies.subscriptionEndDate,
+        })
+        .from(companyMembers)
+        .innerJoin(companies, eq(companyMembers.companyId, companies.id))
+        .where(eq(companyMembers.userId, user.id))
+        .limit(1);
+
+      if (userCompany) {
+        userCompanyId = userCompany.companyId;
+      }
+
+      if (
+        userCompany &&
+        userCompany.subscriptionEndDate &&
+        new Date(userCompany.subscriptionEndDate).getTime() < Date.now()
+      ) {
+        console.warn(`[SIGNIN] 🚫 Expired company subscription attempted signin: ${email}`);
+        res.status(403).json({
+          success: false,
+          message: "Your company subscription has expired. Please contact support or your administrator.",
+        });
+        return;
+      }
+    }
+
     // 4. Verify password
     const passwordMatch = await bcrypt.compare(password, user.password);
     if (!passwordMatch) {
@@ -161,6 +192,7 @@ export async function signIn(req: Request, res: Response): Promise<void> {
         id: user.id,
         email: user.email,
         role: user.role,
+        companyId: userCompanyId,
       });
 
       // Update hashed token in DB
@@ -222,9 +254,9 @@ export async function refreshAccessToken(req: Request, res: Response): Promise<v
   try {
     // 1. Verify JWT signature
     const decoded = verifyRefreshToken(incomingRefreshToken) as {
-      id: number;
+      id: string;
       familyId: string;
-      sessionId: number;
+      sessionId: string;
     };
 
     const incomingHash = hashToken(incomingRefreshToken);
@@ -337,10 +369,41 @@ export async function refreshAccessToken(req: Request, res: Response): Promise<v
         return { status: 403, errorType: "USER_BLOCKED" };
       }
 
+      let userCompanyId: string | null = null;
+      if (user.role !== "superadmin") {
+        const [userCompany] = await tx
+          .select({
+            companyId: companyMembers.companyId,
+            subscriptionEndDate: companies.subscriptionEndDate,
+          })
+          .from(companyMembers)
+          .innerJoin(companies, eq(companyMembers.companyId, companies.id))
+          .where(eq(companyMembers.userId, user.id))
+          .limit(1);
+
+        if (userCompany) {
+          userCompanyId = userCompany.companyId;
+        }
+
+        if (
+          userCompany &&
+          userCompany.subscriptionEndDate &&
+          new Date(userCompany.subscriptionEndDate).getTime() < Date.now()
+        ) {
+          await tx
+            .update(refreshSessions)
+            .set({ revokedAt: now, updatedAt: now })
+            .where(eq(refreshSessions.familyId, session.familyId));
+
+          return { status: 403, errorType: "SUBSCRIPTION_EXPIRED" };
+        }
+      }
+
       const newAccessToken = generateAccessToken({
         id: user.id,
         email: user.email,
         role: user.role,
+        companyId: userCompanyId,
       });
 
       return {
@@ -361,6 +424,7 @@ export async function refreshAccessToken(req: Request, res: Response): Promise<v
         EXPIRED: "Refresh token expired. Please sign in again.",
         USER_NOT_FOUND: "User not found.",
         USER_BLOCKED: "Your account has been suspended or blocked.",
+        SUBSCRIPTION_EXPIRED: "Your company subscription has expired. Please contact support or your administrator.",
       };
 
       res.status(403).json({
@@ -409,7 +473,7 @@ export async function logout(req: Request, res: Response): Promise<void> {
 
   if (token) {
     try {
-      const decoded = verifyRefreshToken(token) as { id: number; familyId: string };
+      const decoded = verifyRefreshToken(token) as { id: string; familyId: string };
       if (decoded.familyId) {
         await db
           .update(refreshSessions)

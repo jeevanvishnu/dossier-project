@@ -26,8 +26,8 @@ export const activeDocuments: SorbitDossierMapItem[] = [
 export const SORBIT_DOSSIER_MAP = activeDocuments;
 
 export const SORBIT_DOSSIER_FIXTURE: ProjectDocument[] = activeDocuments.map((item, index) => ({
-  id: index + 1,
-  projectId: 1,
+  id: `00000000-0000-0000-0000-00000000000${index + 1}`,
+  projectId: "00000000-0000-0000-0000-000000000001",
   nodeId: item.nodeId,
   docCode: item.docCode,
   docType: item.docCode,

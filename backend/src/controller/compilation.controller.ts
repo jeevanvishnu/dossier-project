@@ -31,7 +31,7 @@ export async function getPackageArchives(req: Request, res: Response): Promise<v
 }
 
 export async function compileProjectPackage(req: Request, res: Response): Promise<void> {
-  let projectId: number | null = null;
+  let projectId: string | null = null;
   try {
     projectId = await resolveProjectId(req.params.id);
     if (!projectId) {
@@ -55,7 +55,7 @@ export async function compileProjectPackage(req: Request, res: Response): Promis
 
     if (targetConfigId) {
       targetConfig = await db.query.dossierConfig.findFirst({
-        where: and(eq(dossierConfig.id, parseInt(String(targetConfigId))), eq(dossierConfig.projectId, projectId)),
+        where: and(eq(dossierConfig.id, String(targetConfigId)), eq(dossierConfig.projectId, projectId)),
       });
     } else if (targetSeqParam) {
       const cleanSeq = sanitizeSequence(String(targetSeqParam));
@@ -102,6 +102,55 @@ export async function compileProjectPackage(req: Request, res: Response): Promis
         message: "Cannot compile dossier: No active documents found for this project.",
       });
       return;
+    }
+
+    // Check if there is already a compiled package for this project
+    const lastArchive = await db.query.packageArchives.findFirst({
+      where: eq(packageArchives.projectId, projectId),
+      orderBy: [desc(packageArchives.generatedAt)],
+    });
+
+    if (lastArchive) {
+      const lastArchiveTime = new Date(lastArchive.generatedAt).getTime();
+
+      // Check all documents associated with this project for any upload/update after the last archive
+      const allProjectDocs = await db.query.projectDocuments.findMany({
+        where: eq(projectDocuments.projectId, projectId),
+      });
+
+      const latestDocTime = allProjectDocs.reduce((max, d) => {
+        const docTime = d.uploadedAt ? new Date(d.uploadedAt).getTime() : 0;
+        return docTime > max ? docTime : max;
+      }, 0);
+
+      const projectUpdateTime = project.updatedAt ? new Date(project.updatedAt).getTime() : 0;
+
+      const hasNewChanges = latestDocTime > lastArchiveTime || projectUpdateTime > lastArchiveTime;
+
+      if (!hasNewChanges) {
+        if (projectId) {
+          try {
+            await db.insert(auditLogs).values({
+              projectId,
+              logType: "WARNING",
+              message: `Duplicate XML compilation blocked: No new documents or edits detected since package '${lastArchive.fullName}' was generated on ${new Date(lastArchive.generatedAt).toISOString()}.`,
+              userCredentials: req.user ? `${req.user.email} (${req.user.role})` : "System",
+            });
+          } catch (auditErr) {
+            console.error("Failed to log compilation duplicate audit:", auditErr);
+          }
+        }
+
+        res.status(409).json({
+          success: false,
+          code: "NO_CHANGES_SINCE_LAST_COMPILE",
+          message: "No new documents or modifications have been made since the last XML package was generated.",
+          lastCompiledAt: lastArchive.generatedAt,
+          lastPackageName: lastArchive.fullName,
+          downloadUrl: lastArchive.downloadUrl,
+        });
+        return;
+      }
     }
 
     console.log(`[eCTD Compiler] Compiling ${docsToCompile.length} active documents for Project ${projectId} (Sequence ${targetSequence})...`);

@@ -7,7 +7,7 @@ export class StorageService {
    * Returns used bytes for the user's company.
    * Sums fileSize of all 'active' documents in projects belonging to the user's company.
    */
-  static async getUsedBytesForUser(userId: number): Promise<number> {
+  static async getUsedBytesForUser(userId: string): Promise<number> {
     const [membership] = await db
       .select({ companyId: companyMembers.companyId })
       .from(companyMembers)
@@ -36,7 +36,7 @@ export class StorageService {
    * Returns the storageGb cap for the given userId's company membership.
    * Returns null if user is not a company member.
    */
-  static async getStorageCapForUser(userId: number): Promise<number | null> {
+  static async getStorageCapForUser(userId: string): Promise<number | null> {
     const [membership] = await db
       .select({ storageGb: companyMembers.storageGb })
       .from(companyMembers)
@@ -49,7 +49,7 @@ export class StorageService {
   /**
    * Throws an error if adding newFileBytes would exceed the company's storage cap.
    */
-  static async assertStorageAvailable(userId: number, newFileBytes: number): Promise<void> {
+  static async assertStorageAvailable(userId: string, newFileBytes: number): Promise<void> {
     const storageGb = await this.getStorageCapForUser(userId);
     if (storageGb === null) {
       // User is not bound to a company storage limit (e.g. superadmin)

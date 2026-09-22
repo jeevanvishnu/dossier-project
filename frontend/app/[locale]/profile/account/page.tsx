@@ -368,9 +368,8 @@ export default function AccountSettingsPage() {
         <div className="flex items-center gap-2 bg-surface border border-border p-1.5 rounded-2xl overflow-x-auto shadow-xs">
           <button
             onClick={() => setActiveTab("account")}
-            className={`px-4 py-2 text-xs font-bold rounded-xl transition-colors flex items-center gap-2 shrink-0 cursor-pointer ${
-              activeTab === "account" ? "bg-accent text-white" : "text-secondary hover:text-primary"
-            }`}
+            className={`px-4 py-2 text-xs font-bold rounded-xl transition-colors flex items-center gap-2 shrink-0 cursor-pointer ${activeTab === "account" ? "bg-accent text-white" : "text-secondary hover:text-primary"
+              }`}
           >
             <UserGear size={16} />
             <span>{tProfile("tabAccountSettings")}</span>
@@ -378,9 +377,8 @@ export default function AccountSettingsPage() {
 
           <button
             onClick={() => setActiveTab("users")}
-            className={`px-4 py-2 text-xs font-bold rounded-xl transition-colors flex items-center gap-2 shrink-0 cursor-pointer ${
-              activeTab === "users" ? "bg-accent text-white" : "text-secondary hover:text-primary"
-            }`}
+            className={`px-4 py-2 text-xs font-bold rounded-xl transition-colors flex items-center gap-2 shrink-0 cursor-pointer ${activeTab === "users" ? "bg-accent text-white" : "text-secondary hover:text-primary"
+              }`}
           >
             <Users size={16} />
             <span>User Management</span>
@@ -704,13 +702,12 @@ export default function AccountSettingsPage() {
                           <td className="py-3.5 px-4 font-mono text-primary">{u.email}</td>
                           <td className="py-3.5 px-4">
                             <span
-                              className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                                u.role === "superadmin"
+                              className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${u.role === "superadmin"
                                   ? "bg-purple-500/15 text-purple-400 border border-purple-500/30"
                                   : u.role === "admin"
-                                  ? "bg-accent/15 text-accent border border-accent/30"
-                                  : "bg-bg text-secondary border border-border"
-                              }`}
+                                    ? "bg-accent/15 text-accent border border-accent/30"
+                                    : "bg-bg text-secondary border border-border"
+                                }`}
                             >
                               {u.role.toUpperCase()}
                             </span>
@@ -720,13 +717,12 @@ export default function AccountSettingsPage() {
                               <button
                                 onClick={() => handleToggleBlockStatus(u)}
                                 disabled={isSelf || togglingBlockId === u.id}
-                                className={`flex items-center gap-1.5 text-xs font-semibold cursor-pointer transition-opacity ${
-                                  isSelf
+                                className={`flex items-center gap-1.5 text-xs font-semibold cursor-pointer transition-opacity ${isSelf
                                     ? "opacity-50 cursor-not-allowed"
                                     : togglingBlockId === u.id
-                                    ? "opacity-70 cursor-wait"
-                                    : ""
-                                }`}
+                                      ? "opacity-70 cursor-wait"
+                                      : ""
+                                  }`}
                                 title={isSelf ? "Cannot block your own account" : "Click to toggle account status"}
                               >
                                 {u.isBlocked ? (
@@ -772,9 +768,8 @@ export default function AccountSettingsPage() {
                               <button
                                 onClick={() => handleOpenDeleteModal(u)}
                                 disabled={isSelf}
-                                className={`p-1.5 text-red-500 hover:bg-red-500/10 rounded transition-colors cursor-pointer ${
-                                  isSelf ? "opacity-30 cursor-not-allowed" : ""
-                                }`}
+                                className={`p-1.5 text-red-500 hover:bg-red-500/10 rounded transition-colors cursor-pointer ${isSelf ? "opacity-30 cursor-not-allowed" : ""
+                                  }`}
                                 title={isSelf ? "Cannot delete your own account" : "Delete User"}
                               >
                                 <Trash size={16} />

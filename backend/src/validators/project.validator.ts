@@ -30,7 +30,7 @@ export const updateDossierDataSchema = z.object({
   additionalFeature: z.string().optional(),
   status: z.string().optional(),
   // dossier_config fields
-  dossierConfigId: z.number().int().optional(),
+  dossierConfigId: z.string().optional(),
   createNewDossier: z.boolean().optional(),
   submissionCountry: z.string().optional(),
   role: z.string().optional(),
@@ -42,7 +42,7 @@ export const updateDossierDataSchema = z.object({
 });
 
 export const addMemberSchema = z.object({
-  userId: z.number().int().positive("Valid userId is required"),
+  userId: z.string().min(1, "Valid userId is required"),
   role: z.enum(["owner", "editor", "viewer"]).default("editor"),
 });
 

@@ -1,4 +1,4 @@
-import { pgEnum, pgTable, serial, text, timestamp, varchar, integer, boolean, index, jsonb } from "drizzle-orm/pg-core";
+import { pgEnum, pgTable, uuid, text, timestamp, varchar, integer, boolean, index, uniqueIndex, jsonb } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
 // ─── ENUMS ───────────────────────────────────────────────────────────────────
@@ -9,7 +9,7 @@ export const logTypeEnum = pgEnum("log_type", ["SUCCESS", "WARNING", "ERROR"]);
 
 // ─── TABLES ──────────────────────────────────────────────────────────────────
 export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
+  id: uuid("id").defaultRandom().primaryKey(),
   name: text("name"),
   email: varchar("email", { length: 255 }).notNull().unique(),
   password: text("password").notNull(),
@@ -24,22 +24,27 @@ export const users = pgTable("users", {
 ]);
 
 export const companies = pgTable("companies", {
-  id: serial("id").primaryKey(),
+  id: uuid("id").defaultRandom().primaryKey(),
   name: text("name").notNull(),
   email: varchar("email", { length: 255 }).notNull(),
   mobile: varchar("mobile", { length: 50 }),
   address: text("address"),
   imageUrl: text("image_url"),
+  subscriptionStartDate: timestamp("subscription_start_date").defaultNow().notNull(),
+  subscriptionEndDate: timestamp("subscription_end_date"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("idx_companies_email").on(table.email),
+  index("idx_companies_subscription_end_date").on(table.subscriptionEndDate),
+]);
 
 export const companyMembers = pgTable("company_members", {
-  id: serial("id").primaryKey(),
-  companyId: integer("company_id")
+  id: uuid("id").defaultRandom().primaryKey(),
+  companyId: uuid("company_id")
     .references(() => companies.id, { onDelete: "cascade" })
     .notNull(),
-  userId: integer("user_id")
+  userId: uuid("user_id")
     .references(() => users.id, { onDelete: "cascade" })
     .notNull(),
   role: text("role").default("admin").notNull(), // or enum
@@ -49,11 +54,12 @@ export const companyMembers = pgTable("company_members", {
 }, (table) => [
   index("idx_company_members_company_id").on(table.companyId),
   index("idx_company_members_user_id").on(table.userId),
+  index("idx_company_members_company_id_role").on(table.companyId, table.role),
 ]);
 
 export const refreshSessions = pgTable("refresh_sessions", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id")
+  id: uuid("id").defaultRandom().primaryKey(),
+  userId: uuid("user_id")
     .references(() => users.id, { onDelete: "cascade" })
     .notNull(),
   tokenHash: text("token_hash").notNull(),
@@ -68,11 +74,12 @@ export const refreshSessions = pgTable("refresh_sessions", {
   index("idx_refresh_sessions_token_hash").on(table.tokenHash),
   index("idx_refresh_sessions_family_id").on(table.familyId),
   index("idx_refresh_sessions_expires_at").on(table.expiresAt),
+  index("idx_refresh_sessions_user_id_revoked_at").on(table.userId, table.revokedAt),
 ]);
 
 export const projects = pgTable("projects", {
-  id: serial("id").primaryKey(),
-  companyId: integer("company_id").references(() => companies.id, { onDelete: "cascade" }),
+  id: uuid("id").defaultRandom().primaryKey(),
+  companyId: uuid("company_id").references(() => companies.id, { onDelete: "cascade" }),
   projectCode: varchar("project_code", { length: 100 }).notNull().unique(),
   productName: text("product_name").notNull(),
   dosageForm: text("dosage_form"),
@@ -87,11 +94,14 @@ export const projects = pgTable("projects", {
   version: integer("version").default(1).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("idx_projects_company_id").on(table.companyId),
+  index("idx_projects_company_id_created_at").on(table.companyId, table.createdAt),
+]);
 
 export const dossierConfig = pgTable("dossier_config", {
-  id: serial("id").primaryKey(),
-  projectId: integer("project_id")
+  id: uuid("id").defaultRandom().primaryKey(),
+  projectId: uuid("project_id")
     .references(() => projects.id, { onDelete: "cascade" })
     .notNull(),
   submissionCountry: text("submission_country"),
@@ -107,11 +117,11 @@ export const dossierConfig = pgTable("dossier_config", {
 ]);
 
 export const projectMembers = pgTable("project_members", {
-  id: serial("id").primaryKey(),
-  projectId: integer("project_id")
+  id: uuid("id").defaultRandom().primaryKey(),
+  projectId: uuid("project_id")
     .references(() => projects.id, { onDelete: "cascade" })
     .notNull(),
-  userId: integer("user_id")
+  userId: uuid("user_id")
     .references(() => users.id, { onDelete: "cascade" })
     .notNull(),
   role: projectMemberRoleEnum("role").default("editor").notNull(),
@@ -119,11 +129,12 @@ export const projectMembers = pgTable("project_members", {
 }, (table) => [
   index("idx_project_members_project_id").on(table.projectId),
   index("idx_project_members_user_id").on(table.userId),
+  uniqueIndex("uniq_project_members_project_user").on(table.projectId, table.userId),
 ]);
 
 export const projectDocuments = pgTable("project_documents", {
-  id: serial("id").primaryKey(),
-  projectId: integer("project_id")
+  id: uuid("id").defaultRandom().primaryKey(),
+  projectId: uuid("project_id")
     .references(() => projects.id, { onDelete: "cascade" })
     .notNull(),
   nodeId: varchar("node_id", { length: 100 }).notNull(),
@@ -143,11 +154,13 @@ export const projectDocuments = pgTable("project_documents", {
 }, (table) => [
   index("idx_project_documents_project_id").on(table.projectId),
   index("idx_project_documents_node_id").on(table.nodeId),
+  index("idx_project_documents_project_id_node_id_status").on(table.projectId, table.nodeId, table.status),
+  index("idx_project_documents_project_id_status").on(table.projectId, table.status),
 ]);
 
 export const auditLogs = pgTable("audit_logs", {
-  id: serial("id").primaryKey(),
-  projectId: integer("project_id")
+  id: uuid("id").defaultRandom().primaryKey(),
+  projectId: uuid("project_id")
     .references(() => projects.id, { onDelete: "cascade" })
     .notNull(),
   logType: logTypeEnum("log_type").notNull(),
@@ -156,11 +169,12 @@ export const auditLogs = pgTable("audit_logs", {
   formationDate: timestamp("formation_date").defaultNow().notNull(),
 }, (table) => [
   index("idx_audit_logs_project_id").on(table.projectId),
+  index("idx_audit_logs_project_id_formation_date").on(table.projectId, table.formationDate),
 ]);
 
 export const packageArchives = pgTable("package_archives", {
-  id: serial("id").primaryKey(),
-  projectId: integer("project_id")
+  id: uuid("id").defaultRandom().primaryKey(),
+  projectId: uuid("project_id")
     .references(() => projects.id, { onDelete: "cascade" })
     .notNull(),
   fullName: text("full_name").notNull(),

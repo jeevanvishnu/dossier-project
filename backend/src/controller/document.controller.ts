@@ -302,12 +302,11 @@ export async function deleteDocumentByNode(req: Request, res: Response): Promise
     const docIdParam = req.query.docId || req.body?.docId;
     let activeDoc = null;
 
-    if (docIdParam && !isNaN(parseInt(String(docIdParam), 10))) {
-      const parsedId = parseInt(String(docIdParam), 10);
+    if (docIdParam) {
       activeDoc = await db.query.projectDocuments.findFirst({
         where: and(
           eq(projectDocuments.projectId, projectId),
-          eq(projectDocuments.id, parsedId)
+          eq(projectDocuments.id, String(docIdParam))
         ),
       });
     }
@@ -484,9 +483,9 @@ export async function updateDocumentDates(req: Request, res: Response): Promise<
       ),
     });
 
-    if (!activeDoc && req.body.docId && !isNaN(parseInt(req.body.docId, 10))) {
+    if (!activeDoc && req.body.docId) {
       activeDoc = await db.query.projectDocuments.findFirst({
-        where: eq(projectDocuments.id, parseInt(req.body.docId, 10)),
+        where: eq(projectDocuments.id, String(req.body.docId)),
       });
     }
 
@@ -503,6 +502,7 @@ export async function updateDocumentDates(req: Request, res: Response): Promise<
           .set({
             issueDate: issueDate ? new Date(issueDate) : null,
             expirationDate: expirationDate ? new Date(expirationDate) : null,
+            uploadedAt: new Date(),
           })
           .where(eq(projectDocuments.id, activeDoc.id))
           .returning();

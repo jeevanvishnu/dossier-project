@@ -5,8 +5,35 @@ import { AppShell } from "@/app/components/AppShell";
 import { api } from "@/app/lib/axios";
 import { Plus, Buildings, Trash, PencilSimple } from "@phosphor-icons/react";
 import { AddCompanyModal } from "@/app/components/super-admin/AddCompanyModal";
+import { ConfirmModal } from "@/app/components/ui/ConfirmModal";
 import { toast } from "sonner";
 import { CompaniesTableSkeleton } from "@/app/components/ui/Skeleton";
+
+const getSubscriptionBadge = (endDateStr?: string | null) => {
+  if (!endDateStr) {
+    return (
+      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20">
+        Unlimited
+      </span>
+    );
+  }
+  const endDate = new Date(endDateStr);
+  const isExpired = endDate.getTime() < Date.now();
+  const formattedDate = endDate.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+
+  if (isExpired) {
+    return (
+      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-500/10 text-rose-400 border border-rose-500/20" title={`Expired on ${formattedDate}`}>
+        Expired ({formattedDate})
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" title={`Active until ${formattedDate}`}>
+      Active (until {formattedDate})
+    </span>
+  );
+};
 
 export default function CompaniesPage() {
   const [companies, setCompanies] = useState<any[]>([]);
@@ -87,6 +114,7 @@ export default function CompaniesPage() {
                   <th className="px-6 py-4 text-white font-bold">Company</th>
                   <th className="px-6 py-4 text-white font-bold">Email</th>
                   <th className="px-6 py-4 text-white font-bold">Mobile</th>
+                  <th className="px-6 py-4 text-white font-bold">Subscription</th>
                   <th className="px-6 py-4 text-white font-bold">Address</th>
                   <th className="px-6 py-4 text-right text-white font-bold">Actions</th>
                 </tr>
@@ -96,7 +124,7 @@ export default function CompaniesPage() {
                   <CompaniesTableSkeleton rows={5} />
                 ) : companies.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-6 py-8 text-center text-white/70">
+                    <td colSpan={6} className="px-6 py-8 text-center text-white/70">
                       No companies found.
                     </td>
                   </tr>
@@ -120,6 +148,7 @@ export default function CompaniesPage() {
                       </td>
                       <td className="px-6 py-4 text-white">{company.email}</td>
                       <td className="px-6 py-4 text-white">{company.mobile || "-"}</td>
+                      <td className="px-6 py-4 text-white">{getSubscriptionBadge(company.subscriptionEndDate)}</td>
                       <td className="px-6 py-4 max-w-[200px] truncate text-white">{company.address || "-"}</td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-2">
@@ -155,33 +184,22 @@ export default function CompaniesPage() {
         companyToEdit={selectedCompany}
       />
 
-      {/* Custom Delete Confirmation Modal */}
-      {companyToDelete && (
-        <div className="fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-surface border border-border rounded-2xl p-7 max-w-sm w-full shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-            <h3 className="text-lg font-bold font-lexend text-primary mb-2">Delete Company</h3>
-            <p className="text-sm text-secondary mb-6">
-              Are you sure you want to delete <span className="font-semibold text-primary">{companyToDelete.name}</span>? This action cannot be undone.
-            </p>
-            <div className="flex items-center justify-end gap-3">
-              <button
-                onClick={() => setCompanyToDelete(null)}
-                disabled={isDeleting}
-                className="px-4 py-2 bg-bg hover:bg-surface-raised border border-border rounded-xl text-sm text-secondary hover:text-primary font-semibold transition-colors cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmDelete}
-                disabled={isDeleting}
-                className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-xl text-sm font-semibold transition-all shadow-md hover:shadow-lg disabled:opacity-50 cursor-pointer"
-              >
-                {isDeleting ? "Deleting..." : "Delete"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmModal
+        isOpen={Boolean(companyToDelete)}
+        onClose={() => setCompanyToDelete(null)}
+        onConfirm={confirmDelete}
+        title="Delete Company"
+        description={
+          <span>
+            Are you sure you want to delete <strong className="text-primary font-semibold">{companyToDelete?.name}</strong>? This action cannot be undone.
+          </span>
+        }
+        confirmText="Delete"
+        cancelText="Cancel"
+        isLoading={isDeleting}
+        variant="danger"
+      />
     </AppShell>
   );
 }
+

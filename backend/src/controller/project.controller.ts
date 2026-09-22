@@ -18,14 +18,20 @@ export async function getProjects(req: Request, res: Response): Promise<void> {
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit as string) || 10));
     const offset = (page - 1) * limit;
 
+    const companyFilter =
+      req.user?.role !== "superadmin" && req.user?.companyId != null
+        ? eq(projects.companyId, req.user.companyId)
+        : undefined;
+
     const [projectsList, countResult] = await Promise.all([
       db.query.projects.findMany({
+        where: companyFilter,
         with: { dossierConfig: true },
         orderBy: [desc(projects.createdAt)],
         limit,
         offset,
       }),
-      db.select({ count: count() }).from(projects),
+      db.select({ count: count() }).from(projects).where(companyFilter),
     ]);
 
     const totalCount = Number(countResult[0]?.count || 0);
@@ -65,8 +71,8 @@ export async function createProject(req: Request, res: Response): Promise<void> 
     const currentUser = req.user;
 
     const result = await db.transaction(async (tx) => {
-      let companyId: number | null = null;
-      if (currentUser && currentUser.id) {
+      let companyId: string | null = currentUser?.companyId ?? null;
+      if (!companyId && currentUser && currentUser.id) {
         const [membership] = await tx
           .select({ companyId: companyMembers.companyId })
           .from(companyMembers)
@@ -174,6 +180,14 @@ export async function getDossierData(req: Request, res: Response): Promise<void>
       return;
     }
 
+    if (
+      req.user?.role !== "superadmin" &&
+      projectData.companyId !== req.user?.companyId
+    ) {
+      res.status(403).json({ success: false, message: "Forbidden: You do not have access to this project." });
+      return;
+    }
+
     const allConfigs = await db.query.dossierConfig.findMany({
       where: eq(dossierConfig.projectId, projectId),
     });
@@ -224,6 +238,14 @@ export async function updateDossierData(req: Request, res: Response): Promise<vo
 
     if (!existingProject) {
       res.status(404).json({ success: false, message: "Project not found" });
+      return;
+    }
+
+    if (
+      req.user?.role !== "superadmin" &&
+      existingProject.companyId !== req.user?.companyId
+    ) {
+      res.status(403).json({ success: false, message: "Forbidden: You do not have access to this project." });
       return;
     }
 
@@ -396,6 +418,14 @@ export async function deleteProject(req: Request, res: Response): Promise<void> 
       return;
     }
 
+    if (
+      req.user?.role !== "superadmin" &&
+      existingProject.companyId !== req.user?.companyId
+    ) {
+      res.status(403).json({ success: false, message: "Forbidden: You do not have access to this project." });
+      return;
+    }
+
     // Collect any ImageKit asset IDs before deleting project document records
     const docRecords = await db.query.projectDocuments.findMany({
       where: eq(projectDocuments.projectId, projectId),
@@ -467,8 +497,25 @@ export async function deleteDossierConfig(req: Request, res: Response): Promise<
     }
 
     const currentUser = req.user;
+
+    const existingProject = await db.query.projects.findFirst({
+      where: eq(projects.id, projectId),
+    });
+
+    if (!existingProject) {
+      res.status(404).json({ success: false, message: "Project not found" });
+      return;
+    }
+
+    if (
+      currentUser?.role !== "superadmin" &&
+      existingProject.companyId !== currentUser?.companyId
+    ) {
+      res.status(403).json({ success: false, message: "Forbidden: You do not have access to this project." });
+      return;
+    }
     const rawTargetId = req.params.dossierConfigId || (typeof req.query.dossierConfigId === "string" ? req.query.dossierConfigId : null) || req.body?.dossierConfigId;
-    const targetConfigId = rawTargetId ? parseInt(String(rawTargetId)) : null;
+    const targetConfigId = rawTargetId ? String(rawTargetId) : null;
 
     if (targetConfigId) {
       await db

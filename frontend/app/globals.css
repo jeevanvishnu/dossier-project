@@ -134,7 +134,12 @@ html.light {
     transition: background-color 0.2s ease, color 0.2s ease;
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-family: var(--font-lexend);
     color: var(--color-primary);
   }
@@ -142,13 +147,39 @@ html.light {
 
 /* Base Utility Classes */
 @layer utilities {
-  .bg-bg { background-color: var(--color-bg); }
-  .bg-surface { background-color: var(--color-surface); }
-  .bg-surface-raised { background-color: var(--color-surface-raised); }
-  .border-border { border-color: var(--color-border); }
-  .border-border-strong { border-color: var(--color-border-strong); }
-  .text-primary { color: var(--color-primary); }
-  .text-secondary { color: var(--color-secondary); }
-  .text-accent { color: var(--color-accent); }
-  .text-muted { color: var(--color-muted); }
+  .bg-bg {
+    background-color: var(--color-bg);
+  }
+
+  .bg-surface {
+    background-color: var(--color-surface);
+  }
+
+  .bg-surface-raised {
+    background-color: var(--color-surface-raised);
+  }
+
+  .border-border {
+    border-color: var(--color-border);
+  }
+
+  .border-border-strong {
+    border-color: var(--color-border-strong);
+  }
+
+  .text-primary {
+    color: var(--color-primary);
+  }
+
+  .text-secondary {
+    color: var(--color-secondary);
+  }
+
+  .text-accent {
+    color: var(--color-accent);
+  }
+
+  .text-muted {
+    color: var(--color-muted);
+  }
 }
