@@ -92,7 +92,7 @@ export default function ProjectsPage() {
         const response = await api.get(`/projects?page=${currentPage}&limit=${itemsPerPage}`);
         if (response.data?.success && Array.isArray(response.data?.data)) {
           const dbProjects: ProjectItem[] = response.data.data.map((p: any) => ({
-            id: p.projectCode || String(p.id),
+            id: String(p.id),
             productName: p.productName,
             manufacturer: p.manufacturer || "-",
             dosageForm: p.dosageForm || "-",

@@ -26,10 +26,16 @@ export async function resolveProjectId(param: string | string[] | undefined): Pr
   const rawStr = getSingleParam(param);
   if (!rawStr) return null;
 
-  // Check if it's already a valid UUID
+  // Check if it's a valid UUID format
   const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
   if (uuidRegex.test(rawStr)) {
-    return rawStr;
+    // First try: resolve as primary key (projects.id)
+    const byId = await db.query.projects.findFirst({
+      where: eq(projects.id, rawStr),
+      columns: { id: true },
+    });
+    if (byId) return byId.id;
+    // Fall through: might be a projectCode that also happens to look like a UUID
   }
 
   // Lookup by exact or case-insensitive unique projectCode

@@ -416,7 +416,7 @@
   "profile": {
     "badgeLabel": "Organization & Security Controls",
     "title": "Account & Login Settings",
-    "sub": "User administration table, avatar photo uploads, security credential updates, and corporate TIN/BIN details.",
+    "sub": "User administration table, avatar photo uploads, security credential updates, and corporate representation details.",
     "tabAccountSettings": "Account & Security Settings",
     "tabUsers": "User List Management",
     "tabUsersAdmin": "User List Management (Admin)",

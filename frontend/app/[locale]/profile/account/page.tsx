@@ -118,7 +118,6 @@ export default function AccountSettingsPage() {
   });
 
   const [companyData, setCompanyData] = useState({
-    tinBin: "990240001892",
     legalAddress: "14 Dostyk Ave, Medeu District, Almaty 050010, Kazakhstan",
     officialEmail: "compliance@pharma.kz",
     additionalAddress: "28 Mangilik El Ave, Astana 010000, Kazakhstan",
@@ -501,17 +500,6 @@ export default function AccountSettingsPage() {
               </div>
 
               <form onSubmit={handleCompanySubmit} className="space-y-4 text-xs">
-                <div>
-                  <label className="block text-primary font-bold mb-1">{tProfile("tinBin")}</label>
-                  <input
-                    type="text"
-                    required
-                    value={companyData.tinBin}
-                    onChange={(e) => setCompanyData({ ...companyData, tinBin: e.target.value })}
-                    className="w-full bg-bg border border-border rounded-xl p-2.5 text-primary outline-none focus:border-accent font-mono"
-                  />
-                </div>
-
                 <div>
                   <label className="block text-primary font-bold mb-1">{tProfile("officialEmail")}</label>
                   <input

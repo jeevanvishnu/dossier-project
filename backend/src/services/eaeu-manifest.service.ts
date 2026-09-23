@@ -69,7 +69,10 @@ export function getRussianDocName(originalName: string, eaeuCode?: string, nodeI
   const russianTitle = canonicalLabel || "Документ регистрационного досье";
 
   const cleanNode = node.replace(/-\d{5}$/, "").trim();
-  return cleanNode ? `${cleanNode} ${russianTitle}${ext}` : `${russianTitle}${ext}`;
+  const isCyrillicLabel = /[\u0400-\u04FF]/.test(russianTitle);
+  const separator = isCyrillicLabel ? ". " : " ";
+  
+  return cleanNode ? `${cleanNode}${separator}${russianTitle}${ext}` : `${russianTitle}${ext}`;
 }
 
 export interface EaeuManifestOptions {

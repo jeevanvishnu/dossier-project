@@ -109,7 +109,7 @@ export function AddCompanyUserModal({ isOpen, onClose, onSuccess, memberToEdit }
     try {
       const payload: any = {
         ...formData,
-        companyId: parseInt(formData.companyId)
+        companyId: formData.companyId
       };
 
       if (imageBase64 !== null) {

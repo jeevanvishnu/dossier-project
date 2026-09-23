@@ -16,18 +16,6 @@ interface UserSeed {
 
 const USERS_TO_SEED: UserSeed[] = [
   {
-    email: process.env.SEED_ADMIN_EMAIL || "admindossier@gmail.com",
-    rawPassword: process.env.SEED_ADMIN_PASSWORD || "testadmin@2244",
-    role: "admin",
-    name: "Admin Dossier",
-  },
-  {
-    email: process.env.SEED_USER_EMAIL || "testuser@gmail.com",
-    rawPassword: process.env.SEED_USER_PASSWORD || "testuser@2244",
-    role: "user",
-    name: "Test User",
-  },
-  {
     email: process.env.SEED_SUPERADMIN_EMAIL || "superadmin@gmail.com",
     rawPassword: process.env.SEED_SUPERADMIN_PASSWORD || "testsuperadmin@2244",
     role: "superadmin",

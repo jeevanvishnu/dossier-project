@@ -1,1 +1,0 @@
-ALTER TABLE "dossier_config" ADD COLUMN "dossier_details" jsonb;

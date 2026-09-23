@@ -513,7 +513,7 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
           if (typeof createdOrUpdated.version === "number") {
             setProjectVersion(createdOrUpdated.version);
           }
-          const realId = createdOrUpdated.projectCode || String(createdOrUpdated.id);
+          const realId = String(createdOrUpdated.id);
           if (realId) {
             setCurrentProjectId(realId);
             if (typeof window !== "undefined") {
@@ -634,7 +634,7 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
       const payload = {
         version: projectVersion,
         createNewDossier: editingDossierId === null,
-        dossierConfigId: editingDossierId ? parseInt(editingDossierId) : undefined,
+        dossierConfigId: editingDossierId || undefined,
         submissionCountry: configState.submissionCountry,
         role: configState.roleOfSubmissionCountry,
         procedureType: configState.procedureType,

@@ -194,7 +194,7 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
       }
       const compileRes = await api.post(`/projects/${projectId}/compile`, {
         sequence: activeSeq,
-        dossierConfigId: activeConfigId ? parseInt(activeConfigId) : undefined,
+        dossierConfigId: activeConfigId || undefined,
       });
       if (compileRes.data?.success && compileRes.data?.data?.downloadUrl) {
         const downloadUrl = compileRes.data.data.downloadUrl;
