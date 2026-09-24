@@ -3,6 +3,7 @@ import { eq } from "drizzle-orm";
 import { db } from "../db/db";
 import { users } from "../db/schema";
 import { verifyAccessToken } from "../generateJwtToken/token.util";
+import { CacheService, CacheKeys } from "../lib/cache";
 
 // ─── Extend Express Request to carry decoded user ──────────────────────────
 declare global {
@@ -42,12 +43,23 @@ export async function protect(req: Request, res: Response, next: NextFunction): 
       companyId?: string | null;
     };
 
-    // 3. Query user from database to ensure user is active and not blocked
-    const [user] = await db
-      .select({ id: users.id, email: users.email, role: users.role, isBlocked: users.isBlocked })
-      .from(users)
-      .where(eq(users.id, decoded.id))
-      .limit(1);
+    // 3. Check Redis cache first. On miss, query DB and populate cache with TTL 30s.
+    const cacheKey = CacheKeys.user(decoded.id);
+    let user = await CacheService.get<{ id: string; email: string; role: string; isBlocked: boolean }>(cacheKey);
+
+    if (!user) {
+      const [dbUser] = await db
+        .select({ id: users.id, email: users.email, role: users.role, isBlocked: users.isBlocked })
+        .from(users)
+        .where(eq(users.id, decoded.id))
+        .limit(1);
+        
+      if (dbUser) {
+        user = dbUser;
+        // Set TTL to 30s as per security requirements to limit stale authorization
+        await CacheService.set(cacheKey, user, 30);
+      }
+    }
 
     if (!user || user.isBlocked) {
       console.warn(`[AUTH] 🚫 Access denied — user id=${decoded.id} is suspended/blocked.`);

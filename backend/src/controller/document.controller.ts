@@ -3,6 +3,7 @@ import { db } from "../db/db";
 import { projectDocuments, auditLogs, dossierConfig } from "../db/schema";
 import { uploadToImageKit, deleteFromImageKit } from "../services/imagekit.service";
 import { StorageService } from "../services/storage.service";
+import { CacheService, CacheKeys } from "../lib/cache";
 import { compileEctdPackage, sanitizeSequence } from "../services/compilation.service";
 import { calculateMD5 } from "../utils/crypto.util";
 import { resolveProjectId, getSingleParam } from "../utils/params.util";
@@ -125,6 +126,35 @@ export async function uploadDocument(req: Request, res: Response): Promise<void>
     return;
   }
 
+  // --- Upload Security Validations ---
+  // 1. File Size Validation (Max 50MB)
+  const MAX_FILE_SIZE = 50 * 1024 * 1024;
+  if (file.size > MAX_FILE_SIZE) {
+    res.status(413).json({ success: false, message: "File exceeds the maximum allowed size of 50MB." });
+    return;
+  }
+
+  // 2. MIME Type / Extension Validation
+  const allowedMimes = [
+    "application/pdf",
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/xml",
+    "text/xml",
+    "application/zip"
+  ];
+  if (!allowedMimes.includes(file.mimetype)) {
+    res.status(415).json({ success: false, message: "Unsupported file type. Allowed types: PDF, DOC, DOCX, XML, ZIP." });
+    return;
+  }
+
+  // 3. Filename Validation (Path Traversal Protection)
+  if (file.originalname.includes("..") || file.originalname.includes("/")) {
+    res.status(400).json({ success: false, message: "Invalid filename format." });
+    return;
+  }
+  // -----------------------------------
+
   if (operation === "replace" && !existingActive) {
     res.status(400).json({
       success: false,
@@ -209,6 +239,12 @@ export async function uploadDocument(req: Request, res: Response): Promise<void>
       data: newDocRecord,
       message: `Document (${operation}) uploaded successfully.`,
     });
+
+    // Invalidate Caches
+    await CacheService.del(CacheKeys.projectDossier(projectId));
+    if (req.user?.companyId) {
+      await CacheService.del(CacheKeys.companyStorage(req.user.companyId));
+    }
   } catch (error: any) {
     console.error(`[Upload Document Error - Project ${projectId}, Node ${nodeId}]`, error);
 
@@ -379,6 +415,12 @@ export async function deleteDocumentByNode(req: Request, res: Response): Promise
       data: tombstoneRecord,
       message: `Document at node '${nodeId}' deleted successfully.`,
     });
+
+    // Invalidate Caches
+    await CacheService.del(CacheKeys.projectDossier(projectId));
+    if (req.user?.companyId) {
+      await CacheService.del(CacheKeys.companyStorage(req.user.companyId));
+    }
   } catch (error: any) {
     console.error("[Delete Document Error]", error);
     res.status(500).json({ success: false, message: error.message || "Failed to delete document" });
@@ -406,7 +448,23 @@ export async function seedSorbitDossier(req: Request, res: Response): Promise<vo
     });
     const currentSeq = sanitizeSequence(config?.dossierSequence);
 
-    const { activeDocuments } = await import("../fixtures/sorbitDossier.fixture.js");
+    // Fetch real active documents for this project directly from PostgreSQL database
+    const activeDocuments = await db.query.projectDocuments.findMany({
+      where: and(
+        eq(projectDocuments.projectId, projectId),
+        eq(projectDocuments.status, "active")
+      ),
+    });
+
+    if (activeDocuments.length === 0) {
+      res.status(200).json({
+        success: true,
+        count: 0,
+        data: [],
+        message: "No existing documents found in database for this project.",
+      });
+      return;
+    }
 
     const insertedDocs = await db.transaction(async (tx) => {
       await tx
@@ -414,18 +472,20 @@ export async function seedSorbitDossier(req: Request, res: Response): Promise<vo
         .set({ status: "superseded" })
         .where(and(eq(projectDocuments.projectId, projectId), eq(projectDocuments.status, "active")));
 
-      const docsToInsert = activeDocuments.map((item: any, index: number) => ({
+      const docsToInsert = activeDocuments.map((item, index) => ({
         projectId,
         nodeId: item.nodeId,
+        docCode: item.docCode,
+        docType: item.docType,
         originalName: item.originalName,
         sequence: currentSeq,
-        uploadedAt: new Date("2026-08-12T15:07:50Z"),
+        uploadedAt: new Date(),
         status: "active" as const,
         operation: "new" as const,
-        imageKitUrl: `https://ik.imagekit.io/ectd/test/${encodeURIComponent(item.originalName)}`,
-        imageKitFileId: `seed_file_${index + 1}`,
-        fileSize: 1024567,
-        md5Checksum: "d9e1049125db0e4d416206eb7e5b54ef",
+        imageKitUrl: item.imageKitUrl,
+        imageKitFileId: item.imageKitFileId,
+        fileSize: item.fileSize,
+        md5Checksum: item.md5Checksum,
       }));
 
       const inserted = await tx.insert(projectDocuments).values(docsToInsert).returning();
@@ -433,7 +493,7 @@ export async function seedSorbitDossier(req: Request, res: Response): Promise<vo
       await tx.insert(auditLogs).values({
         projectId,
         logType: "SUCCESS",
-        message: `Seeded project ${projectId} with ${activeDocuments.length} Russian client Sorbit dossier documents.`,
+        message: `Refreshed project ${projectId} sequence ${currentSeq} with ${activeDocuments.length} active database documents.`,
         userCredentials: req.user ? `${req.user.email} (${req.user.role})` : "System",
       });
 
@@ -539,6 +599,8 @@ export async function updateDocumentDates(req: Request, res: Response): Promise<
       data: updatedDoc,
       message: "Document dates updated successfully.",
     });
+
+    await CacheService.del(CacheKeys.projectDossier(projectId));
   } catch (error: any) {
     console.error("[Update Document Dates Error]", error);
     res.status(500).json({ success: false, message: error.message || "Failed to update document dates" });

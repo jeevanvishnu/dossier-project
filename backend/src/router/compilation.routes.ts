@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { protect } from "../middleware/auth.middleware";
 import { getPackageArchives, compileProjectPackage } from "../controller/compilation.controller";
+import { compileLimiter } from "../middleware/rateLimiter.middleware";
 
 const router = Router();
 
@@ -8,6 +9,6 @@ const router = Router();
 router.get("/:id/packages", protect, getPackageArchives);
 
 // Trigger eCTD XML backbone & ZIP compilation (Requires owner or editor)
-router.post("/:id/compile", protect, compileProjectPackage);
+router.post("/:id/compile", protect, compileLimiter, compileProjectPackage);
 
 export default router;

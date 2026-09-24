@@ -1,10 +1,10 @@
-import dotenv from "dotenv";
-dotenv.config();
+import "dotenv/config";
+
 
 import express, { Request, Response, NextFunction } from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import rateLimit from "express-rate-limit";
+
 import { sql } from "drizzle-orm";
 
 import { db } from "./db/db";
@@ -70,20 +70,7 @@ app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
 app.use(cookieParser());
 
-// ─── Rate Limiting for Authentication Endpoints ──────────────────────────────
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 20, // Limit each IP to 20 requests per 15 minutes
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: {
-    success: false,
-    message: "Too many authentication attempts. Please try again after 15 minutes.",
-  },
-});
-
-app.use("/api/auth/signin", authLimiter);
-app.use("/api/auth/refresh", authLimiter);
+// Rate limiting for auth is now handled directly in auth.router.ts using Upstash Redis.
 
 // ─── API Routes ──────────────────────────────────────────────────────────────
 app.use("/api/auth", authRouter);

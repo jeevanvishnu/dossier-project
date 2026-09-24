@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { protect, authorize } from "../middleware/auth.middleware";
 import { uploadMiddleware } from "../middleware/upload.middleware";
+import { uploadLimiter } from "../middleware/rateLimiter.middleware";
 import {
   uploadDocument,
   getDocumentByNode,
@@ -23,6 +24,7 @@ router.get(
 router.post(
   "/:id/documents/:nodeId",
   protect,
+  uploadLimiter,
   uploadMiddleware,
   uploadDocument
 );

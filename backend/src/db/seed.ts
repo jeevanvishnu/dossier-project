@@ -1,11 +1,10 @@
+import "dotenv/config";
 import { db } from "./db";
 import { users } from "./schema";
 import bcrypt from "bcrypt";
 import { eq } from "drizzle-orm";
-import dotenv from "dotenv";
 import { BACKEND_ECTD_TREE_SEED } from "./ctdTreeSeed";
 
-dotenv.config();
 
 interface UserSeed {
   email: string;

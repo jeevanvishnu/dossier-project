@@ -3,6 +3,7 @@ import { db } from "../db/db";
 import { companyMembers } from "../db/schema";
 import { StorageService } from "../services/storage.service";
 import { eq } from "drizzle-orm";
+import { CacheService, CacheKeys } from "../lib/cache";
 
 export async function getCompanyStats(req: Request, res: Response): Promise<void> {
   try {
@@ -14,6 +15,7 @@ export async function getCompanyStats(req: Request, res: Response): Promise<void
 
     const [membership] = await db
       .select({
+        companyId: companyMembers.companyId,
         maxUsers: companyMembers.maxUsers,
         storageGb: companyMembers.storageGb,
       })
@@ -24,7 +26,21 @@ export async function getCompanyStats(req: Request, res: Response): Promise<void
     const maxUsers = membership ? membership.maxUsers : 1;
     const storageGb = membership ? membership.storageGb : 1;
 
-    const usedStorageBytes = await StorageService.getUsedBytesForUser(userId);
+    let usedStorageBytes = 0;
+    let cacheKey = null;
+
+    if (membership && membership.companyId) {
+      cacheKey = CacheKeys.companyStorage(membership.companyId);
+      const cached = await CacheService.get<number>(cacheKey);
+      if (cached !== null) {
+        usedStorageBytes = cached;
+      } else {
+        usedStorageBytes = await StorageService.getUsedBytesForUser(userId);
+        await CacheService.set(cacheKey, usedStorageBytes, 30); // 30s TTL
+      }
+    } else {
+      usedStorageBytes = await StorageService.getUsedBytesForUser(userId);
+    }
 
     res.json({
       success: true,

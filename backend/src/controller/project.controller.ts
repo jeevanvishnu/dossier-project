@@ -5,6 +5,7 @@ import { createProjectSchema, updateDossierDataSchema } from "../validators/proj
 import { parseIdParam, resolveProjectId } from "../utils/params.util";
 import { deleteFromImageKit } from "../services/imagekit.service";
 import { eq, and, desc, isNotNull, sql, count } from "drizzle-orm";
+import { CacheService, CacheKeys } from "../lib/cache";
 
 import crypto from "crypto";
 
@@ -155,6 +156,14 @@ export async function getDossierData(req: Request, res: Response): Promise<void>
       return;
     }
 
+    const cacheKey = CacheKeys.projectDossier(projectId);
+    const cachedData = await CacheService.get<any>(cacheKey);
+
+    if (cachedData) {
+      res.status(200).json({ success: true, data: cachedData, cached: true });
+      return;
+    }
+
     const projectData = await db.query.projects.findFirst({
       where: eq(projects.id, projectId),
       with: {
@@ -196,14 +205,18 @@ export async function getDossierData(req: Request, res: Response): Promise<void>
 
     const totalFileSize = (documents || []).reduce((sum: number, doc: any) => sum + (doc.fileSize || 0), 0);
 
+    const responseData = {
+      project,
+      dossierConfig: allConfigs[0] || config || null,
+      dossierConfigs: allConfigs,
+      dossierSize: totalFileSize,
+    };
+
+    await CacheService.set(cacheKey, responseData, 30); // 30 seconds TTL
+
     res.status(200).json({
       success: true,
-      data: {
-        project,
-        dossierConfig: allConfigs[0] || config || null,
-        dossierConfigs: allConfigs,
-        dossierSize: totalFileSize,
-      },
+      data: responseData,
     });
   } catch (error: any) {
     console.error("[Get Dossier Data Error]", error);
@@ -377,6 +390,8 @@ export async function updateDossierData(req: Request, res: Response): Promise<vo
       return { project: updatedProject, dossierConfig: updatedConfig, dossierConfigs: allConfigs };
     });
 
+    await CacheService.del(CacheKeys.projectDossier(projectId));
+
     res.status(200).json({
       success: true,
       data: updatedData,
@@ -477,6 +492,7 @@ export async function deleteProject(req: Request, res: Response): Promise<void> 
       },
       message: `Project ${deletedProject.productName} (${deletedProject.projectCode}) and all associated product metadata, dossier data, configuration, dossier history, and XML creation history were deleted successfully.`,
     });
+    await CacheService.del(CacheKeys.projectDossier(projectId));
   } catch (error: any) {
     console.error("[Delete Project Error]", error);
     res.status(500).json({ success: false, message: error.message || "Failed to delete project" });
@@ -546,6 +562,7 @@ export async function deleteDossierConfig(req: Request, res: Response): Promise<
       data: { remainingConfigs },
       message: "Dossier configuration deleted successfully",
     });
+    await CacheService.del(CacheKeys.projectDossier(projectId));
   } catch (error: any) {
     console.error("[Delete Dossier Config Error]", error);
     res.status(500).json({ success: false, message: error.message || "Failed to delete dossier configuration" });

@@ -2,9 +2,18 @@ import { Request, Response } from "express";
 import { db } from "../db/db";
 import { users, companies, projectDocuments } from "../db/schema";
 import { sql, eq } from "drizzle-orm";
+import { CacheService, CacheKeys } from "../lib/cache";
 
 export async function getStats(req: Request, res: Response): Promise<void> {
   try {
+    const cacheKey = CacheKeys.adminStats();
+    const cachedStats = await CacheService.get<any>(cacheKey);
+
+    if (cachedStats) {
+      res.status(200).json({ success: true, data: cachedStats, cached: true });
+      return;
+    }
+
     const [totalUsersRes] = await db.select({ count: sql<number>`count(*)::int` }).from(users);
     const [totalCompaniesRes] = await db.select({ count: sql<number>`count(*)::int` }).from(companies);
     const [activeAdminsRes] = await db.select({ count: sql<number>`count(*)::int` }).from(users).where(eq(users.role, "admin"));
@@ -52,7 +61,7 @@ export async function getStats(req: Request, res: Response): Promise<void> {
     const arpu = companyCount > 0 ? Math.round(totalRevenue / companyCount) : 4850;
 
     res.setHeader("X-Data-Mode", "mock");
-    res.status(200).json({
+    const responseData = {
       success: true,
       data: {
         totalUsers: userCount,
@@ -81,7 +90,11 @@ export async function getStats(req: Request, res: Response): Promise<void> {
           { role: "Super Admin", count: 1 },
         ]
       },
-    });
+    };
+
+    await CacheService.set(cacheKey, responseData.data, 5 * 60); // 5 minutes TTL
+
+    res.status(200).json(responseData);
   } catch (error: any) {
     console.error("[STATS_CONTROLLER] Error fetching stats:", error);
     res.status(500).json({ success: false, message: "Failed to fetch stats" });

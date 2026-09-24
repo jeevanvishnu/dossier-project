@@ -4,6 +4,7 @@ import { eq, ilike, or, and, count, desc, ne, inArray } from "drizzle-orm";
 import { db } from "../db/db";
 import { users, refreshSessions, companyMembers } from "../db/schema";
 import { sendWelcomeEmail } from "./email.service";
+import { CacheService, CacheKeys } from "../lib/cache";
 import {
   CreateUserInput,
   UpdateUserInput,
@@ -176,6 +177,7 @@ export class UserManagementService {
         updatedAt: users.updatedAt,
       });
 
+    await CacheService.del(CacheKeys.user(userId));
     return updatedUser;
   }
 
@@ -218,6 +220,7 @@ export class UserManagementService {
     });
 
     console.log(`[USER_SERVICE] 🚫 User id=${userId} blocked and all refresh sessions revoked.`);
+    await CacheService.del(CacheKeys.user(userId));
     return result;
   }
 
@@ -247,6 +250,7 @@ export class UserManagementService {
     }
 
     console.log(`[USER_SERVICE] ✅ User id=${userId} unblocked.`);
+    await CacheService.del(CacheKeys.user(userId));
     return unblockedUser;
   }
 
@@ -264,6 +268,7 @@ export class UserManagementService {
     }
 
     console.log(`[USER_SERVICE] 🗑️ User id=${userId} (${deletedUser.email}) permanently deleted.`);
+    await CacheService.del(CacheKeys.user(userId));
     return deletedUser;
   }
 
