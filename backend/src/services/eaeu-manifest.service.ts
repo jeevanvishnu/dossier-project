@@ -18,9 +18,13 @@ export function mapNodeIdToEaeuCode(nodeId: string, docCode?: string): string {
     return entry.docCode;
   }
 
-  throw new Error(
-    `Unresolvable EAEU document code: node '${nodeId}' ${docCode ? `with docCode '${docCode}'` : ""} requires a valid docCode selection from codelist-2058 lookup table.`
+  // Graceful fallback: log a warning but do NOT throw.
+  // Throwing here would crash the entire XML compilation because of a single unresolvable node.
+  // '00000' is used as a safe placeholder so the manifest is still generated.
+  console.warn(
+    `[EAEU Manifest] Unresolvable doc code for node '${nodeId}'${docCode ? ` (docCode: '${docCode}')` : ""}. Using fallback '00000'. Add a matching entry to CTD_DOC_CODES to resolve this.`
   );
+  return "00000";
 }
 
 /**
@@ -49,29 +53,57 @@ export function mapOperationAttribute(status?: string | null): "new" | "replace"
 }
 
 /**
+ * Returns true if the string contains at least one Cyrillic character (U+0400–U+04FF).
+ * Used to decide the separator: Cyrillic labels get '. ' (period + space),
+ * Latin/English labels get ' ' (space only), matching the sorbit_.xml reference filenames.
+ */
+function hasCyrillic(text: string): boolean {
+  return /[\u0400-\u04FF]/.test(text);
+}
+
+/**
  * Ensures document names in XML manifest conform to Russian EAEU regulatory standards.
- * Preserves Cyrillic filenames. For non-Cyrillic filenames, derives title directly from canonical label in ctdDocCodes.ts.
+ *
+ * Rules applied in order:
+ * 1. If the user already uploaded it with the correct node prefix (e.g. "1.0. Custom Name.pdf"),
+ *    return it unchanged — bypass all further logic.
+ * 2. If the user's filename stem exactly matches the canonical label for this docCode (meaning
+ *    the user uploaded the file under its own meaningful name without a node prefix, as seen in
+ *    the sorbit_.xml reference for 13028), return the original filename unchanged — no prefix added.
+ * 3. Otherwise, construct "<nodeId><separator><canonicalLabel><ext>" where separator is:
+ *    - ". "  (period + space) if the canonical label contains Cyrillic (e.g. 01001, 06001)
+ *    - " "   (space only)    if the canonical label is Latin/English (e.g. 01013, 01015)
  */
 export function getRussianDocName(originalName: string, eaeuCode?: string, nodeId?: string): string {
   if (!originalName) return "Документ.pdf";
 
-  if (/[\u0400-\u04FF]/.test(originalName)) {
+  const cleanNode = (nodeId || "").replace(/-\d{5}$/, "").trim();
+
+  // Bypass 1: user already included the node prefix — preserve verbatim
+  if (cleanNode && originalName.startsWith(cleanNode)) {
     return originalName;
   }
 
   const extMatch = originalName.match(/\.[a-zA-Z0-9]+$/);
   const ext = extMatch ? extMatch[0] : ".pdf";
+  const originalStem = extMatch ? originalName.slice(0, -extMatch[0].length) : originalName;
 
   const code = eaeuCode || "";
-  const node = nodeId || "";
-
   const canonicalLabel = code ? getCanonicalDocLabelByCode(code) : undefined;
   const russianTitle = canonicalLabel || "Документ регистрационного досье";
 
-  const cleanNode = node.replace(/-\d{5}$/, "").trim();
-  const isCyrillicLabel = /[\u0400-\u04FF]/.test(russianTitle);
-  const separator = isCyrillicLabel ? ". " : " ";
-  
+  // Bypass 2: user's filename stem matches the canonical label exactly — the filer intentionally
+  // preserved the original filename without a node prefix (confirmed in sorbit_.xml for 13028).
+  // Do NOT force-prepend a node-number prefix in this case.
+  if (canonicalLabel && originalStem === canonicalLabel) {
+    return originalName;
+  }
+
+  // Separator rule: inspect actual text of the canonical label for Cyrillic characters.
+  // Cyrillic labels → ". " (period + space), as in "1.0. Сопроводительное письмо Сорбит.pdf"
+  // Latin labels    → " "  (space only),      as in "1.8.1 Addetional trade name.pdf"
+  const separator = cleanNode && hasCyrillic(russianTitle) ? ". " : " ";
+
   return cleanNode ? `${cleanNode}${separator}${russianTitle}${ext}` : `${russianTitle}${ext}`;
 }
 

@@ -38,11 +38,11 @@ function createRateLimiter(
         // If the request is blocked, return 429
         const retryAfter = Math.max(0, Math.ceil((reset - Date.now()) / 1000));
         res.setHeader("Retry-After", String(retryAfter));
-        
+
         let message = "Too many requests. Please try again later.";
         if (reason === "timeout") {
-           // We normally fail-open on timeout. The @upstash/ratelimit SDK returns success=true on timeout
-           // if timeout is configured. So we shouldn't hit this, but handled just in case.
+          // We normally fail-open on timeout. The @upstash/ratelimit SDK returns success=true on timeout
+          // if timeout is configured. So we shouldn't hit this, but handled just in case.
         }
 
         res.status(429).json({
@@ -85,15 +85,27 @@ export const changePasswordLimiter = createRateLimiter(
   (req) => `changepw:${req.user?.id || "unknown"}:${req.ip}`
 );
 
+// forgotPasswordLimiter: 5 req / 15m. Keyed by IP + Email.
+export const forgotPasswordLimiter = createRateLimiter(
+  { max: 5, window: "15 m" },
+  (req) => `forgotpw:${req.ip}:${req.body?.email || "anonymous"}`
+);
+
+// resetPasswordLimiter: 10 req / 15m. Keyed by IP.
+export const resetPasswordLimiter = createRateLimiter(
+  { max: 10, window: "15 m" },
+  (req) => `resetpw:${req.ip}`
+);
+
 // uploadLimiter: 20 req / 10m. Keyed by userId.
 export const uploadLimiter = createRateLimiter(
   { max: 20, window: "10 m" },
   (req) => `upload:${req.user?.id || "unknown"}`
 );
 
-// compileLimiter: 3 req / 5m. Keyed by userId + projectId to isolate project spam.
+// compileLimiter: 100 req / 5m. Keyed by userId + projectId to isolate project spam.
 export const compileLimiter = createRateLimiter(
-  { max: 3, window: "5 m" },
+  { max: 1000, window: "5 m" },
   (req) => `compile:${req.user?.id || "unknown"}:${req.params.id || "unknown"}`
 );
 

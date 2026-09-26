@@ -23,18 +23,33 @@ export async function uploadDocument(req: Request, res: Response): Promise<void>
   const operation: "new" | "replace" | "delete" =
     operationInput === "replace" ? "replace" : operationInput === "delete" ? "delete" : "new";
 
-  const config = await db.query.dossierConfig.findFirst({
-    where: eq(dossierConfig.projectId, projectId),
-  });
-  const currentSeq = sanitizeSequence(config?.dossierSequence);
+  // Prefer an explicit dossierConfigId sent by the client (identifies the active dossier).
+  // Fall back to looking up the latest config for the project.
+  const rawDossierConfigId = req.query.dossierConfigId || req.body?.dossierConfigId;
+  const dossierConfigIdParam: string | undefined = rawDossierConfigId ? String(rawDossierConfigId) : undefined;
 
-  // Check for pre-existing active document at this nodeId
+  const config = dossierConfigIdParam
+    ? await db.query.dossierConfig.findFirst({ where: eq(dossierConfig.id, dossierConfigIdParam) })
+    : await db.query.dossierConfig.findFirst({ where: eq(dossierConfig.projectId, projectId) });
+  const currentSeq = sanitizeSequence(config?.dossierSequence);
+  const resolvedDossierConfigId: string | null = config?.id ?? null;
+
+  // Check for pre-existing active document at this nodeId, scoped to the current dossier.
+  // When a dossierConfigId is known, only documents belonging to THAT dossier are considered.
+  // This prevents a document uploaded in Dossier 0001 from blocking uploads in Dossier 0000.
   const existingActive = await db.query.projectDocuments.findFirst({
-    where: and(
-      eq(projectDocuments.projectId, projectId),
-      eq(projectDocuments.nodeId, nodeId),
-      eq(projectDocuments.status, "active")
-    ),
+    where: resolvedDossierConfigId
+      ? and(
+          eq(projectDocuments.projectId, projectId),
+          eq(projectDocuments.nodeId, nodeId),
+          eq(projectDocuments.status, "active"),
+          eq(projectDocuments.dossierConfigId, resolvedDossierConfigId)
+        )
+      : and(
+          eq(projectDocuments.projectId, projectId),
+          eq(projectDocuments.nodeId, nodeId),
+          eq(projectDocuments.status, "active")
+        ),
   });
 
   // ─── 1. OPERATION = 'delete' ───────────────────────────────────────────────
@@ -218,6 +233,7 @@ export async function uploadDocument(req: Request, res: Response): Promise<void>
           imageKitFileId: ikResult.fileId,
           fileSize: file.size,
           sequence: currentSeq,
+          dossierConfigId: resolvedDossierConfigId,
           md5Checksum,
           status: "active",
           operation,
@@ -308,11 +324,24 @@ export async function getAllProjectDocuments(req: Request, res: Response): Promi
       return;
     }
 
+    // When dossierConfigId is provided, return only docs belonging to that specific dossier.
+    // This prevents files from one dossier sequence leaking into another.
+    const rawDossierConfigId = req.query.dossierConfigId;
+    const dossierConfigIdFilter: string | undefined = rawDossierConfigId ? String(rawDossierConfigId) : undefined;
+
+    const whereConditions = dossierConfigIdFilter
+      ? and(
+          eq(projectDocuments.projectId, projectId),
+          eq(projectDocuments.status, "active"),
+          eq(projectDocuments.dossierConfigId, dossierConfigIdFilter)
+        )
+      : and(
+          eq(projectDocuments.projectId, projectId),
+          eq(projectDocuments.status, "active")
+        );
+
     const documents = await db.query.projectDocuments.findMany({
-      where: and(
-        eq(projectDocuments.projectId, projectId),
-        eq(projectDocuments.status, "active")
-      ),
+      where: whereConditions,
     });
 
     res.status(200).json({

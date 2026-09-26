@@ -284,7 +284,15 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
   const fetchAllDocuments = async () => {
     if (!projectId) return;
     try {
-      const response = await api.get(`/projects/${projectId}/documents`);
+      // Read the currently active dossier config ID so we only fetch docs for this dossier sequence.
+      let activeDossierConfigId: string | undefined = undefined;
+      if (typeof window !== "undefined") {
+        activeDossierConfigId = sessionStorage.getItem(`active_dossier_id_${projectId}`) || undefined;
+      }
+      const url = activeDossierConfigId
+        ? `/projects/${projectId}/documents?dossierConfigId=${activeDossierConfigId}`
+        : `/projects/${projectId}/documents`;
+      const response = await api.get(url);
       if (response.data?.success && Array.isArray(response.data?.data)) {
         const docs = response.data.data;
         const newMap: Record<string, UploadedFile[]> = {};
@@ -415,8 +423,14 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
         formData.append("docCode", selectedDocCode);
       }
 
+      // Read the active dossier config ID to tag this upload with its dossier
+      let activeDossierConfigId: string | undefined = undefined;
+      if (typeof window !== "undefined") {
+        activeDossierConfigId = sessionStorage.getItem(`active_dossier_id_${projectId}`) || undefined;
+      }
+
       const response = await api.post(
-        `/projects/${projectId}/documents/${selectedModuleId}?operation=${selectedOperation}${selectedDocCode ? `&docCode=${selectedDocCode}` : ""}`,
+        `/projects/${projectId}/documents/${selectedModuleId}?operation=${selectedOperation}${selectedDocCode ? `&docCode=${selectedDocCode}` : ""}${activeDossierConfigId ? `&dossierConfigId=${activeDossierConfigId}` : ""}`,
         formData,
         {
           onUploadProgress: (progressEvent) => {
@@ -810,12 +824,12 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
             onDragLeave={isDossierLocked || isUploading ? undefined : handleDrag}
             onDrop={isDossierLocked || isUploading ? undefined : handleDrop}
             className={`border-2 border-dashed rounded-xl p-5 text-center transition-all relative ${isDossierLocked
-                ? "border-border bg-surface-raised/40 opacity-60 cursor-not-allowed"
-                : isUploading
-                  ? "border-accent/50 bg-accent/5 dark:bg-accent/10 shadow-sm"
-                  : dragActive
-                    ? "border-accent bg-accent/10 scale-[1.01]"
-                    : "border-border bg-bg/50 hover:border-accent/70 hover:bg-surface-raised/50"
+              ? "border-border bg-surface-raised/40 opacity-60 cursor-not-allowed"
+              : isUploading
+                ? "border-accent/50 bg-accent/5 dark:bg-accent/10 shadow-sm"
+                : dragActive
+                  ? "border-accent bg-accent/10 scale-[1.01]"
+                  : "border-border bg-bg/50 hover:border-accent/70 hover:bg-surface-raised/50"
               }`}
           >
             <input

@@ -155,3 +155,131 @@ export async function sendWelcomeEmail({
     return { success: false, error: err.message || "Email send exception" };
   }
 }
+
+export interface SendPasswordResetEmailParams {
+  to: string;
+  resetUrl: string;
+}
+
+/**
+ * Sends a password reset email with a reset link via Resend.
+ */
+export async function sendPasswordResetEmail({
+  to,
+  resetUrl,
+}: SendPasswordResetEmailParams): Promise<{ success: boolean; id?: string; error?: string }> {
+  console.log(`
+============================================================
+🔑 PASSWORD RESET EMAIL:
+   To:       ${to}
+   Link:     ${resetUrl}
+============================================================
+  `);
+
+  const resend = getResendClient();
+  if (!resend) {
+    const errorMsg = "RESEND_API_KEY is not configured in backend/.env.";
+    console.warn(`[EMAIL] ⚠️ Cannot send reset email to ${to}: ${errorMsg}`);
+    return { success: false, error: errorMsg };
+  }
+
+  const fromEmail = process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev";
+
+  const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <style>
+          body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f4f7f6; margin: 0; padding: 20px; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; padding: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+          .header { border-bottom: 2px solid #0284c7; padding-bottom: 15px; margin-bottom: 20px; }
+          .header h2 { color: #0f172a; margin: 0; font-size: 24px; }
+          .content { font-size: 15px; line-height: 1.6; }
+          .btn { display: inline-block; background-color: #0284c7; color: #ffffff !important; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 600; margin-top: 20px; }
+          .footer { margin-top: 30px; font-size: 12px; color: #94a3b8; text-align: center; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h2>Reset Your Password — eCTD Portal</h2>
+          </div>
+          <div class="content">
+            <p>Hello,</p>
+            <p>We received a request to reset the password for your eCTD Portal account registered with <strong>${to}</strong>.</p>
+            <p>Click the button below to set a new password. This link will expire in 1 hour:</p>
+            
+            <a href="${resetUrl}" class="btn" target="_blank">Reset Password</a>
+
+            <p style="margin-top: 25px; font-size: 13px; color: #64748b;">
+              Or copy and paste this link into your browser:<br/>
+              <a href="${resetUrl}" style="color: #0284c7; word-break: break-all;">${resetUrl}</a>
+            </p>
+
+            <p style="font-size: 13px; color: #64748b; margin-top: 20px;">
+              If you did not request a password reset, you can safely ignore this email.
+            </p>
+          </div>
+          <div class="footer">
+            <p>eCTD Regulatory Dossier Portal — Automated Security Notice</p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: `eCTD Security <${fromEmail}>`,
+      to: [to],
+      subject: "Reset Your Password — eCTD Portal",
+      html: htmlContent,
+      headers: {
+        "X-Entity-Ref-ID": `pw-reset-${to}-${Date.now()}`,
+      },
+    });
+
+    if (error) {
+      console.error(`[EMAIL] ❌ Resend error when sending reset email to ${to}:`, error.message);
+
+      if (
+        fromEmail.includes("resend.dev") &&
+        error.message?.includes("only send testing emails")
+      ) {
+        const testRecipient = process.env.RESEND_TEST_RECIPIENT || "jeevanvishnu18@gmail.com";
+        console.warn(
+          `[EMAIL] ⚠️ Resend sandbox mode: Delivering reset email for ${to} to registered test recipient (${testRecipient}).`
+        );
+
+        const testNoticeHtml = `
+          <div style="background-color: #fef3c7; border: 1px solid #f59e0b; color: #92400e; padding: 12px; margin-bottom: 20px; border-radius: 6px; font-size: 13px;">
+            <strong>⚠️ Resend Sandbox Mode Notice:</strong><br/>
+            This password reset link was requested for <code>${to}</code>. Resend sandbox delivers to <code>${testRecipient}</code>.
+          </div>
+          ${htmlContent}
+        `;
+
+        const fallback = await resend.emails.send({
+          from: `eCTD Security <${fromEmail}>`,
+          to: [testRecipient],
+          subject: `[TEST RESET LINK for ${to}] Reset Your Password — eCTD Portal`,
+          html: testNoticeHtml,
+        });
+
+        if (!fallback.error && fallback.data) {
+          console.log(`[EMAIL] ✅ Password reset email delivered to test recipient (${testRecipient}) (ID: ${fallback.data.id})`);
+          return { success: true, id: fallback.data.id };
+        }
+      }
+
+      return { success: false, error: error.message };
+    }
+
+    console.log(`[EMAIL] ✅ Password reset email sent successfully to ${to} (ID: ${data?.id})`);
+    return { success: true, id: data?.id };
+  } catch (err: any) {
+    console.error(`[EMAIL] 💥 Exception sending password reset email to ${to}:`, err);
+    return { success: false, error: err.message || "Email send exception" };
+  }
+}

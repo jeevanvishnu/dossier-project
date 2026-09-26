@@ -18,6 +18,9 @@ import {
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/routing";
 
+import { toast } from "sonner";
+import { api } from "../lib/axios";
+
 export function AuthModal() {
   const tAuth = useTranslations("auth");
   const tCommon = useTranslations("common");
@@ -81,7 +84,7 @@ export function AuthModal() {
     }
   };
 
-  const handleForgotSubmit = (e: React.FormEvent) => {
+  const handleForgotSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage("");
 
@@ -91,10 +94,19 @@ export function AuthModal() {
     }
 
     setIsForgotLoading(true);
-    setTimeout(() => {
+    try {
+      const response = await api.post("/auth/forgot-password", { email: forgotEmail });
+      if (response.data?.success) {
+        setForgotSuccess(true);
+        toast.success(response.data?.message || "Password reset instructions sent.");
+      }
+    } catch (err: any) {
+      const errorMsg = err.response?.data?.message || "Failed to process request.";
+      setErrorMessage(errorMsg);
+      toast.error(errorMsg);
+    } finally {
       setIsForgotLoading(false);
-      setForgotSuccess(true);
-    }, 1000);
+    }
   };
 
   return (

@@ -3,7 +3,6 @@ import { db } from "./db";
 import { users } from "./schema";
 import bcrypt from "bcrypt";
 import { eq } from "drizzle-orm";
-import { BACKEND_ECTD_TREE_SEED } from "./ctdTreeSeed";
 
 
 interface UserSeed {
@@ -74,7 +73,6 @@ async function seedUsers() {
       }
     }
 
-    console.log(`✅ Verified ${BACKEND_ECTD_TREE_SEED.length} top-level eCTD modules available in backend seed taxonomy.`);
     process.exit(0);
   } catch (error: any) {
     console.error("❌ Error seeding users:", error);

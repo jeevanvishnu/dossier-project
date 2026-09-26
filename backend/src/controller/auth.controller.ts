@@ -1,10 +1,11 @@
 import { Request, Response } from "express";
 import bcrypt from "bcrypt";
-import { randomUUID } from "node:crypto";
+import { randomUUID, randomBytes, createHash } from "node:crypto";
 import { eq, or, lt, and, isNull, gt, count } from "drizzle-orm";
 import { db } from "../db/db";
 import { users, refreshSessions, companyMembers, companies } from "../db/schema";
-import { signInSchema, changePasswordSchema } from "../validators/auth.validator";
+import { signInSchema, changePasswordSchema, forgotPasswordSchema, resetPasswordSchema } from "../validators/auth.validator";
+import { sendPasswordResetEmail } from "../services/email.service";
 import {
   generateAccessToken,
   generateRefreshToken,
@@ -599,6 +600,160 @@ export async function getMe(req: Request, res: Response): Promise<void> {
     res.status(200).json({ success: true, data: { user } });
   } catch (error: any) {
     console.error("[ME] 💥 Error:", error.message);
+    res.status(500).json({ success: false, message: "Internal server error." });
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  POST /api/auth/forgot-password
+// ─────────────────────────────────────────────────────────────────────────────
+export async function forgotPassword(req: Request, res: Response): Promise<void> {
+  console.log("[FORGOT_PASSWORD] 📥 Request received for:", req.body?.email);
+
+  const parsed = forgotPasswordSchema.safeParse(req.body);
+  if (!parsed.success) {
+    const errors = parsed.error.flatten().fieldErrors;
+    res.status(422).json({
+      success: false,
+      message: "Validation failed",
+      errors,
+    });
+    return;
+  }
+
+  const { email } = parsed.data;
+
+  try {
+    const [user] = await db
+      .select({ id: users.id, email: users.email, isBlocked: users.isBlocked })
+      .from(users)
+      .where(eq(users.email, email))
+      .limit(1);
+
+    if (!user) {
+      console.log(`[FORGOT_PASSWORD] ⚠️ Email not found: ${email}`);
+      res.status(404).json({
+        success: false,
+        message: "No account found with this email address.",
+      });
+      return;
+    }
+
+    if (user.isBlocked) {
+      console.log(`[FORGOT_PASSWORD] ⚠️ Account is blocked: ${email}`);
+      res.status(403).json({
+        success: false,
+        message: "This account has been suspended. Please contact support.",
+      });
+      return;
+    }
+
+    // 1. Generate 32-byte raw token and SHA-256 hash
+    const rawToken = randomBytes(32).toString("hex");
+    const tokenHash = createHash("sha256").update(rawToken).digest("hex");
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour token validity
+
+    // 2. Persist tokenHash & expiry in DB
+    await db
+      .update(users)
+      .set({
+        resetPasswordToken: tokenHash,
+        resetPasswordExpires: expiresAt,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, user.id));
+
+    const resetUrl = `${process.env.FRONTEND_URL || "http://localhost:3000"}/reset-password?token=${rawToken}`;
+    console.log(`[FORGOT_PASSWORD] 🔑 Password reset token generated for user id=${user.id}`);
+    console.log(`[FORGOT_PASSWORD] 🔗 Reset URL: ${resetUrl}`);
+
+    // Dispatch password reset email via Resend
+    await sendPasswordResetEmail({ to: user.email, resetUrl }).catch((err) => {
+      console.error("[FORGOT_PASSWORD] Failed to dispatch reset email:", err);
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Password reset instructions have been sent to your email address.",
+    });
+  } catch (error: any) {
+    console.error("[FORGOT_PASSWORD] 💥 Error:", error.message);
+    res.status(500).json({ success: false, message: "Internal server error." });
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+//  POST /api/auth/reset-password
+// ─────────────────────────────────────────────────────────────────────────────
+export async function resetPassword(req: Request, res: Response): Promise<void> {
+  console.log("[RESET_PASSWORD] 📥 Password reset request received");
+
+  const parsed = resetPasswordSchema.safeParse(req.body);
+  if (!parsed.success) {
+    const errors = parsed.error.flatten().fieldErrors;
+    res.status(422).json({
+      success: false,
+      message: "Validation failed",
+      errors,
+    });
+    return;
+  }
+
+  const { token, newPassword } = parsed.data;
+
+  try {
+    const tokenHash = createHash("sha256").update(token).digest("hex");
+    const now = new Date();
+
+    const [user] = await db
+      .select({ id: users.id, isBlocked: users.isBlocked })
+      .from(users)
+      .where(
+        and(
+          eq(users.resetPasswordToken, tokenHash),
+          gt(users.resetPasswordExpires, now)
+        )
+      )
+      .limit(1);
+
+    if (!user || user.isBlocked) {
+      console.warn("[RESET_PASSWORD] ⛔ Invalid or expired token attempted");
+      res.status(400).json({
+        success: false,
+        message: "Invalid or expired password reset token.",
+      });
+      return;
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
+
+    await db.transaction(async (tx) => {
+      // 1. Update password and clear reset token & expiry
+      await tx
+        .update(users)
+        .set({
+          password: hashedPassword,
+          resetPasswordToken: null,
+          resetPasswordExpires: null,
+          updatedAt: now,
+        })
+        .where(eq(users.id, user.id));
+
+      // 2. Revoke all refresh sessions across all devices for security
+      await tx
+        .update(refreshSessions)
+        .set({ revokedAt: now, updatedAt: now })
+        .where(eq(refreshSessions.userId, user.id));
+    });
+
+    console.log(`[RESET_PASSWORD] ✅ Password reset successfully for user id=${user.id}`);
+
+    res.status(200).json({
+      success: true,
+      message: "Password reset successfully. You may now sign in with your new password.",
+    });
+  } catch (error: any) {
+    console.error("[RESET_PASSWORD] 💥 Error:", error.message);
     res.status(500).json({ success: false, message: "Internal server error." });
   }
 }

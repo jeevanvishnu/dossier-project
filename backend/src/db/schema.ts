@@ -17,10 +17,13 @@ export const users = pgTable("users", {
   imageUrl: text("image_url"),
   imageKitFileId: text("imagekit_file_id"),
   isBlocked: boolean("is_blocked").default(false).notNull(),
+  resetPasswordToken: text("reset_password_token"),
+  resetPasswordExpires: timestamp("reset_password_expires"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [
   index("idx_users_email").on(table.email),
+  index("idx_users_reset_password_token").on(table.resetPasswordToken),
 ]);
 
 export const companies = pgTable("companies", {
@@ -137,6 +140,10 @@ export const projectDocuments = pgTable("project_documents", {
   projectId: uuid("project_id")
     .references(() => projects.id, { onDelete: "cascade" })
     .notNull(),
+  // Links document to the specific dossier sequence it was uploaded under.
+  // Nullable for backwards-compatibility with documents created before this column was added.
+  dossierConfigId: uuid("dossier_config_id")
+    .references(() => dossierConfig.id, { onDelete: "set null" }),
   nodeId: varchar("node_id", { length: 100 }).notNull(),
   docCode: varchar("doc_code", { length: 5 }),
   docType: varchar("doc_type", { length: 100 }),
@@ -156,6 +163,7 @@ export const projectDocuments = pgTable("project_documents", {
   index("idx_project_documents_node_id").on(table.nodeId),
   index("idx_project_documents_project_id_node_id_status").on(table.projectId, table.nodeId, table.status),
   index("idx_project_documents_project_id_status").on(table.projectId, table.status),
+  index("idx_project_documents_dossier_config_id").on(table.dossierConfigId),
 ]);
 
 export const auditLogs = pgTable("audit_logs", {

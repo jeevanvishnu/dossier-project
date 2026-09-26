@@ -1,0 +1,3 @@
+ALTER TABLE "project_documents" ADD COLUMN "dossier_config_id" uuid;--> statement-breakpoint
+ALTER TABLE "project_documents" ADD CONSTRAINT "project_documents_dossier_config_id_dossier_config_id_fk" FOREIGN KEY ("dossier_config_id") REFERENCES "public"."dossier_config"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+CREATE INDEX "idx_project_documents_dossier_config_id" ON "project_documents" USING btree ("dossier_config_id");

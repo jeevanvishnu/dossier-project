@@ -72,6 +72,13 @@ export async function compileProjectPackage(req: Request, res: Response): Promis
     }
 
     const targetSequence = sanitizeSequence(targetConfig?.dossierSequence);
+    const targetDossierConfigId = targetConfig?.id;
+
+    // Build the base filter: always scope to the specific dossierConfigId when available.
+    // This ensures documents from Dossier 0001 don't appear in the Dossier 0000 compile and vice-versa.
+    const dossierScopeFilter = targetDossierConfigId
+      ? eq(projectDocuments.dossierConfigId, targetDossierConfigId)
+      : eq(projectDocuments.projectId, projectId); // legacy fallback: no dossierConfigId yet
 
     // For sequence 0000 (initial registration submission), compile ONLY active documents.
     // Draft deletes during sequence 0000 do not create tombstones in initial sequence XML.
@@ -80,20 +87,22 @@ export async function compileProjectPackage(req: Request, res: Response): Promis
       where:
         targetSequence === "0000"
           ? and(
-            eq(projectDocuments.projectId, projectId),
-            eq(projectDocuments.status, "active")
-          )
-          : and(
-            eq(projectDocuments.projectId, projectId),
-            or(
+              eq(projectDocuments.projectId, projectId),
               eq(projectDocuments.status, "active"),
-              and(
-                eq(projectDocuments.status, "deleted"),
-                eq(projectDocuments.sequence, targetSequence),
-                ne(projectDocuments.sequence, "0000")
-              )
+              dossierScopeFilter
             )
-          ),
+          : and(
+              eq(projectDocuments.projectId, projectId),
+              dossierScopeFilter,
+              or(
+                eq(projectDocuments.status, "active"),
+                and(
+                  eq(projectDocuments.status, "deleted"),
+                  eq(projectDocuments.sequence, targetSequence),
+                  ne(projectDocuments.sequence, "0000")
+                )
+              )
+            ),
     });
 
     if (docsToCompile.length === 0) {
@@ -103,6 +112,7 @@ export async function compileProjectPackage(req: Request, res: Response): Promis
       });
       return;
     }
+
 
     // Check if there is already a compiled package for this project
     const lastArchive = await db.query.packageArchives.findFirst({
