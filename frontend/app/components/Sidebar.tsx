@@ -44,8 +44,8 @@ export function Sidebar() {
 
   const superAdminNavItems = [
     { name: tNav("dashboard"), href: "/dashboard", icon: SquaresFour },
-    { name: "Companies", href: "/super-admin/companies", icon: Buildings },
-    { name: "Company Admin", href: "/super-admin/company-users", icon: UsersThree },
+    { name: tNav("superAdminCompanies"), href: "/super-admin/companies", icon: Buildings },
+    { name: tNav("superAdminCompanyAdmin"), href: "/super-admin/company-users", icon: UsersThree },
   ];
 
   const navItems = roleLower === "superadmin"

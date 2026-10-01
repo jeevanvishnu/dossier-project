@@ -8,34 +8,10 @@ import { AddCompanyModal } from "@/app/components/super-admin/AddCompanyModal";
 import { ConfirmModal } from "@/app/components/ui/ConfirmModal";
 import { toast } from "sonner";
 import { CompaniesTableSkeleton } from "@/app/components/ui/Skeleton";
-
-const getSubscriptionBadge = (endDateStr?: string | null) => {
-  if (!endDateStr) {
-    return (
-      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20">
-        Unlimited
-      </span>
-    );
-  }
-  const endDate = new Date(endDateStr);
-  const isExpired = endDate.getTime() < Date.now();
-  const formattedDate = endDate.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
-
-  if (isExpired) {
-    return (
-      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-500/10 text-rose-400 border border-rose-500/20" title={`Expired on ${formattedDate}`}>
-        Expired ({formattedDate})
-      </span>
-    );
-  }
-  return (
-    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" title={`Active until ${formattedDate}`}>
-      Active (until {formattedDate})
-    </span>
-  );
-};
+import { useTranslations } from "next-intl";
 
 export default function CompaniesPage() {
+  const t = useTranslations("superAdmin");
   const [companies, setCompanies] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -44,6 +20,32 @@ export default function CompaniesPage() {
   // Custom Delete Modal state
   const [companyToDelete, setCompanyToDelete] = useState<{ id: number; name: string } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const getSubscriptionBadge = (endDateStr?: string | null) => {
+    if (!endDateStr) {
+      return (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20">
+          {t("badgeUnlimited")}
+        </span>
+      );
+    }
+    const endDate = new Date(endDateStr);
+    const isExpired = endDate.getTime() < Date.now();
+    const formattedDate = endDate.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+
+    if (isExpired) {
+      return (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-500/10 text-rose-400 border border-rose-500/20" title={`Expired on ${formattedDate}`}>
+          {t("badgeExpired", { date: formattedDate })}
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" title={`Active until ${formattedDate}`}>
+        {t("badgeActiveUntil", { date: formattedDate })}
+      </span>
+    );
+  };
 
   const fetchCompanies = async () => {
     setLoading(true);
@@ -80,12 +82,12 @@ export default function CompaniesPage() {
     try {
       const res = await api.delete(`/admin/companies/${companyToDelete.id}`);
       if (res.data.success) {
-        toast.success("Company deleted successfully");
+        toast.success(t("toastCompanyDeleted"));
         fetchCompanies();
       }
     } catch (error) {
       console.error("Failed to delete company:", error);
-      toast.error("Failed to delete company");
+      toast.error(t("toastCompanyDeleteFailed"));
     } finally {
       setIsDeleting(false);
       setCompanyToDelete(null);
@@ -96,27 +98,27 @@ export default function CompaniesPage() {
     <AppShell>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold font-lexend text-primary">Companies</h2>
+          <h2 className="text-xl font-bold font-lexend text-primary">{t("companiesTitle")}</h2>
           <button
             onClick={handleOpenAddModal}
             className="px-4 py-2 bg-accent hover:bg-accent-hover text-white text-sm font-semibold rounded-xl flex items-center gap-2 transition-colors shadow-xs cursor-pointer"
           >
             <Plus size={18} weight="bold" />
-            Add Company
+            {t("addCompany")}
           </button>
         </div>
 
         <div className="bg-surface border border-border rounded-2xl shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm text-white">
-              <thead className="bg-bg border-b border-border text-xs uppercase tracking-wider font-semibold text-white/90">
+            <table className="w-full text-left text-sm text-primary">
+              <thead className="bg-bg border-b border-border text-xs uppercase tracking-wider font-semibold text-secondary">
                 <tr>
-                  <th className="px-6 py-4 text-white font-bold">Company</th>
-                  <th className="px-6 py-4 text-white font-bold">Email</th>
-                  <th className="px-6 py-4 text-white font-bold">Mobile</th>
-                  <th className="px-6 py-4 text-white font-bold">Subscription</th>
-                  <th className="px-6 py-4 text-white font-bold">Address</th>
-                  <th className="px-6 py-4 text-right text-white font-bold">Actions</th>
+                  <th className="px-6 py-4 text-primary font-bold">{t("colCompany")}</th>
+                  <th className="px-6 py-4 text-primary font-bold">{t("colEmail")}</th>
+                  <th className="px-6 py-4 text-primary font-bold">{t("colMobile")}</th>
+                  <th className="px-6 py-4 text-primary font-bold">{t("colSubscription")}</th>
+                  <th className="px-6 py-4 text-primary font-bold">{t("colAddress")}</th>
+                  <th className="px-6 py-4 text-right text-primary font-bold">{t("colActions")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -124,32 +126,32 @@ export default function CompaniesPage() {
                   <CompaniesTableSkeleton rows={5} />
                 ) : companies.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-8 text-center text-white/70">
-                      No companies found.
+                    <td colSpan={6} className="px-6 py-8 text-center text-secondary">
+                      {t("noCompaniesFound")}
                     </td>
                   </tr>
                 ) : (
                   companies.map((company) => (
                     <tr key={company.id} className="hover:bg-bg/50 transition-colors">
-                      <td className="px-6 py-4 text-white">
+                      <td className="px-6 py-4 text-primary">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-lg bg-bg border border-border flex items-center justify-center overflow-hidden shrink-0">
                             {company.imageUrl ? (
                               <img src={company.imageUrl} alt={company.name} className="w-full h-full object-cover" />
                             ) : (
-                              <Buildings size={20} className="text-white/60" />
+                              <Buildings size={20} className="text-secondary" />
                             )}
                           </div>
                           <div>
-                            <p className="font-semibold text-white">{company.name}</p>
-                            <p className="text-[11px] text-white/60">ID: {company.id}</p>
+                            <p className="font-semibold text-primary">{company.name}</p>
+                            <p className="text-[11px] text-secondary">ID: {company.id}</p>
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-white">{company.email}</td>
-                      <td className="px-6 py-4 text-white">{company.mobile || "-"}</td>
-                      <td className="px-6 py-4 text-white">{getSubscriptionBadge(company.subscriptionEndDate)}</td>
-                      <td className="px-6 py-4 max-w-[200px] truncate text-white">{company.address || "-"}</td>
+                      <td className="px-6 py-4 text-primary">{company.email}</td>
+                      <td className="px-6 py-4 text-primary">{company.mobile || "-"}</td>
+                      <td className="px-6 py-4 text-primary">{getSubscriptionBadge(company.subscriptionEndDate)}</td>
+                      <td className="px-6 py-4 max-w-[200px] truncate text-primary">{company.address || "-"}</td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <button 
@@ -188,18 +190,17 @@ export default function CompaniesPage() {
         isOpen={Boolean(companyToDelete)}
         onClose={() => setCompanyToDelete(null)}
         onConfirm={confirmDelete}
-        title="Delete Company"
+        title={t("modalDeleteCompanyTitle")}
         description={
           <span>
             Are you sure you want to delete <strong className="text-primary font-semibold">{companyToDelete?.name}</strong>? This action cannot be undone.
           </span>
         }
-        confirmText="Delete"
-        cancelText="Cancel"
+        confirmText={t("modalDeleteCompanyConfirm")}
+        cancelText={t("modalDeleteCompanyCancel")}
         isLoading={isDeleting}
         variant="danger"
       />
     </AppShell>
   );
 }
-

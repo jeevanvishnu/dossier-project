@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { X, UploadSimple, Trash, Buildings, EnvelopeSimple, Phone, MapPin, Calendar, Camera } from "@phosphor-icons/react";
 import { api, handleApiError } from "../../lib/axios";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 
 export interface CompanyData {
   id?: number;
@@ -29,6 +30,7 @@ const formatDateForInput = (dateVal?: string | Date | null) => {
 };
 
 export function CompanyModal({ isOpen, onClose, onSuccess, companyToEdit }: CompanyModalProps) {
+  const t = useTranslations("superAdmin");
   const isEditing = Boolean(companyToEdit);
 
   const [formData, setFormData] = useState({
@@ -79,7 +81,7 @@ export function CompanyModal({ isOpen, onClose, onSuccess, companyToEdit }: Comp
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
-      toast.error("Image file size exceeds 5MB limit");
+      toast.error(t("toastImageSizeExceeded"));
       return;
     }
 
@@ -111,14 +113,14 @@ export function CompanyModal({ isOpen, onClose, onSuccess, companyToEdit }: Comp
       if (isEditing && companyToEdit?.id) {
         const res = await api.patch(`/admin/companies/${companyToEdit.id}`, payload);
         if (res.data.success) {
-          toast.success("Company updated successfully");
+          toast.success(t("toastCompanyUpdated"));
           onSuccess();
           onClose();
         }
       } else {
         const res = await api.post("/admin/companies", payload);
         if (res.data.success) {
-          toast.success("Company created successfully");
+          toast.success(t("toastCompanyCreated"));
           onSuccess();
           onClose();
           setFormData({
@@ -145,10 +147,10 @@ export function CompanyModal({ isOpen, onClose, onSuccess, companyToEdit }: Comp
         <div className="flex items-center justify-between pb-4 border-b border-border/60">
           <div>
             <h2 className="text-xl font-bold font-lexend text-primary">
-              {isEditing ? "Edit Company" : "Add New Company"}
+              {isEditing ? t("modalEditCompanyTitle") : t("modalAddCompanyTitle")}
             </h2>
             <p className="text-xs text-secondary mt-1">
-              {isEditing ? "Update existing company details in the system" : "Register a new client company in the system"}
+              {isEditing ? t("modalEditCompanySub") : t("modalAddCompanySub")}
             </p>
           </div>
           <button
@@ -173,7 +175,7 @@ export function CompanyModal({ isOpen, onClose, onSuccess, companyToEdit }: Comp
               <div
                 onClick={() => fileInputRef.current?.click()}
                 className="w-24 h-24 rounded-full border-2 border-dashed border-border hover:border-accent bg-bg flex items-center justify-center overflow-hidden cursor-pointer transition-all shadow-inner group-hover:ring-4 group-hover:ring-accent/20"
-                title="Upload Company Logo"
+                title={t("companyLogo")}
               >
                 {formData.imageUrl ? (
                   <img
@@ -184,7 +186,7 @@ export function CompanyModal({ isOpen, onClose, onSuccess, companyToEdit }: Comp
                 ) : (
                   <div className="flex flex-col items-center justify-center text-secondary group-hover:text-accent transition-colors">
                     <Camera size={28} />
-                    <span className="text-[10px] font-medium mt-1">Upload</span>
+                    <span className="text-[10px] font-medium mt-1">{t("upload")}</span>
                   </div>
                 )}
               </div>
@@ -201,12 +203,12 @@ export function CompanyModal({ isOpen, onClose, onSuccess, companyToEdit }: Comp
               )}
             </div>
             <p className="text-[11px] text-secondary mt-2">
-              Company Logo <span className="text-muted">(Optional)</span>
+              {t("companyLogo")} <span className="text-muted">{t("optional")}</span>
             </p>
           </div>
 
           <div className="space-y-1.5">
-            <label className="block text-xs font-semibold text-primary ml-1">Company Name <span className="text-red-400">*</span></label>
+            <label className="block text-xs font-semibold text-primary ml-1">{t("companyNameLabel")} <span className="text-red-400">*</span></label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <Buildings size={18} className="text-secondary" />
@@ -214,7 +216,7 @@ export function CompanyModal({ isOpen, onClose, onSuccess, companyToEdit }: Comp
               <input
                 type="text"
                 name="name"
-                placeholder="Enter a company name"
+                placeholder={t("enterCompanyNamePlaceholder")}
                 value={formData.name}
                 onChange={handleChange}
                 className="w-full bg-surface-raised/50 border border-border rounded-xl pl-10 pr-4 py-2.5 text-sm text-primary placeholder:text-muted focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent focus:bg-bg transition-all"
@@ -225,7 +227,7 @@ export function CompanyModal({ isOpen, onClose, onSuccess, companyToEdit }: Comp
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-primary ml-1">Email <span className="text-red-400">*</span></label>
+              <label className="block text-xs font-semibold text-primary ml-1">{t("emailLabel")} <span className="text-red-400">*</span></label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <EnvelopeSimple size={18} className="text-secondary" />
@@ -233,7 +235,7 @@ export function CompanyModal({ isOpen, onClose, onSuccess, companyToEdit }: Comp
                 <input
                   type="email"
                   name="email"
-                  placeholder="Enter an email address"
+                  placeholder={t("enterEmailPlaceholder")}
                   value={formData.email}
                   onChange={handleChange}
                   className="w-full bg-surface-raised/50 border border-border rounded-xl pl-10 pr-4 py-2.5 text-sm text-primary placeholder:text-muted focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent focus:bg-bg transition-all"
@@ -242,7 +244,7 @@ export function CompanyModal({ isOpen, onClose, onSuccess, companyToEdit }: Comp
               </div>
             </div>
             <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-primary ml-1">Mobile</label>
+              <label className="block text-xs font-semibold text-primary ml-1">{t("mobileLabel")}</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Phone size={18} className="text-secondary" />
@@ -250,7 +252,7 @@ export function CompanyModal({ isOpen, onClose, onSuccess, companyToEdit }: Comp
                 <input
                   type="text"
                   name="mobile"
-                  placeholder="Enter mobile number"
+                  placeholder={t("enterMobilePlaceholder")}
                   value={formData.mobile}
                   onChange={handleChange}
                   className="w-full bg-surface-raised/50 border border-border rounded-xl pl-10 pr-4 py-2.5 text-sm text-primary placeholder:text-muted focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent focus:bg-bg transition-all"
@@ -261,7 +263,7 @@ export function CompanyModal({ isOpen, onClose, onSuccess, companyToEdit }: Comp
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-primary ml-1">Subscription Start Date</label>
+              <label className="block text-xs font-semibold text-primary ml-1">{t("subStartDateLabel")}</label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Calendar size={18} className="text-secondary" />
@@ -277,7 +279,7 @@ export function CompanyModal({ isOpen, onClose, onSuccess, companyToEdit }: Comp
             </div>
             <div className="space-y-1.5">
               <label className="block text-xs font-semibold text-primary ml-1">
-                Subscription End Date <span className="text-secondary font-normal">(Optional)</span>
+                {t("subEndDateLabel")} <span className="text-secondary font-normal">{t("optional")}</span>
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -295,14 +297,14 @@ export function CompanyModal({ isOpen, onClose, onSuccess, companyToEdit }: Comp
           </div>
 
           <div className="space-y-1.5">
-            <label className="block text-xs font-semibold text-primary ml-1">Address</label>
+            <label className="block text-xs font-semibold text-primary ml-1">{t("addressLabel")}</label>
             <div className="relative">
               <div className="absolute top-3 left-0 pl-3 flex items-start pointer-events-none">
                 <MapPin size={18} className="text-secondary" />
               </div>
               <textarea
                 name="address"
-                placeholder="Enter an address"
+                placeholder={t("enterAddressPlaceholder")}
                 value={formData.address}
                 onChange={handleChange}
                 rows={2}
@@ -311,8 +313,6 @@ export function CompanyModal({ isOpen, onClose, onSuccess, companyToEdit }: Comp
             </div>
           </div>
 
-
-
           <div className="flex items-center justify-end gap-3 pt-5 border-t border-border/60 mt-6">
             <button
               type="button"
@@ -320,14 +320,14 @@ export function CompanyModal({ isOpen, onClose, onSuccess, companyToEdit }: Comp
               disabled={loading}
               className="px-5 py-2.5 bg-bg hover:bg-surface-raised border border-border rounded-xl text-sm text-secondary hover:text-primary font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-border"
             >
-              Cancel
+              {t("modalDeleteCompanyCancel")}
             </button>
             <button
               type="submit"
               disabled={loading}
               className="px-5 py-2.5 bg-accent hover:bg-accent-hover text-white rounded-xl text-sm font-semibold transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:shadow-none focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:ring-offset-bg"
             >
-              {loading ? (isEditing ? "Saving..." : "Creating...") : (isEditing ? "Save Changes" : "Create Company")}
+              {loading ? (isEditing ? t("saving") : t("creating")) : (isEditing ? t("saveChanges") : t("createCompany"))}
             </button>
           </div>
         </form>

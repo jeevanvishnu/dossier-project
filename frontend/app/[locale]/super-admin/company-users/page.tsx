@@ -8,8 +8,10 @@ import { AddCompanyUserModal } from "@/app/components/super-admin/AddCompanyUser
 import { ConfirmModal } from "@/app/components/ui/ConfirmModal";
 import { toast } from "sonner";
 import { CompanyUsersTableSkeleton } from "@/app/components/ui/Skeleton";
+import { useTranslations } from "next-intl";
 
 export default function CompanyUsersPage() {
+  const t = useTranslations("superAdmin");
   const [members, setMembers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -53,12 +55,12 @@ export default function CompanyUsersPage() {
     try {
       const res = await api.delete(`/admin/company-members/${adminToRemove.id}`);
       if (res.data.success) {
-        toast.success("Company member removed successfully");
+        toast.success(t("toastAdminRemoved"));
         fetchMembers();
       }
     } catch (error) {
       console.error("Failed to remove company member:", error);
-      toast.error("Failed to remove company member");
+      toast.error(t("toastAdminRemoveFailed"));
     } finally {
       setIsDeleting(false);
       setAdminToRemove(null);
@@ -69,26 +71,26 @@ export default function CompanyUsersPage() {
     <AppShell>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold font-lexend text-primary">Company Admin</h2>
+          <h2 className="text-xl font-bold font-lexend text-primary">{t("companyAdminsTitle")}</h2>
           <button
             onClick={handleOpenAddModal}
             className="px-4 py-2 bg-accent hover:bg-accent-hover text-white text-sm font-semibold rounded-xl flex items-center gap-2 transition-colors shadow-xs cursor-pointer"
           >
             <Plus size={18} weight="bold" />
-            Add Admin
+            {t("addAdmin")}
           </button>
         </div>
 
         <div className="bg-surface border border-border rounded-2xl shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm text-white">
-              <thead className="bg-bg border-b border-border text-xs uppercase tracking-wider font-semibold text-white/90">
+            <table className="w-full text-left text-sm text-primary">
+              <thead className="bg-bg border-b border-border text-xs uppercase tracking-wider font-semibold text-secondary">
                 <tr>
-                  <th className="px-6 py-4 text-white font-bold">Admin Name</th>
-                  <th className="px-6 py-4 text-white font-bold">Company</th>
-                  <th className="px-6 py-4 text-white font-bold">User Limit</th>
-                  <th className="px-6 py-4 text-white font-bold">Storage Limit</th>
-                  <th className="px-6 py-4 text-right text-white font-bold">Actions</th>
+                  <th className="px-6 py-4 text-primary font-bold">{t("colAdminName")}</th>
+                  <th className="px-6 py-4 text-primary font-bold">{t("colCompany")}</th>
+                  <th className="px-6 py-4 text-primary font-bold">{t("colUserLimit")}</th>
+                  <th className="px-6 py-4 text-primary font-bold">{t("colStorageLimit")}</th>
+                  <th className="px-6 py-4 text-right text-primary font-bold">{t("colActions")}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -96,14 +98,14 @@ export default function CompanyUsersPage() {
                   <CompanyUsersTableSkeleton rows={5} />
                 ) : members.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-6 py-8 text-center text-white/70">
-                      No company admins found.
+                    <td colSpan={5} className="px-6 py-8 text-center text-secondary">
+                      {t("noAdminsFound")}
                     </td>
                   </tr>
                 ) : (
                   members.map((member) => (
                     <tr key={member.id} className="hover:bg-bg/50 transition-colors">
-                      <td className="px-6 py-4 text-white">
+                      <td className="px-6 py-4 text-primary">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-full bg-accent/15 text-accent flex items-center justify-center shrink-0 overflow-hidden border border-border/80">
                             {member.user.imageUrl ? (
@@ -117,26 +119,26 @@ export default function CompanyUsersPage() {
                             )}
                           </div>
                           <div>
-                            <p className="font-semibold text-white">{member.user.name}</p>
-                            <p className="text-[11px] text-white/60">{member.user.email}</p>
+                            <p className="font-semibold text-primary">{member.user.name}</p>
+                            <p className="text-[11px] text-secondary">{member.user.email}</p>
                           </div>
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-white">
-                        <span className="font-medium text-white px-2.5 py-1 bg-bg border border-border rounded-lg text-xs">
+                      <td className="px-6 py-4 text-primary">
+                        <span className="font-medium text-primary px-2.5 py-1 bg-bg border border-border rounded-lg text-xs">
                           {member.company.name}
                         </span>
                       </td>
-                      <td className="px-6 py-4 text-white">
+                      <td className="px-6 py-4 text-primary">
                         <div className="flex items-center gap-1.5 text-blue-400 text-xs font-medium">
                           <Users size={16} />
-                          {member.maxUsers} max users
+                          {member.maxUsers} {t("maxUsers")}
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-white">
+                      <td className="px-6 py-4 text-primary">
                         <div className="flex items-center gap-1.5 text-purple-400 text-xs font-medium">
                           <Database size={16} />
-                          {member.storageGb} GB storage
+                          {member.storageGb} {t("gbStorage")}
                         </div>
                       </td>
                       <td className="px-6 py-4 text-right">
@@ -177,18 +179,17 @@ export default function CompanyUsersPage() {
         isOpen={Boolean(adminToRemove)}
         onClose={() => setAdminToRemove(null)}
         onConfirm={handleConfirmDelete}
-        title="Remove Company Admin"
+        title={t("modalRemoveAdminTitle")}
         description={
           <span>
             Are you sure you want to remove <strong className="text-primary font-semibold">{adminToRemove?.name}</strong> from this company?
           </span>
         }
-        confirmText="Remove Admin"
-        cancelText="Cancel"
+        confirmText={t("modalRemoveAdminConfirm")}
+        cancelText={t("modalRemoveAdminCancel")}
         isLoading={isDeleting}
         variant="danger"
       />
     </AppShell>
   );
 }
-

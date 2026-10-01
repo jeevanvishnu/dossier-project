@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { X, Camera, Trash, UserGear, UploadSimple } from "@phosphor-icons/react";
 import { api, handleApiError } from "../../lib/axios";
 import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 
 interface AddCompanyUserModalProps {
   isOpen: boolean;
@@ -11,6 +12,7 @@ interface AddCompanyUserModalProps {
 }
 
 export function AddCompanyUserModal({ isOpen, onClose, onSuccess, memberToEdit }: AddCompanyUserModalProps) {
+  const t = useTranslations("superAdmin");
   const isEditing = Boolean(memberToEdit);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -66,7 +68,7 @@ export function AddCompanyUserModal({ isOpen, onClose, onSuccess, memberToEdit }
     if (!file) return;
 
     if (file.size > 5 * 1024 * 1024) {
-      toast.error("Avatar image size must be under 5MB");
+      toast.error(t("toastAvatarSizeExceeded"));
       return;
     }
 
@@ -100,7 +102,7 @@ export function AddCompanyUserModal({ isOpen, onClose, onSuccess, memberToEdit }
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.companyId) {
-      toast.error("Please select a company");
+      toast.error(t("toastSelectCompanyRequired"));
       return;
     }
 
@@ -119,14 +121,14 @@ export function AddCompanyUserModal({ isOpen, onClose, onSuccess, memberToEdit }
       if (isEditing && memberToEdit?.id) {
         const res = await api.patch(`/admin/company-members/${memberToEdit.id}`, payload);
         if (res.data.success) {
-          toast.success(res.data.message || "Company Admin updated successfully");
+          toast.success(res.data.message || t("toastAdminRemoved"));
           onSuccess();
           onClose();
         }
       } else {
         const res = await api.post("/admin/company-members", payload);
         if (res.data.success) {
-          toast.success(res.data.message || "Company Admin added successfully");
+          toast.success(res.data.message || t("toastCompanyCreated"));
           onSuccess();
           onClose();
           setFormData({ name: "", email: "", companyId: "", maxUsers: 10, storageGb: 5 });
@@ -146,7 +148,7 @@ export function AddCompanyUserModal({ isOpen, onClose, onSuccess, memberToEdit }
       <div className="bg-surface border border-border rounded-2xl p-6 max-w-lg w-full shadow-2xl space-y-4 animate-in fade-in zoom-in-95 duration-150">
         <div className="flex items-center justify-between pb-3 border-b border-border">
           <h2 className="text-lg font-bold font-lexend text-primary">
-            {isEditing ? "Edit Company Admin" : "Add Company Admin"}
+            {isEditing ? t("modalEditAdminTitle") : t("modalAddAdminTitle")}
           </h2>
           <button
             onClick={onClose}
@@ -170,7 +172,7 @@ export function AddCompanyUserModal({ isOpen, onClose, onSuccess, memberToEdit }
               <div
                 onClick={() => fileInputRef.current?.click()}
                 className="w-20 h-20 rounded-full border-2 border-dashed border-border hover:border-accent bg-bg flex items-center justify-center overflow-hidden cursor-pointer transition-all shadow-inner group-hover:ring-4 group-hover:ring-accent/20"
-                title="Upload Profile Picture"
+                title={t("adminProfilePic")}
               >
                 {imagePreview ? (
                   <img
@@ -181,7 +183,7 @@ export function AddCompanyUserModal({ isOpen, onClose, onSuccess, memberToEdit }
                 ) : (
                   <div className="flex flex-col items-center justify-center text-secondary group-hover:text-accent transition-colors">
                     <Camera size={26} />
-                    <span className="text-[10px] font-medium mt-0.5">Upload</span>
+                    <span className="text-[10px] font-medium mt-0.5">{t("upload")}</span>
                   </div>
                 )}
               </div>
@@ -198,12 +200,12 @@ export function AddCompanyUserModal({ isOpen, onClose, onSuccess, memberToEdit }
               )}
             </div>
             <p className="text-[11px] text-secondary mt-2">
-              Admin Profile Picture <span className="text-muted">(Optional)</span>
+              {t("adminProfilePic")} <span className="text-muted">{t("optional")}</span>
             </p>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-primary mb-1">Company *</label>
+            <label className="block text-xs font-semibold text-primary mb-1">{t("companySelectLabel")}</label>
             <select
               name="companyId"
               value={formData.companyId}
@@ -211,7 +213,7 @@ export function AddCompanyUserModal({ isOpen, onClose, onSuccess, memberToEdit }
               className="w-full bg-bg border border-border rounded-xl px-3 py-2 text-sm text-primary focus:outline-none focus:border-accent"
               required
             >
-              <option value="">Select Company</option>
+              <option value="">{t("selectCompanyPlaceholder")}</option>
               {companies.map((company) => (
                 <option key={company.id} value={company.id}>{company.name}</option>
               ))}
@@ -220,7 +222,7 @@ export function AddCompanyUserModal({ isOpen, onClose, onSuccess, memberToEdit }
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-primary mb-1">Name *</label>
+              <label className="block text-xs font-semibold text-primary mb-1">{t("nameLabel")}</label>
               <input
                 type="text"
                 name="name"
@@ -231,7 +233,7 @@ export function AddCompanyUserModal({ isOpen, onClose, onSuccess, memberToEdit }
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-primary mb-1">Email *</label>
+              <label className="block text-xs font-semibold text-primary mb-1">{t("emailLabel")} *</label>
               <input
                 type="email"
                 name="email"
@@ -245,7 +247,7 @@ export function AddCompanyUserModal({ isOpen, onClose, onSuccess, memberToEdit }
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-primary mb-1">Max Users Limit</label>
+              <label className="block text-xs font-semibold text-primary mb-1">{t("maxUsersLimitLabel")}</label>
               <input
                 type="number"
                 name="maxUsers"
@@ -257,7 +259,7 @@ export function AddCompanyUserModal({ isOpen, onClose, onSuccess, memberToEdit }
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-primary mb-1">Storage Limit (GB)</label>
+              <label className="block text-xs font-semibold text-primary mb-1">{t("storageLimitGbLabel")}</label>
               <input
                 type="number"
                 name="storageGb"
@@ -277,14 +279,14 @@ export function AddCompanyUserModal({ isOpen, onClose, onSuccess, memberToEdit }
               disabled={loading}
               className="px-4 py-2 bg-bg hover:bg-surface-raised border border-border rounded-xl text-sm text-secondary font-medium transition-colors"
             >
-              Cancel
+              {t("modalRemoveAdminCancel")}
             </button>
             <button
               type="submit"
               disabled={loading}
               className="px-4 py-2 bg-accent hover:bg-accent-hover text-white rounded-xl text-sm font-semibold transition-colors shadow-xs disabled:opacity-50"
             >
-              {loading ? (isEditing ? "Saving..." : "Adding...") : (isEditing ? "Save Changes" : "Add Admin")}
+              {loading ? (isEditing ? t("saving") : t("adding")) : (isEditing ? t("saveChanges") : t("addAdminButton"))}
             </button>
           </div>
         </form>
@@ -292,4 +294,3 @@ export function AddCompanyUserModal({ isOpen, onClose, onSuccess, memberToEdit }
     </div>
   );
 }
-
