@@ -7,13 +7,8 @@ import { cleanupExpiredSessions } from "./controller/auth.controller";
 
 const PORT = process.env.PORT || 5000;
 
-/**
- * Migration execution on server boot.
- * NOTE / KNOWN CONSTRAINT:
- * Running migrate() on startup is intended for single-instance Node servers.
- * For multi-instance clustered deployments, run migrations as a pre-deploy step
- * to prevent concurrent schema lock conflicts.
- */
+
+ 
 async function runBootMigrations() {
   const connectionString = process.env.DATABASE_URL_UNPOOLED || process.env.DATABASE_URL;
   if (!connectionString) {
@@ -31,13 +26,6 @@ async function runBootMigrations() {
   }
 }
 
-/**
- * Scheduled Session Cleanup Task
- * NOTE / SERVERLESS CONSIDERATION:
- * The 24-hour setInterval task relies on a long-running Node.js process.
- * If deploying to serverless environments (e.g., Vercel, AWS Lambda),
- * configure a cron trigger (e.g. Vercel Cron or CloudWatch) to invoke cleanup.
- */
 function scheduleSessionCleanup() {
   cleanupExpiredSessions().catch(() => null);
   setInterval(() => {
