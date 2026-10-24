@@ -3,6 +3,7 @@ import { db } from "./db";
 import { users } from "./schema";
 import bcrypt from "bcrypt";
 import { eq } from "drizzle-orm";
+import { BACKEND_ECTD_TREE_SEED } from "./ctdTreeSeed";
 
 
 interface UserSeed {
@@ -14,13 +15,12 @@ interface UserSeed {
 
 const USERS_TO_SEED: UserSeed[] = [
   {
-    email: process.env.SEED_SUPERADMIN_EMAIL || "superadmin@gmail.com",
-    rawPassword: process.env.SEED_SUPERADMIN_PASSWORD || "testsuperadmin@2244",
+    email: process.env.SEED_SUPERADMIN_EMAIL!,
+    rawPassword: process.env.SEED_SUPERADMIN_PASSWORD!,
     role: "superadmin",
     name: "Super Admin",
   },
 ];
-
 async function seedUsers() {
   try {
     for (const userData of USERS_TO_SEED) {
@@ -73,6 +73,7 @@ async function seedUsers() {
       }
     }
 
+    console.log(`✅ Verified ${BACKEND_ECTD_TREE_SEED.length} top-level eCTD modules available in backend seed taxonomy.`);
     process.exit(0);
   } catch (error: any) {
     console.error("❌ Error seeding users:", error);

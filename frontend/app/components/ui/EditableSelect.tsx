@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { CaretDown, Check, CheckCircle } from "@phosphor-icons/react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 
 export interface SelectOption {
   label: string;
@@ -35,6 +35,7 @@ export const EditableSelect: React.FC<EditableSelectProps> = ({
   size = "md",
 }) => {
   const tWorkspace = useTranslations("workspace");
+  const locale = useLocale();
   const [isOpen, setIsOpen] = useState(false);
   const [isUserTyping, setIsUserTyping] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -59,8 +60,14 @@ export const EditableSelect: React.FC<EditableSelectProps> = ({
   }, []);
 
   // Compute display value for input when not typing
-  const selectedOption = options.find((opt) => opt.value === value || opt.label === value);
-  const displayInputValue = isUserTyping ? value : (selectedOption ? selectedOption.label : value);
+  const selectedOption = options.find((opt) => opt.value === value);
+  const displayInputValue = isUserTyping ? searchTerm : (selectedOption ? selectedOption.label : value);
+
+  // Reset typing state if value changes externally
+  useEffect(() => {
+    setIsUserTyping(false);
+    setSearchTerm("");
+  }, [value, locale]);
 
   // Compute filtered options
   let displayOptions = options;
