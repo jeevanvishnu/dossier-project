@@ -15,7 +15,7 @@ export default function LoginPage() {
   const tErrors = useTranslations("errors");
   const router = useRouter();
   const { signIn, isLoading } = useAuth();
-  const [email, setEmail] = useState("admin@ectc.kz");
+  const [email, setEmail] = useState("admin@itavo.kz");
   const [password, setPassword] = useState("Admin@2026");
   const [roleSelect, setRoleSelect] = useState<"admin" | "user">("admin");
 
@@ -71,7 +71,7 @@ export default function LoginPage() {
             type="button"
             onClick={() => {
               setRoleSelect("admin");
-              setEmail("admin@ectc.kz");
+              setEmail("admin@itavo.kz");
             }}
             className={`flex-1 py-1.5 text-xs font-bold rounded-lg flex items-center justify-center gap-1.5 transition-colors ${roleSelect === "admin"
                 ? "bg-accent text-white"

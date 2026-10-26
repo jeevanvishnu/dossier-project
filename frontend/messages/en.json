@@ -39,8 +39,8 @@
     "inReview": "In Review"
   },
   "nav": {
-    "brand": "ECTC",
-    "portal": "ECTC Portal",
+    "brand": "ITAVO",
+    "portal": "ITAVO Portal",
     "home": "Home",
     "about": "About",
     "pricing": "Pricing",
@@ -155,10 +155,10 @@
     "privacy": "Privacy Policy",
     "terms": "Terms of Service",
     "cookies": "Cookie Policy",
-    "copyright": "© 2026 ECTC Portal. All rights reserved."
+    "copyright": "© 2026 ITAVO Portal. All rights reserved."
   },
   "auth": {
-    "modalTitle": "Access ECTC Portal",
+    "modalTitle": "Access ITAVO Portal",
     "modalSubtitle": "Sign in to your regulatory workspace or request corporate access",
     "signInTab": "Sign In",
     "signUpTab": "Register",
@@ -173,7 +173,7 @@
     "adminRole": "Admin Role",
     "userRole": "User Role",
     "superAdminRole": "Super Admin Role",
-    "loginTitle": "ECTC Unified Portal Login",
+    "loginTitle": "ITAVO Unified Portal Login",
     "loginSub": "Kazakhstan Pharmaceutical & Medical Regulatory Submission Platform",
     "authenticating": "Authenticating...",
     "demoGranted": "Demo Access Granted as",
@@ -183,7 +183,7 @@
     "instructionsSent": "Instructions Sent!"
   },
   "appShell": {
-    "workspaceTitle": "ECTC Workspace",
+    "workspaceTitle": "ITAVO Workspace",
     "breadcrumbOverview": "Dashboard Overview",
     "breadcrumbContracts": "My Contracts & Agreements",
     "breadcrumbTariffs": "Subscription & Storage Tariffs",
@@ -493,7 +493,7 @@
   },
   "tour": {
     "title": "System Tour & Technical Support",
-    "sub": "Interactive walkthrough of the ECTC Pharmaceutical Dossier Portal features.",
+    "sub": "Interactive walkthrough of the ITAVO Pharmaceutical Dossier Portal features.",
     "welcomeStepTitle": "1. Unified Dashboard",
     "welcomeStepDesc": "Access all your projects, active contracts, and tariffs in one single workspace.",
     "dossierStepTitle": "2. Automated eCTD Validation",
@@ -512,7 +512,7 @@
     "responseDetail": "Maximum 2-hour reaction SLA for active tickets",
     "ruleLabel": "Rule",
     "ruleDetail": "Always provide your Organization User ID (e.g. USR-101) when requesting support",
-    "telegramBtn": "Contact Technical Support (@ectc_support)",
+    "telegramBtn": "Contact Technical Support (@itavo_support)",
     "faqTitle": "Frequently Asked Questions & Friction Resolution",
     "modulesTitle": "In-Depth Module Walkthrough Descriptions",
     "faq1Q": "What should I do if my contract is expiring soon?",

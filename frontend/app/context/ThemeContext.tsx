@@ -18,7 +18,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     setMounted(true);
-    const savedTheme = localStorage.getItem("ectc_theme") as Theme | null;
+    const savedTheme = (localStorage.getItem("itavo_theme") || localStorage.getItem("ectc_theme")) as Theme | null;
     if (savedTheme === "light" || savedTheme === "dark") {
       setThemeState(savedTheme);
       applyTheme(savedTheme);
@@ -43,7 +43,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme);
-    localStorage.setItem("ectc_theme", newTheme);
+    localStorage.setItem("itavo_theme", newTheme);
     applyTheme(newTheme);
   };
 
