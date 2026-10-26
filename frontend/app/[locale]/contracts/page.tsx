@@ -15,40 +15,40 @@ export default function ContractsPage() {
 
   const [contracts] = useState([
     {
-      id: "ITAVO-KZ-2026-8812",
+      id: "ITAVE-KZ-2026-8812",
       typeKey: "typeAnnualLease",
       typeDefault: "Annual Storage Lease (Tariff OWN)",
       startDate: "2026-01-15",
       endDate: "2027-01-14",
       status: "Active Legal",
-      parties: "PharmaKZ LLC / ITAVO Digital",
+      parties: "PharmaKZ LLC / ITAVE Digital",
     },
     {
-      id: "ITAVO-KZ-2025-4102",
+      id: "ITAVE-KZ-2025-4102",
       typeKey: "typeMonthlyTierM",
       typeDefault: "Monthly Record Tier M",
       startDate: "2025-06-01",
       endDate: "2026-05-31",
       status: "Active Legal",
-      parties: "MedTech Asia / ITAVO Digital",
+      parties: "MedTech Asia / ITAVE Digital",
     },
     {
-      id: "ITAVO-KZ-2024-1109",
+      id: "ITAVE-KZ-2024-1109",
       typeKey: "typeInitialReg",
       typeDefault: "Initial Registration Agreement",
       startDate: "2024-03-10",
       endDate: "2025-03-09",
       status: "Expired Terms",
-      parties: "Biomedical KZ / ITAVO Digital",
+      parties: "Biomedical KZ / ITAVE Digital",
     },
     {
-      id: "ITAVO-KZ-2023-0045",
+      id: "ITAVE-KZ-2023-0045",
       typeKey: "typePilotDossier",
       typeDefault: "Pilot Dossier Processing Contract",
       startDate: "2023-01-01",
       endDate: "2023-12-31",
       status: "Expired Terms",
-      parties: "KazPharma Group / ITAVO Digital",
+      parties: "KazPharma Group / ITAVE Digital",
     },
   ]);
 

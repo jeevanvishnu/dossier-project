@@ -1,4 +1,4 @@
-# UI Design System — ITAVO Professional Services
+# UI Design System — ITAVE Professional Services
 
 > **Design Read:** B2B professional service website for trust-seeking clients. Clean, structured, editorial language. Trust-first. No decoration for decoration's sake.
 > **Dials:** `DESIGN_VARIANCE: 5` | `MOTION_INTENSITY: 3` | `VISUAL_DENSITY: 4`

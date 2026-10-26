@@ -36,7 +36,7 @@ export function SupportWidget() {
               <QrCode size={18} />
             </div>
             <div>
-              <p className="text-[11px] font-semibold text-primary">@itavo_support</p>
+              <p className="text-[11px] font-semibold text-primary">@itave_support</p>
               <p className="text-[9px] text-muted">{tSupp("slaResponse")}</p>
             </div>
           </div>
@@ -102,7 +102,7 @@ export function SupportWidget() {
 
             <div className="mt-5 pt-4 border-t border-border">
               <a
-                href="https://t.me/itavo_support"
+                href="https://t.me/itave_support"
                 target="_blank"
                 rel="noreferrer"
                 className="btn btn-accent w-full text-white font-semibold text-xs py-2.5 rounded-lg flex items-center justify-center gap-2"

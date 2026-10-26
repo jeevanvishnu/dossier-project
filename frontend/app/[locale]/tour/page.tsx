@@ -116,7 +116,7 @@ export default function SystemTourPage() {
             </div>
 
             <a
-              href="https://t.me/itavo_support"
+              href="https://t.me/itave_support"
               target="_blank"
               rel="noreferrer"
               className="px-5 py-3 bg-accent hover:bg-accent-hover text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center justify-center gap-2 shrink-0"

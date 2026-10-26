@@ -1,4 +1,4 @@
-# UI Plan — ITAVO Professional Services Website
+# UI Plan — ITAVE Professional Services Website
 
 > **Design Read:** B2B professional service website for trust-seeking clients, with a clean/structured editorial language, leaning toward a grounded layout system. References: ui.md design tokens.
 > **Site Purpose:** Communicate clearly how the service works. Build trust. Drive qualified inquiries.
