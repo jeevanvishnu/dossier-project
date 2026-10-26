@@ -12,8 +12,6 @@ import {
   ArrowLeft,
   CheckCircle,
   CircleNotch,
-  ShieldCheck,
-  Key,
 } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/routing";
@@ -120,18 +118,18 @@ export function AuthModal() {
         onClick={closeAuthModal}
       />
 
-      <div data-theme="dark" className="dark relative w-full max-w-md bg-surface border border-border rounded-3xl shadow-2xl overflow-hidden z-10 my-auto animate-in zoom-in-95 duration-200">
+      <div data-theme="dark" className="dark relative w-full max-w-md bg-surface border border-border/80 rounded-3xl shadow-2xl overflow-hidden z-10 my-auto animate-in zoom-in-95 duration-200">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-72 h-36 bg-accent/15 blur-3xl pointer-events-none rounded-full" />
 
         <button
           onClick={closeAuthModal}
           aria-label="Close modal"
-          className="absolute top-4 right-4 p-2 text-secondary hover:text-primary hover:bg-surface-raised rounded-full transition-all duration-200 z-20"
+          className="absolute top-4 right-4 w-8 h-8 rounded-full border border-border/60 bg-surface/80 text-secondary hover:text-primary hover:bg-surface-raised flex items-center justify-center transition-all duration-200 z-20 cursor-pointer shadow-xs"
         >
-          <X size={18} />
+          <X size={16} />
         </button>
 
-        <div className="relative z-10 p-7 sm:p-9">
+        <div className="relative z-10 p-7 sm:p-8">
           {mode === "forgot" ? (
             <div className="mb-6 text-center flex flex-col items-center">
               <button
@@ -143,20 +141,12 @@ export function AuthModal() {
                 {tCommon("back")}
               </button>
 
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-accent/20 to-sky-500/10 border border-accent/30 flex items-center justify-center text-accent mb-3 shadow-md">
-                <Key size={28} weight="duotone" />
-              </div>
-
               <h2 className="font-lexend text-2xl font-bold text-primary tracking-tight">
                 {tAuth("forgotPassword")}
               </h2>
             </div>
           ) : (
             <div className="mb-6 text-center flex flex-col items-center">
-              <div className="w-13 h-13 rounded-2xl bg-gradient-to-br from-accent/20 to-sky-500/10 border border-accent/30 flex items-center justify-center text-accent mb-3 shadow-md">
-                <ShieldCheck size={28} weight="duotone" />
-              </div>
-
               <h2 className="font-lexend text-2xl font-bold text-primary tracking-tight">
                 {tAuth("modalTitle")}
               </h2>
@@ -167,7 +157,7 @@ export function AuthModal() {
           )}
 
           {errorMessage && (
-            <div className="mb-4 p-3 rounded-2xl bg-red-500/10 border border-red-500/30 text-red-500 text-xs font-medium flex items-center gap-2">
+            <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-500 text-xs font-medium flex items-center gap-2">
               <span>⚠️</span>
               <span>{errorMessage}</span>
             </div>
@@ -183,7 +173,7 @@ export function AuthModal() {
                 <button
                   type="button"
                   onClick={() => setMode("signin")}
-                  className="mt-5 btn btn-primary w-full rounded-2xl h-11 text-white bg-accent hover:bg-accent-hover border-none font-bold text-sm shadow-md transition-all"
+                  className="mt-5 w-full rounded-full h-11 text-white bg-accent hover:bg-accent-hover font-semibold text-sm shadow-xs transition-all cursor-pointer flex items-center justify-center"
                 >
                   {tCommon("back")}
                 </button>
@@ -204,7 +194,7 @@ export function AuthModal() {
                       placeholder={tAuth("emailPlaceholder")}
                       value={forgotEmail}
                       onChange={(e) => setForgotEmail(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 bg-bg border border-border focus:border-accent focus:ring-2 focus:ring-accent/20 rounded-2xl text-primary placeholder-muted text-sm outline-none transition-all"
+                      className="w-full pl-10 pr-4 py-2.5 bg-bg/80 border border-border/80 focus:border-accent focus:ring-2 focus:ring-accent/20 rounded-xl text-primary placeholder-muted text-sm outline-none transition-all"
                     />
                   </div>
                 </div>
@@ -212,7 +202,7 @@ export function AuthModal() {
                 <button
                   type="submit"
                   disabled={isForgotLoading}
-                  className="w-full mt-2 btn btn-primary rounded-2xl h-11 text-white bg-accent hover:bg-accent-hover border-none font-bold text-sm shadow-md flex items-center justify-center gap-2 transition-all"
+                  className="w-full mt-2 rounded-full h-11 text-white bg-accent hover:bg-accent-hover font-semibold text-sm shadow-xs flex items-center justify-center gap-2 transition-all cursor-pointer"
                 >
                   {isForgotLoading ? (
                     <>
@@ -243,7 +233,7 @@ export function AuthModal() {
                     placeholder={tAuth("emailPlaceholder")}
                     value={signInEmail}
                     onChange={(e) => setSignInEmail(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 bg-bg border border-border focus:border-accent focus:ring-2 focus:ring-accent/20 rounded-2xl text-primary placeholder-muted text-sm outline-none transition-all"
+                    className="w-full pl-10 pr-4 py-2.5 bg-bg/80 border border-border/80 focus:border-accent focus:ring-2 focus:ring-accent/20 rounded-xl text-primary placeholder-muted text-sm outline-none transition-all"
                   />
                 </div>
               </div>
@@ -271,12 +261,12 @@ export function AuthModal() {
                     placeholder={tAuth("passwordPlaceholder")}
                     value={signInPassword}
                     onChange={(e) => setSignInPassword(e.target.value)}
-                    className="w-full pl-10 pr-10 py-3 bg-bg border border-border focus:border-accent focus:ring-2 focus:ring-accent/20 rounded-2xl text-primary placeholder-muted text-sm outline-none transition-all"
+                    className="w-full pl-10 pr-10 py-2.5 bg-bg/80 border border-border/80 focus:border-accent focus:ring-2 focus:ring-accent/20 rounded-xl text-primary placeholder-muted text-sm outline-none transition-all"
                   />
                   <button
                     type="button"
                     onClick={() => setShowSignInPassword(!showSignInPassword)}
-                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-secondary hover:text-primary transition-colors"
+                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-secondary hover:text-primary transition-colors cursor-pointer"
                   >
                     {showSignInPassword ? <EyeSlash size={18} /> : <Eye size={18} />}
                   </button>
@@ -286,7 +276,7 @@ export function AuthModal() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full mt-2 btn btn-primary rounded-2xl h-11 text-white bg-accent hover:bg-accent-hover border-none font-bold text-sm shadow-md flex items-center justify-center gap-2 transition-all transform active:scale-[0.99]"
+                className="w-full mt-2 rounded-full h-11 text-white bg-accent hover:bg-accent-hover font-semibold text-sm shadow-xs flex items-center justify-center gap-2 transition-all transform active:scale-[0.99] cursor-pointer"
               >
                 {isLoading ? (
                   <>

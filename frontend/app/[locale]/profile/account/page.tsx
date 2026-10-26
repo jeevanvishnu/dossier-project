@@ -22,6 +22,7 @@ import {
   ShieldWarning,
   CaretLeft,
   CaretRight,
+  CaretUpDown,
   X,
 } from "@phosphor-icons/react";
 import { toast } from "sonner";
@@ -350,54 +351,76 @@ export default function AccountSettingsPage() {
   return (
     <AppShell>
       <div className="space-y-6">
-        {/* Header Banner */}
-        <div className="bg-surface border border-border p-5 rounded-2xl shadow-xs">
-          <span className="text-[10px] uppercase tracking-wider font-bold text-accent px-2 py-0.5 rounded bg-accent/10 border border-accent/20">
-            {tProfile("badgeLabel")}
-          </span>
-          <h1 className="font-lexend text-2xl font-bold text-primary mt-1">
-            {tProfile("title")}
-          </h1>
-          <p className="text-xs text-secondary">
-            {tProfile("sub")}
-          </p>
-        </div>
+        {/* Top Header Row matching the 'Employees' clean model */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-3">
+            <h1 className="font-lexend text-2xl font-bold text-primary tracking-tight">
+              {tProfile("title")}
+            </h1>
 
-        {/* Tab Navigation */}
-        <div className="flex items-center gap-2 bg-surface border border-border p-1.5 rounded-2xl overflow-x-auto shadow-xs">
-          <button
-            onClick={() => setActiveTab("account")}
-            className={`px-4 py-2 text-xs font-bold rounded-xl transition-colors flex items-center gap-2 shrink-0 cursor-pointer ${activeTab === "account" ? "bg-accent text-white" : "text-secondary hover:text-primary"
-              }`}
-          >
-            <UserGear size={16} />
-            <span>{tProfile("tabAccountSettings")}</span>
-          </button>
+            {/* Continuous Segmented Pill Tabs */}
+            <div className="inline-flex items-center p-1 bg-surface border border-border rounded-full shadow-xs">
+              <button
+                type="button"
+                onClick={() => setActiveTab("account")}
+                className={`flex items-center gap-2 px-5 py-2 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                  activeTab === "account"
+                    ? "bg-accent text-white shadow-xs"
+                    : "text-secondary hover:text-primary"
+                }`}
+              >
+                <UserGear size={16} />
+                <span>{tProfile("tabAccountSettings")}</span>
+              </button>
 
-          <button
-            onClick={() => setActiveTab("users")}
-            className={`px-4 py-2 text-xs font-bold rounded-xl transition-colors flex items-center gap-2 shrink-0 cursor-pointer ${activeTab === "users" ? "bg-accent text-white" : "text-secondary hover:text-primary"
-              }`}
-          >
-            <Users size={16} />
-            <span>User Management</span>
-          </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("users")}
+                className={`flex items-center gap-2 px-5 py-2 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                  activeTab === "users"
+                    ? "bg-accent text-white shadow-xs"
+                    : "text-secondary hover:text-primary"
+                }`}
+              >
+                <Users size={16} />
+                <span>User Management</span>
+                <span
+                  className={`w-4.5 h-4.5 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                    activeTab === "users" ? "bg-white/20 text-white" : "bg-surface-raised text-muted"
+                  }`}
+                >
+                  {pagination.total}
+                </span>
+              </button>
+            </div>
+          </div>
+
+          {activeTab === "users" && isAdmin && (
+            <button
+              type="button"
+              onClick={() => setShowAddUserModal(true)}
+              className="px-5 py-2.5 bg-accent hover:bg-accent-hover text-white font-semibold text-xs rounded-full shadow-xs transition-all flex items-center gap-2 shrink-0 cursor-pointer self-start sm:self-auto"
+            >
+              <Plus size={16} weight="bold" />
+              <span>Add User</span>
+            </button>
+          )}
         </div>
 
         {/* ACCOUNT SETTINGS TAB */}
         {activeTab === "account" && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
             {/* Photo Avatar Card */}
-            <div className="bg-surface border border-border rounded-2xl p-6 shadow-sm space-y-4 h-full">
-              <div className="flex items-center gap-2 pb-3 border-b border-border">
+            <div className="bg-surface border border-border rounded-3xl p-6 shadow-xs space-y-4 h-full">
+              <div className="flex items-center gap-2.5 pb-4 border-b border-border/60">
                 <UploadSimple size={20} className="text-accent" />
                 <h2 className="font-lexend font-bold text-base text-primary">
                   {tProfile("avatarTitle")}
                 </h2>
               </div>
 
-              <div className="flex flex-col items-center gap-3 pt-1">
-                <div className="w-20 h-20 rounded-full bg-bg border-2 border-accent/40 overflow-hidden flex items-center justify-center shrink-0">
+              <div className="flex flex-col items-center gap-4 pt-2">
+                <div className="w-20 h-20 rounded-full bg-bg border-2 border-accent/40 overflow-hidden flex items-center justify-center shrink-0 shadow-inner">
                   {avatarPreview ? (
                     <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
                   ) : (
@@ -418,19 +441,19 @@ export default function AccountSettingsPage() {
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="px-4 py-2 bg-accent hover:bg-accent-hover text-white text-xs font-bold rounded-xl transition-all shadow-xs flex items-center gap-2 cursor-pointer"
+                    className="px-5 py-2.5 bg-accent hover:bg-accent-hover text-white text-xs font-semibold rounded-full transition-all shadow-xs flex items-center gap-2 cursor-pointer"
                   >
                     <UploadSimple size={16} />
                     <span>{tProfile("tabAvatar")}</span>
                   </button>
                   {avatarError && (
-                    <p className="text-xs text-red-500 font-medium text-center">{avatarError}</p>
+                    <p className="text-xs text-rose-400 font-medium text-center">{avatarError}</p>
                   )}
                 </div>
               </div>
 
-              <div className="bg-bg p-4 rounded-xl border border-border space-y-2 text-xs mt-auto">
-                <span className="font-bold text-accent block uppercase tracking-wider">
+              <div className="bg-bg/70 p-4 rounded-2xl border border-border space-y-1.5 text-xs mt-auto">
+                <span className="font-bold text-accent block uppercase tracking-wider text-[10px]">
                   Dimension Limits
                 </span>
                 <p className="text-secondary">• Max size: <strong className="text-primary">50 KB</strong></p>
@@ -439,8 +462,8 @@ export default function AccountSettingsPage() {
             </div>
 
             {/* Password Update Card */}
-            <div className="bg-surface border border-border rounded-2xl p-6 shadow-sm space-y-4 h-full">
-              <div className="flex items-center gap-2 pb-3 border-b border-border">
+            <div className="bg-surface border border-border rounded-3xl p-6 shadow-xs space-y-4 h-full">
+              <div className="flex items-center gap-2.5 pb-4 border-b border-border/60">
                 <LockKey size={20} className="text-accent" />
                 <h2 className="font-lexend font-bold text-base text-primary">
                   {tProfile("passwordTitle")}
@@ -449,7 +472,7 @@ export default function AccountSettingsPage() {
 
               <form onSubmit={handlePasswordSubmit} className="space-y-4 text-xs">
                 <div>
-                  <label className="block text-primary font-bold mb-1">{tProfile("currentPassword")}</label>
+                  <label className="block text-primary font-semibold mb-1.5">{tProfile("currentPassword")}</label>
                   <input
                     type="password"
                     required
@@ -460,7 +483,7 @@ export default function AccountSettingsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-primary font-bold mb-1">{tProfile("newPassword")}</label>
+                  <label className="block text-primary font-semibold mb-1.5">{tProfile("newPassword")}</label>
                   <input
                     type="password"
                     required
@@ -471,7 +494,7 @@ export default function AccountSettingsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-primary font-bold mb-1">{tProfile("confirmPassword")}</label>
+                  <label className="block text-primary font-semibold mb-1.5">{tProfile("confirmPassword")}</label>
                   <input
                     type="password"
                     required
@@ -481,18 +504,20 @@ export default function AccountSettingsPage() {
                   />
                 </div>
 
-                <button
-                  type="submit"
-                  className="w-full py-2.5 bg-accent hover:bg-accent-hover text-white font-bold rounded-xl transition-all shadow-sm cursor-pointer"
-                >
-                  {tProfile("updatePasswordBtn")}
-                </button>
+                <div className="pt-2">
+                  <button
+                    type="submit"
+                    className="w-full py-2.5 bg-accent hover:bg-accent-hover text-white font-semibold rounded-full transition-all shadow-xs cursor-pointer"
+                  >
+                    {tProfile("updatePasswordBtn")}
+                  </button>
+                </div>
               </form>
             </div>
 
             {/* Company Data Card */}
-            <div className="bg-surface border border-border rounded-2xl p-6 shadow-sm space-y-4 h-full">
-              <div className="flex items-center gap-2 pb-3 border-b border-border">
+            <div className="bg-surface border border-border rounded-3xl p-6 shadow-xs space-y-4 h-full">
+              <div className="flex items-center gap-2.5 pb-4 border-b border-border/60">
                 <Buildings size={20} className="text-accent" />
                 <h2 className="font-lexend font-bold text-base text-primary">
                   {tProfile("companyTitle")}
@@ -501,7 +526,7 @@ export default function AccountSettingsPage() {
 
               <form onSubmit={handleCompanySubmit} className="space-y-4 text-xs">
                 <div>
-                  <label className="block text-primary font-bold mb-1">{tProfile("officialEmail")}</label>
+                  <label className="block text-primary font-semibold mb-1.5">{tProfile("officialEmail")}</label>
                   <input
                     type="email"
                     required
@@ -512,7 +537,7 @@ export default function AccountSettingsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-primary font-bold mb-1">{tProfile("legalAddress")}</label>
+                  <label className="block text-primary font-semibold mb-1.5">{tProfile("legalAddress")}</label>
                   <input
                     type="text"
                     required
@@ -523,7 +548,7 @@ export default function AccountSettingsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-primary font-bold mb-1">{tProfile("corporatePhone")}</label>
+                  <label className="block text-primary font-semibold mb-1.5">{tProfile("corporatePhone")}</label>
                   <input
                     type="text"
                     required
@@ -536,7 +561,7 @@ export default function AccountSettingsPage() {
                 <div className="pt-2">
                   <button
                     type="submit"
-                    className="w-full py-2.5 bg-accent hover:bg-accent-hover text-white font-bold rounded-xl transition-all shadow-sm cursor-pointer"
+                    className="w-full py-2.5 bg-accent hover:bg-accent-hover text-white font-semibold rounded-full transition-all shadow-xs cursor-pointer"
                   >
                     {tProfile("saveCompanyBtn")}
                   </button>
@@ -546,258 +571,316 @@ export default function AccountSettingsPage() {
           </div>
         )}
 
-        {/* USERS MANAGEMENT TAB (ADMIN VIEW INTEGRATED WITH BACKEND REST API) */}
+        {/* USERS MANAGEMENT TAB (EXACT EMPLOYEES MODEL IMPLEMENTATION) */}
         {activeTab === "users" && (
-          <div className="bg-surface border border-border rounded-2xl overflow-hidden shadow-sm space-y-0">
-            {/* Header Toolbar */}
-            <div className="p-5 border-b border-border flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-              <div className="flex items-center gap-2">
-                <Users size={20} className="text-accent" />
-                <div>
-                  <h2 className="font-lexend font-bold text-base text-primary">
-                    User List Management Table
-                  </h2>
-                  <p className="text-xs text-secondary">
-                    Total {pagination.total} registered users
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 w-full md:w-auto">
+          <div className="space-y-6">
+            {/* Filter Bar Controls */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              {/* Segmented Pill Tabs for Status */}
+              <div className="inline-flex items-center p-1 bg-surface border border-border rounded-full shadow-xs self-start">
                 <button
-                  onClick={fetchUsers}
-                  disabled={loadingUsers}
-                  className="p-2 bg-bg hover:bg-surface-raised border border-border text-secondary hover:text-primary rounded-lg transition-colors cursor-pointer"
-                  title="Refresh List"
-                >
-                  <ArrowsClockwise size={16} className={loadingUsers ? "animate-spin text-accent" : ""} />
-                </button>
-
-                {isAdmin && (
-                  <button
-                    onClick={() => setShowAddUserModal(true)}
-                    className="px-3.5 py-2 bg-accent hover:bg-accent-hover text-white font-bold text-xs rounded-xl transition-colors flex items-center gap-2 cursor-pointer shadow-xs"
-                  >
-                    <Plus size={16} />
-                    <span>Add New User</span>
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Filter Bar */}
-            <div className="p-4 bg-bg/50 border-b border-border grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {/* Search Bar */}
-              <div className="relative">
-                <MagnifyingGlass
-                  size={16}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-muted"
-                />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value);
+                  type="button"
+                  onClick={() => {
+                    setBlockedFilter("");
                     setPage(1);
                   }}
-                  placeholder="Search name or email..."
-                  className="w-full bg-surface border border-border rounded-xl pl-9 pr-3 py-2 text-xs text-primary outline-none focus:border-accent"
-                />
+                  className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                    blockedFilter === ""
+                      ? "bg-accent text-white shadow-xs"
+                      : "text-secondary hover:text-primary"
+                  }`}
+                >
+                  <span>All Accounts</span>
+                  <span
+                    className={`w-4.5 h-4.5 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                      blockedFilter === "" ? "bg-white/20 text-white" : "bg-surface-raised text-muted"
+                    }`}
+                  >
+                    {pagination.total}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBlockedFilter("active");
+                    setPage(1);
+                  }}
+                  className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                    blockedFilter === "active"
+                      ? "bg-accent text-white shadow-xs"
+                      : "text-secondary hover:text-primary"
+                  }`}
+                >
+                  <span>Active</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setBlockedFilter("blocked");
+                    setPage(1);
+                  }}
+                  className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                    blockedFilter === "blocked"
+                      ? "bg-accent text-white shadow-xs"
+                      : "text-secondary hover:text-primary"
+                  }`}
+                >
+                  <span>Blocked</span>
+                </button>
               </div>
 
-              {/* Role Filter */}
-              <div>
+              {/* Search & Role Filter */}
+              <div className="flex items-center gap-3 w-full sm:w-auto">
+                <div className="flex items-center gap-2 bg-surface border border-border rounded-full px-4 py-2 text-xs text-muted w-full sm:w-64 shadow-xs focus-within:border-accent transition-colors">
+                  <MagnifyingGlass size={15} className="text-muted shrink-0" />
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      setPage(1);
+                    }}
+                    placeholder="Search name or email..."
+                    className="bg-transparent text-primary outline-none w-full text-xs placeholder:text-muted"
+                  />
+                </div>
+
                 <select
                   value={roleFilter}
                   onChange={(e) => {
                     setRoleFilter(e.target.value);
                     setPage(1);
                   }}
-                  className="w-full bg-surface border border-border rounded-xl px-3 py-2 text-xs text-primary outline-none focus:border-accent"
+                  className="bg-surface border border-border rounded-full px-4 py-2 text-xs text-primary outline-none focus:border-accent cursor-pointer shadow-xs"
                 >
                   <option value="">All Roles</option>
                   <option value="user">User</option>
                   <option value="admin">Admin</option>
                   <option value="superadmin">Superadmin</option>
                 </select>
-              </div>
 
-              {/* Blocked Status Filter */}
-              <div>
-                <select
-                  value={blockedFilter}
-                  onChange={(e) => {
-                    setBlockedFilter(e.target.value);
-                    setPage(1);
-                  }}
-                  className="w-full bg-surface border border-border rounded-xl px-3 py-2 text-xs text-primary outline-none focus:border-accent"
+                <button
+                  onClick={fetchUsers}
+                  disabled={loadingUsers}
+                  className="w-8 h-8 rounded-full bg-surface hover:bg-surface-raised border border-border text-secondary hover:text-primary flex items-center justify-center transition-colors cursor-pointer shrink-0 shadow-xs"
+                  title="Refresh"
                 >
-                  <option value="">All Account Statuses</option>
-                  <option value="active">Active Accounts</option>
-                  <option value="blocked">Blocked / Suspended</option>
-                </select>
+                  <ArrowsClockwise size={15} className={loadingUsers ? "animate-spin text-accent" : ""} />
+                </button>
               </div>
             </div>
 
-            {/* Users Table */}
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs text-secondary">
-                <thead className="bg-bg text-primary uppercase font-bold text-[10px] tracking-wider border-b border-border">
-                  <tr>
-                    <th className="py-3.5 px-4">ID</th>
-                    <th className="py-3.5 px-4">User Details</th>
-                    <th className="py-3.5 px-4">Email</th>
-                    <th className="py-3.5 px-4">Role</th>
-                    <th className="py-3.5 px-4">Account Status</th>
-                    <th className="py-3.5 px-4">Created Date</th>
-                    {isAdmin && <th className="py-3.5 px-4 text-right">Actions</th>}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {loadingUsers ? (
-                    <tr>
-                      <td colSpan={isAdmin ? 7 : 6} className="py-12 text-center text-secondary">
-                        <div className="flex flex-col items-center justify-center gap-2">
-                          <ArrowsClockwise size={24} className="animate-spin text-accent" />
-                          <span>Loading users from database...</span>
-                        </div>
-                      </td>
+            {/* Clean Rounded Table Container */}
+            <div className="bg-surface border border-border rounded-3xl overflow-hidden shadow-xs">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-border/60 text-secondary">
+                      <th className="py-4.5 px-6 font-semibold">
+                        <span className="inline-flex items-center gap-1.5">
+                          Name
+                          <CaretUpDown size={14} className="text-muted/70" />
+                        </span>
+                      </th>
+                      <th className="py-4.5 px-6 font-semibold">
+                        <span className="inline-flex items-center gap-1.5">
+                          Email
+                          <CaretUpDown size={14} className="text-muted/70" />
+                        </span>
+                      </th>
+                      <th className="py-4.5 px-6 font-semibold">
+                        <span className="inline-flex items-center gap-1.5">
+                          Role
+                          <CaretUpDown size={14} className="text-muted/70" />
+                        </span>
+                      </th>
+                      <th className="py-4.5 px-6 font-semibold">
+                        <span className="inline-flex items-center gap-1.5">
+                          Status
+                          <CaretUpDown size={14} className="text-muted/70" />
+                        </span>
+                      </th>
+                      <th className="py-4.5 px-6 font-semibold">
+                        <span className="inline-flex items-center gap-1.5">
+                          Created Date
+                          <CaretUpDown size={14} className="text-muted/70" />
+                        </span>
+                      </th>
+                      {isAdmin && <th className="py-4.5 px-6 text-right font-semibold">Actions</th>}
                     </tr>
-                  ) : usersList.length === 0 ? (
-                    <tr>
-                      <td colSpan={isAdmin ? 7 : 6} className="py-12 text-center text-secondary">
-                        No user accounts match the current query.
-                      </td>
-                    </tr>
-                  ) : (
-                    usersList.map((u) => {
-                      const isSelf = authUser?.id === u.id;
-                      return (
-                        <tr key={u.id} className="hover:bg-surface-raised transition-colors">
-                          <td className="py-3.5 px-4 font-mono font-bold text-accent">
-                            #{u.id}
-                          </td>
-                          <td className="py-3.5 px-4">
-                            <div className="font-semibold text-primary">
-                              {u.name || "—"}
-                            </div>
-                            {isSelf && (
-                              <span className="text-[9px] bg-accent/20 text-accent font-bold px-1.5 py-0.2 rounded uppercase">
-                                You
-                              </span>
-                            )}
-                          </td>
-                          <td className="py-3.5 px-4 font-mono text-primary">{u.email}</td>
-                          <td className="py-3.5 px-4">
-                            <span
-                              className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${u.role === "superadmin"
-                                  ? "bg-purple-500/15 text-purple-400 border border-purple-500/30"
-                                  : u.role === "admin"
-                                    ? "bg-accent/15 text-accent border border-accent/30"
-                                    : "bg-bg text-secondary border border-border"
+                  </thead>
+                  <tbody className="divide-y divide-border/40">
+                    {loadingUsers ? (
+                      <tr>
+                        <td colSpan={isAdmin ? 6 : 5} className="py-12 text-center text-secondary">
+                          <div className="flex flex-col items-center justify-center gap-2">
+                            <ArrowsClockwise size={24} className="animate-spin text-accent" />
+                            <span>Loading users from database...</span>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : usersList.length === 0 ? (
+                      <tr>
+                        <td colSpan={isAdmin ? 6 : 5} className="py-12 text-center text-muted">
+                          No user accounts match the current query.
+                        </td>
+                      </tr>
+                    ) : (
+                      usersList.map((u) => {
+                        const isSelf = authUser?.id === u.id;
+                        return (
+                          <tr key={u.id} className="hover:bg-surface-raised/40 transition-colors">
+                            {/* 1. Name */}
+                            <td className="py-4.5 px-6">
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold text-primary text-sm">
+                                  {u.name || "—"}
+                                </span>
+                                {isSelf && (
+                                  <span className="text-[9px] bg-accent/20 text-accent font-bold px-2 py-0.5 rounded-full uppercase">
+                                    You
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+
+                            {/* 2. Email */}
+                            <td className="py-4.5 px-6 font-mono text-secondary text-xs">{u.email}</td>
+
+                            {/* 3. Role Badge (like 'Employees' reference) */}
+                            <td className="py-4.5 px-6">
+                              <span
+                                className={`px-3 py-1 rounded-full text-xs font-semibold inline-flex items-center gap-1.5 ${
+                                  u.role === "superadmin"
+                                    ? "bg-purple-500/10 text-purple-400 border border-purple-500/25"
+                                    : u.role === "admin"
+                                    ? "bg-rose-500/10 text-rose-400 border border-rose-500/25"
+                                    : "bg-accent/10 text-accent border border-accent/25"
                                 }`}
-                            >
-                              {u.role.toUpperCase()}
-                            </span>
-                          </td>
-                          <td className="py-3.5 px-4">
-                            {isAdmin ? (
-                              <button
-                                onClick={() => handleToggleBlockStatus(u)}
-                                disabled={isSelf || togglingBlockId === u.id}
-                                className={`flex items-center gap-1.5 text-xs font-semibold cursor-pointer transition-opacity ${isSelf
-                                    ? "opacity-50 cursor-not-allowed"
-                                    : togglingBlockId === u.id
+                              >
+                                {u.role === "superadmin"
+                                  ? "Super Admin"
+                                  : u.role === "admin"
+                                  ? "Admin"
+                                  : "Standard"}
+                              </span>
+                            </td>
+
+                            {/* 4. Status Toggle */}
+                            <td className="py-4.5 px-6">
+                              {isAdmin ? (
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleBlockStatus(u)}
+                                  disabled={isSelf || togglingBlockId === u.id}
+                                  className={`flex items-center gap-1.5 text-xs font-semibold cursor-pointer transition-opacity ${
+                                    isSelf
+                                      ? "opacity-50 cursor-not-allowed"
+                                      : togglingBlockId === u.id
                                       ? "opacity-70 cursor-wait"
                                       : ""
                                   }`}
-                                title={isSelf ? "Cannot block your own account" : "Click to toggle account status"}
-                              >
-                                {u.isBlocked ? (
-                                  <>
-                                    <ToggleLeft size={22} className="text-red-500" />
-                                    <span className="text-red-500 font-bold">Blocked</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <ToggleRight size={22} className="text-emerald-500" />
-                                    <span className="text-emerald-500">Active</span>
-                                  </>
-                                )}
-                              </button>
-                            ) : (
-                              <div className="flex items-center gap-1.5 text-xs font-semibold">
-                                {u.isBlocked ? (
-                                  <>
-                                    <XCircle size={18} weight="fill" className="text-red-500 shrink-0" />
-                                    <span className="text-red-500 font-bold">Blocked</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <CheckCircle size={18} weight="fill" className="text-emerald-500 shrink-0" />
-                                    <span className="text-emerald-500">Active</span>
-                                  </>
-                                )}
-                              </div>
-                            )}
-                          </td>
-                          <td className="py-3.5 px-4 text-xs text-secondary font-mono">
-                            {u.createdAt ? new Date(u.createdAt).toLocaleDateString("en-GB") : "—"}
-                          </td>
-                          {isAdmin && (
-                            <td className="py-3.5 px-4 text-right space-x-1.5">
-                              <button
-                                onClick={() => handleOpenEditModal(u)}
-                                className="p-1.5 text-secondary hover:text-accent hover:bg-accent/10 rounded transition-colors cursor-pointer"
-                                title="Edit User"
-                              >
-                                <PencilSimple size={16} />
-                              </button>
-                              <button
-                                onClick={() => handleOpenDeleteModal(u)}
-                                disabled={isSelf}
-                                className={`p-1.5 text-red-500 hover:bg-red-500/10 rounded transition-colors cursor-pointer ${isSelf ? "opacity-30 cursor-not-allowed" : ""
-                                  }`}
-                                title={isSelf ? "Cannot delete your own account" : "Delete User"}
-                              >
-                                <Trash size={16} />
-                              </button>
+                                  title={isSelf ? "Cannot block your own account" : "Click to toggle account status"}
+                                >
+                                  {u.isBlocked ? (
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                                      <XCircle size={14} weight="fill" />
+                                      Blocked
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                      <CheckCircle size={14} weight="fill" />
+                                      Active
+                                    </span>
+                                  )}
+                                </button>
+                              ) : (
+                                <div className="flex items-center gap-1.5 text-xs font-semibold">
+                                  {u.isBlocked ? (
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                                      <XCircle size={14} weight="fill" />
+                                      Blocked
+                                    </span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                                      <CheckCircle size={14} weight="fill" />
+                                      Active
+                                    </span>
+                                  )}
+                                </div>
+                              )}
                             </td>
-                          )}
-                        </tr>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
-            </div>
 
-            {/* Pagination Controls */}
-            {pagination.totalPages > 1 && (
-              <div className="p-4 border-t border-border flex items-center justify-between bg-bg/50">
-                <span className="text-xs text-secondary">
-                  Page <strong className="text-primary">{pagination.page}</strong> of{" "}
-                  <strong className="text-primary">{pagination.totalPages}</strong> ({pagination.total} total)
-                </span>
+                            {/* 5. Date */}
+                            <td className="py-4.5 px-6 text-xs text-secondary font-mono">
+                              {u.createdAt ? new Date(u.createdAt).toLocaleDateString("en-GB") : "—"}
+                            </td>
 
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-                    disabled={pagination.page <= 1}
-                    className="p-1.5 border border-border bg-surface text-secondary hover:text-primary disabled:opacity-40 rounded-lg cursor-pointer"
-                  >
-                    <CaretLeft size={16} />
-                  </button>
-                  <button
-                    onClick={() => setPage((prev) => Math.min(pagination.totalPages, prev + 1))}
-                    disabled={pagination.page >= pagination.totalPages}
-                    className="p-1.5 border border-border bg-surface text-secondary hover:text-primary disabled:opacity-40 rounded-lg cursor-pointer"
-                  >
-                    <CaretRight size={16} />
-                  </button>
-                </div>
+                            {/* 6. Action buttons (Edit pencil circle & Delete trash circle like reference image) */}
+                            {isAdmin && (
+                              <td className="py-4.5 px-6 text-right">
+                                <div className="flex items-center justify-end gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleOpenEditModal(u)}
+                                    className="w-8 h-8 rounded-full bg-surface-raised hover:bg-accent/15 text-secondary hover:text-accent border border-border/60 transition-all inline-flex items-center justify-center cursor-pointer shadow-xs"
+                                    title="Edit User"
+                                  >
+                                    <PencilSimple size={15} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleOpenDeleteModal(u)}
+                                    disabled={isSelf}
+                                    className={`w-8 h-8 rounded-full bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 transition-all inline-flex items-center justify-center cursor-pointer shadow-xs ${
+                                      isSelf ? "opacity-30 cursor-not-allowed" : ""
+                                    }`}
+                                    title={isSelf ? "Cannot delete your own account" : "Delete User"}
+                                  >
+                                    <Trash size={15} />
+                                  </button>
+                                </div>
+                              </td>
+                            )}
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
               </div>
-            )}
+
+              {/* Pagination Controls */}
+              {pagination.totalPages > 1 && (
+                <div className="p-4 border-t border-border/60 flex items-center justify-between bg-bg/40">
+                  <span className="text-xs text-secondary">
+                    Page <strong className="text-primary">{pagination.page}</strong> of{" "}
+                    <strong className="text-primary">{pagination.totalPages}</strong> ({pagination.total} total)
+                  </span>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+                      disabled={pagination.page <= 1}
+                      className="w-8 h-8 rounded-full border border-border bg-surface text-secondary hover:text-primary disabled:opacity-40 flex items-center justify-center cursor-pointer shadow-xs"
+                    >
+                      <CaretLeft size={15} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPage((prev) => Math.min(pagination.totalPages, prev + 1))}
+                      disabled={pagination.page >= pagination.totalPages}
+                      className="w-8 h-8 rounded-full border border-border bg-surface text-secondary hover:text-primary disabled:opacity-40 flex items-center justify-center cursor-pointer shadow-xs"
+                    >
+                      <CaretRight size={15} />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
 

@@ -2,7 +2,14 @@
 
 import React, { useState } from "react";
 import { AppShell } from "../../components/AppShell";
-import { FileText, CheckCircle, WarningOctagon, Plus, DownloadSimple, MagnifyingGlass } from "@phosphor-icons/react";
+import {
+  Plus,
+  DownloadSimple,
+  MagnifyingGlass,
+  CaretUpDown,
+  CheckCircle,
+  WarningOctagon,
+} from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { useTranslations } from "next-intl";
 
@@ -11,7 +18,7 @@ export default function ContractsPage() {
   const tCommon = useTranslations("common");
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterType, setFilterType] = useState("all");
+  const [filterType, setFilterType] = useState<"all" | "active" | "expired">("all");
 
   const [contracts] = useState([
     {
@@ -52,10 +59,19 @@ export default function ContractsPage() {
     },
   ]);
 
+  const activeCount = contracts.filter((c) => c.status === "Active Legal").length;
+  const expiredCount = contracts.filter((c) => c.status === "Expired Terms").length;
+
   const filteredContracts = contracts.filter((c) => {
     const typeLabel = tContracts.has(c.typeKey as any) ? tContracts(c.typeKey as any) : c.typeDefault;
-    const matchesSearch = c.id.toLowerCase().includes(searchTerm.toLowerCase()) || typeLabel.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterType === "all" || (filterType === "active" && c.status === "Active Legal") || (filterType === "expired" && c.status === "Expired Terms");
+    const matchesSearch =
+      c.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      typeLabel.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      c.parties.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus =
+      filterType === "all" ||
+      (filterType === "active" && c.status === "Active Legal") ||
+      (filterType === "expired" && c.status === "Expired Terms");
     return matchesSearch && matchesStatus;
   });
 
@@ -66,120 +82,199 @@ export default function ContractsPage() {
   return (
     <AppShell>
       <div className="space-y-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-surface border border-border p-5 rounded-2xl shadow-xs">
-          <div>
-            <span className="text-[10px] uppercase tracking-wider font-medium text-accent px-2 py-0.5 rounded bg-accent/10 border border-accent/20">
-              {tContracts("badgeLabel")}
-            </span>
-            <h1 className="font-lexend text-2xl font-bold text-primary mt-1">
+        {/* Top Header Row matching the 'Employees' clean model */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-3">
+            <h1 className="font-lexend text-2xl font-bold text-primary tracking-tight">
               {tContracts("title")}
             </h1>
-            <p className="text-xs text-secondary">
-              {tContracts("sub")}
-            </p>
+
+            {/* Segmented Pill Tabs */}
+            <div className="inline-flex items-center p-1 bg-surface border border-border rounded-full shadow-xs">
+              <button
+                type="button"
+                onClick={() => setFilterType("active")}
+                className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                  filterType === "active"
+                    ? "bg-accent text-white shadow-xs"
+                    : "text-secondary hover:text-primary"
+                }`}
+              >
+                <span>{tContracts("statusActive")}</span>
+                <span
+                  className={`w-4.5 h-4.5 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                    filterType === "active" ? "bg-white/20 text-white" : "bg-surface-raised text-muted"
+                  }`}
+                >
+                  {activeCount}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setFilterType("expired")}
+                className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                  filterType === "expired"
+                    ? "bg-accent text-white shadow-xs"
+                    : "text-secondary hover:text-primary"
+                }`}
+              >
+                <span>{tContracts("statusExpired")}</span>
+                <span
+                  className={`w-4.5 h-4.5 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                    filterType === "expired" ? "bg-white/20 text-white" : "bg-surface-raised text-muted"
+                  }`}
+                >
+                  {expiredCount}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setFilterType("all")}
+                className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                  filterType === "all"
+                    ? "bg-accent text-white shadow-xs"
+                    : "text-secondary hover:text-primary"
+                }`}
+              >
+                <span>{tCommon("viewAll") || "All"}</span>
+                <span
+                  className={`w-4.5 h-4.5 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                    filterType === "all" ? "bg-white/20 text-white" : "bg-surface-raised text-muted"
+                  }`}
+                >
+                  {contracts.length}
+                </span>
+              </button>
+            </div>
           </div>
 
-          <button
-            onClick={() => toast.success(tContracts("requestInitiatedToast"))}
-            className="px-4 py-2 bg-accent hover:bg-accent-hover text-white font-medium text-xs rounded-xl shadow-sm transition-all flex items-center gap-1.5 shrink-0 cursor-pointer"
-          >
-            <Plus size={16} />
-            <span>{tContracts("createContract")}</span>
-          </button>
+          {/* Action Button & Search */}
+          <div className="flex items-center gap-3 self-start md:self-end">
+            <div className="flex items-center gap-2 bg-surface border border-border rounded-full px-4 py-2 text-xs text-muted w-52 sm:w-64 shadow-xs focus-within:border-accent transition-colors">
+              <MagnifyingGlass size={15} className="text-muted shrink-0" />
+              <input
+                type="text"
+                placeholder={tContracts("searchContracts")}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="bg-transparent text-primary outline-none w-full text-xs placeholder:text-muted"
+              />
+            </div>
+
+            <button
+              type="button"
+              onClick={() => toast.success(tContracts("requestInitiatedToast"))}
+              className="px-5 py-2.5 bg-accent hover:bg-accent-hover text-white font-semibold text-xs rounded-full shadow-xs transition-all flex items-center gap-1.5 shrink-0 cursor-pointer"
+            >
+              <Plus size={16} weight="bold" />
+              <span>{tContracts("createContract")}</span>
+            </button>
+          </div>
         </div>
 
-        <div className="bg-surface border border-border p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xs">
-          <div className="flex items-center gap-2 bg-bg border border-border rounded-xl px-3 py-2 text-xs text-muted w-full sm:w-80">
-            <MagnifyingGlass size={16} className="text-muted shrink-0" />
-            <input
-              type="text"
-              placeholder={tContracts("searchContracts")}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-transparent text-primary outline-none w-full text-xs"
-            />
-          </div>
-
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <button
-              onClick={() => setFilterType("all")}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${filterType === "all" ? "bg-accent text-white" : "bg-bg text-secondary hover:text-primary border border-border"
-                }`}
-            >
-              {tContracts("filterStatus")} ({contracts.length})
-            </button>
-            <button
-              onClick={() => setFilterType("active")}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${filterType === "active" ? "bg-emerald-500 text-white" : "bg-bg text-secondary hover:text-primary border border-border"
-                }`}
-            >
-              {tContracts("statusActive")}
-            </button>
-            <button
-              onClick={() => setFilterType("expired")}
-              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${filterType === "expired" ? "bg-red-500 text-white" : "bg-bg text-secondary hover:text-primary border border-border"
-                }`}
-            >
-              {tContracts("statusExpired")}
-            </button>
-          </div>
-        </div>
-
-        <div className="bg-surface border border-border rounded-2xl overflow-hidden shadow-sm">
-          <div className="p-5 border-b border-border flex items-center gap-2">
-            <FileText size={20} className="text-accent" />
-            <h2 className="font-lexend font-bold text-base text-primary">
-              {tContracts("title")}
-            </h2>
-          </div>
-
+        {/* Clean Rounded Table Container */}
+        <div className="bg-surface border border-border rounded-3xl overflow-hidden shadow-xs">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-secondary">
-              <thead className="bg-bg text-primary uppercase font-bold text-[10px] tracking-wider border-b border-border">
-                <tr>
-                  <th className="py-3.5 px-4">{tContracts("colNumber")}</th>
-                  <th className="py-3.5 px-4">{tContracts("colType")}</th>
-                  <th className="py-3.5 px-4">{tContracts("colPartner")}</th>
-                  <th className="py-3.5 px-4">{tContracts("colStartDate")}</th>
-                  <th className="py-3.5 px-4">{tContracts("colValidUntil")}</th>
-                  <th className="py-3.5 px-4">{tContracts("colStatus")}</th>
-                  <th className="py-3.5 px-4 text-right">{tContracts("colActions")}</th>
+            <table className="w-full text-left text-xs">
+              <thead>
+                <tr className="border-b border-border/60 text-secondary">
+                  <th className="py-4.5 px-6 font-semibold">
+                    <span className="inline-flex items-center gap-1.5">
+                      {tContracts("colNumber")}
+                      <CaretUpDown size={14} className="text-muted/70" />
+                    </span>
+                  </th>
+                  <th className="py-4.5 px-6 font-semibold">
+                    <span className="inline-flex items-center gap-1.5">
+                      {tContracts("colType")}
+                      <CaretUpDown size={14} className="text-muted/70" />
+                    </span>
+                  </th>
+                  <th className="py-4.5 px-6 font-semibold">
+                    <span className="inline-flex items-center gap-1.5">
+                      {tContracts("colPartner")}
+                      <CaretUpDown size={14} className="text-muted/70" />
+                    </span>
+                  </th>
+                  <th className="py-4.5 px-6 font-semibold">
+                    <span className="inline-flex items-center gap-1.5">
+                      {tContracts("colStartDate")}
+                      <CaretUpDown size={14} className="text-muted/70" />
+                    </span>
+                  </th>
+                  <th className="py-4.5 px-6 font-semibold">
+                    <span className="inline-flex items-center gap-1.5">
+                      {tContracts("colValidUntil")}
+                      <CaretUpDown size={14} className="text-muted/70" />
+                    </span>
+                  </th>
+                  <th className="py-4.5 px-6 font-semibold">
+                    <span className="inline-flex items-center gap-1.5">
+                      {tContracts("colStatus")}
+                      <CaretUpDown size={14} className="text-muted/70" />
+                    </span>
+                  </th>
+                  <th className="py-4.5 px-6 text-right font-semibold">
+                    {tContracts("colActions")}
+                  </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border">
-                {filteredContracts.map((c) => (
-                  <tr key={c.id} className="hover:bg-surface-raised transition-colors">
-                    <td className="py-3.5 px-4 font-mono font-bold text-primary">{c.id}</td>
-                    <td className="py-3.5 px-4 font-medium text-primary">
-                      {tContracts.has(c.typeKey as any) ? tContracts(c.typeKey as any) : c.typeDefault}
-                    </td>
-                    <td className="py-3.5 px-4 text-secondary">{c.parties}</td>
-                    <td className="py-3.5 px-4 font-medium">{c.startDate}</td>
-                    <td className="py-3.5 px-4 font-medium">{c.endDate}</td>
-                    <td className="py-3.5 px-4">
-                      {c.status === "Active Legal" ? (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-                          <CheckCircle size={14} />
-                          {tContracts("statusActive")}
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-red-500/10 text-red-500 border border-red-500/20">
-                          <WarningOctagon size={14} />
-                          {tContracts("statusExpired")}
-                        </span>
-                      )}
-                    </td>
-                    <td className="py-3.5 px-4 text-right">
-                      <button
-                        onClick={() => handleDownloadPdf(c.id)}
-                        className="p-1.5 text-accent hover:bg-accent/15 rounded-lg transition-colors inline-flex items-center gap-1 font-semibold text-[11px] cursor-pointer"
-                      >
-                        <DownloadSimple size={14} />
-                        <span>{tContracts("downloadPdf")}</span>
-                      </button>
+              <tbody className="divide-y divide-border/40">
+                {filteredContracts.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="py-12 text-center text-muted">
+                      No contracts found.
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  filteredContracts.map((c) => (
+                    <tr
+                      key={c.id}
+                      className="hover:bg-surface-raised/40 transition-colors"
+                    >
+                      <td className="py-4.5 px-6 font-mono font-semibold text-primary text-xs">
+                        {c.id}
+                      </td>
+                      <td className="py-4.5 px-6 font-medium text-primary text-sm">
+                        {tContracts.has(c.typeKey as any) ? tContracts(c.typeKey as any) : c.typeDefault}
+                      </td>
+                      <td className="py-4.5 px-6 text-secondary text-xs">
+                        {c.parties}
+                      </td>
+                      <td className="py-4.5 px-6 text-secondary font-mono text-xs">
+                        {c.startDate}
+                      </td>
+                      <td className="py-4.5 px-6 text-secondary font-mono text-xs">
+                        {c.endDate}
+                      </td>
+                      <td className="py-4.5 px-6">
+                        {c.status === "Active Legal" ? (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                            <CheckCircle size={13} weight="fill" />
+                            {tContracts("statusActive")}
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                            <WarningOctagon size={13} weight="fill" />
+                            {tContracts("statusExpired")}
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-4.5 px-6 text-right">
+                        <button
+                          type="button"
+                          onClick={() => handleDownloadPdf(c.id)}
+                          title={tContracts("downloadPdf")}
+                          className="w-8 h-8 rounded-full bg-surface-raised hover:bg-accent/15 text-secondary hover:text-accent border border-border/60 transition-all inline-flex items-center justify-center cursor-pointer shadow-xs"
+                        >
+                          <DownloadSimple size={15} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

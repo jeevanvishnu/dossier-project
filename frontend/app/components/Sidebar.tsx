@@ -12,7 +12,6 @@ import {
   UserGear,
   ListBullets,
   SignOut,
-  Pill,
   Buildings,
   UsersThree,
 } from "@phosphor-icons/react";
@@ -32,15 +31,7 @@ export function Sidebar() {
 
   const systemTourItem = { name: tNav("systemTour"), href: "/tour", icon: Compass };
   const activityLogItem = { name: tNav("activityLog"), href: "/journal", icon: ListBullets };
-
-  const userNavItems = [
-    { name: tNav("dashboard"), href: "/dashboard", icon: SquaresFour },
-    { name: tNav("myContracts"), href: "/contracts", icon: FileText },
-    { name: tNav("myTariffs"), href: "/tariffs", icon: CreditCard },
-    { name: tNav("myProjects"), href: "/projects", icon: Folders },
-    { name: tNav("paymentHistory"), href: "/payments", icon: Receipt },
-    { name: tNav("accountSettings"), href: "/profile/account", icon: UserGear },
-  ];
+  const accountSettingsItem = { name: tNav("accountSettings"), href: "/profile/account", icon: UserGear };
 
   const superAdminNavItems = [
     { name: tNav("dashboard"), href: "/dashboard", icon: SquaresFour },
@@ -48,11 +39,21 @@ export function Sidebar() {
     { name: tNav("superAdminCompanyAdmin"), href: "/super-admin/company-users", icon: UsersThree },
   ];
 
-  const navItems = roleLower === "superadmin"
-    ? superAdminNavItems
+  const userMainItems = [
+    { name: tNav("dashboard"), href: "/dashboard", icon: SquaresFour },
+    { name: tNav("myContracts"), href: "/contracts", icon: FileText },
+    { name: tNav("myTariffs"), href: "/tariffs", icon: CreditCard },
+    { name: tNav("myProjects"), href: "/projects", icon: Folders },
+    { name: tNav("paymentHistory"), href: "/payments", icon: Receipt },
+  ];
+
+  const mainMenuItems = roleLower === "superadmin" ? superAdminNavItems : userMainItems;
+
+  const generalItems = roleLower === "superadmin"
+    ? []
     : isAdmin
-      ? [systemTourItem, ...userNavItems, activityLogItem]
-      : userNavItems;
+      ? [systemTourItem, activityLogItem, accountSettingsItem]
+      : [accountSettingsItem];
 
   const handleLogout = async () => {
     try {
@@ -63,54 +64,76 @@ export function Sidebar() {
     }
   };
 
+  const renderNavLink = (item: { name: string; href: string; icon: React.ElementType }) => {
+    const Icon = item.icon;
+    const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname?.startsWith(item.href));
+    return (
+      <Link
+        key={item.name}
+        href={item.href}
+        className={`group flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-150 ${
+          isActive
+            ? "bg-accent text-white font-semibold shadow-xs"
+            : "text-secondary hover:text-primary hover:bg-surface-raised"
+        }`}
+      >
+        <Icon
+          size={19}
+          weight={isActive ? "fill" : "regular"}
+          className={`shrink-0 transition-colors ${isActive ? "text-white" : "text-muted group-hover:text-primary"}`}
+        />
+        <span className="truncate">{item.name}</span>
+      </Link>
+    );
+  };
+
   return (
-    <aside className="w-64 bg-surface border-r border-border min-h-screen flex flex-col justify-between shrink-0 select-none">
+    <aside className="w-64 bg-surface border-r border-border min-h-screen flex flex-col justify-between shrink-0 select-none pb-4">
       <div>
-        <div className="h-16 px-5 border-b border-border flex items-center justify-between">
-          <Link href="/dashboard" className="flex items-center gap-2.5 group">
-            <div className="w-8 h-8 rounded-lg bg-accent/15 border border-accent/30 text-accent flex items-center justify-center font-bold font-lexend group-hover:scale-105 transition-transform">
-              <Pill size={20} weight="fill" />
+        {/* Brand / Portal Header */}
+        <div className="h-18 px-5 flex items-center border-b border-border/40">
+          <Link href="/dashboard" className="flex items-center gap-3 group">
+            <div className="w-9 h-9 rounded-xl bg-accent flex items-center justify-center text-white shadow-xs transition-transform group-hover:scale-105 shrink-0">
+              <SquaresFour size={20} weight="fill" />
             </div>
-            <span className="font-lexend font-bold text-base text-primary tracking-tight block leading-none">
+            <span className="font-lexend font-bold text-base text-primary tracking-tight leading-none group-hover:text-accent transition-colors">
               {tNav("portal")}
             </span>
           </Link>
         </div>
 
-        <nav className="px-3 space-y-1 mt-2">
-          <p className="px-3 pt-2 pb-1.5 text-[10px] font-bold text-muted uppercase tracking-wider">
-            {tNav("mainNavigation")}
+        {/* Navigation Groups */}
+        <nav className="px-3.5 space-y-1 mt-4">
+          {/* Main Menu Section */}
+          <p className="px-3.5 pb-2 text-[11px] font-bold text-muted uppercase tracking-wider">
+            {tNav("mainMenu")}
           </p>
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname?.startsWith(item.href));
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold transition-all duration-150 ${
-                  isActive
-                    ? "bg-accent/15 text-accent border-l-4 border-accent shadow-xs"
-                    : "text-secondary hover:text-primary hover:bg-surface-raised"
-                }`}
-              >
-                <Icon size={18} className={isActive ? "text-accent" : "text-muted"} />
-                <span>{item.name}</span>
-              </Link>
-            );
-          })}
+          <div className="space-y-1">
+            {mainMenuItems.map(renderNavLink)}
+          </div>
 
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold text-red-500 hover:bg-red-500/10 hover:text-red-600 transition-all duration-150 mt-2 cursor-pointer"
-          >
-            <SignOut size={18} className="text-red-500" />
-            <span>{tCommon("logout")}</span>
-          </button>
+          {/* General Section */}
+          <div className="pt-5 mt-4 border-t border-border/40">
+            <p className="px-3.5 pb-2 text-[11px] font-bold text-muted uppercase tracking-wider">
+              {tNav("general")}
+            </p>
+            <div className="space-y-1">
+              {generalItems.map(renderNavLink)}
+
+              <button
+                onClick={handleLogout}
+                className="w-full group flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-[13px] font-medium text-red-500 hover:bg-red-500/10 hover:text-red-600 transition-all duration-150 cursor-pointer text-left"
+              >
+                <SignOut size={19} className="shrink-0 text-red-500 transition-colors" />
+                <span className="truncate">{tCommon("logout")}</span>
+              </button>
+            </div>
+          </div>
         </nav>
       </div>
 
-      <div className="p-3">
+      {/* Bottom Support Widget */}
+      <div className="p-3.5">
         <SupportWidget />
       </div>
     </aside>

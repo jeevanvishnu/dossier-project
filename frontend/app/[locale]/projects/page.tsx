@@ -24,6 +24,7 @@ import {
   Certificate,
   Sparkle,
   CircleNotch,
+  CaretUpDown,
 } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { useTranslations, useLocale } from "next-intl";
@@ -124,8 +125,6 @@ export default function ProjectsPage() {
     fetchProjects();
   }, [currentPage]);
 
-
-
   const handleDeleteProject = async (targetPrj: ProjectItem) => {
     setIsDeletingId(targetPrj.id);
     try {
@@ -156,76 +155,72 @@ export default function ProjectsPage() {
   return (
     <AppShell>
       <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-surface border border-border p-5 rounded-2xl shadow-xs">
-          <div>
-            <span className="text-[10px] uppercase tracking-wider font-bold text-accent px-2 py-0.5 rounded bg-accent/10 border border-accent/20">
-              {tProjects("workspaceBadge")}
-            </span>
-            <h1 className="font-lexend text-2xl font-bold text-primary mt-1">
+        {/* Top Header Row matching the 'Employees' clean model */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-3">
+            <h1 className="font-lexend text-2xl font-bold text-primary tracking-tight">
               {tProjects("title")}
             </h1>
-            <p className="text-xs text-secondary">
-              {tProjects("sub")}
-            </p>
-          </div>
 
-          <button
-            onClick={handleCreateNewProject}
-            disabled={isCreatingProject}
-            className="px-4 py-2 bg-accent hover:bg-accent-hover text-white font-bold text-xs rounded-xl shadow-sm transition-all flex items-center gap-1.5 shrink-0 cursor-pointer disabled:opacity-50"
-          >
-            {isCreatingProject ? <CircleNotch size={16} className="animate-spin" /> : <Plus size={16} />}
-            <span>{tProjects("newProjectBtn")}</span>
-          </button>
-        </div>
-
-        {/* Filter & Toolbar */}
-        <div className="bg-surface border border-border p-4 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xs">
-          {/* Search Box */}
-          <div className="flex items-center gap-2 bg-bg border border-border rounded-xl px-3 py-2 text-xs text-muted w-full sm:w-80">
-            <MagnifyingGlass size={16} className="text-muted shrink-0" />
-            <input
-              type="text"
-              placeholder={tCommon("search")}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-transparent text-primary outline-none w-full text-xs"
-            />
-          </div>
-
-          {/* Right Controls: View Toggle + Stats */}
-          <div className="flex items-center gap-4 w-full sm:w-auto justify-between sm:justify-end">
-            <div className="text-xs text-secondary font-semibold">
-              {tProjects("activeCount")}: <strong className="text-accent">{projects.length}</strong>
-            </div>
-
-            {/* Grid / List Mode Switcher */}
-            <div className="flex items-center bg-bg border border-border p-1 rounded-xl gap-1">
+            {/* Segmented Pill Tabs for View Mode & Counts */}
+            <div className="inline-flex items-center p-1 bg-surface border border-border rounded-full shadow-xs">
               <button
-                onClick={() => setViewMode("grid")}
-                title="Grid View"
-                className={`p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${viewMode === "grid"
-                  ? "bg-accent text-white shadow-xs"
-                  : "text-secondary hover:text-primary hover:bg-surface"
-                  }`}
-              >
-                <SquaresFour size={16} />
-                <span className="hidden md:inline text-[11px]">{tProjects("gridView")}</span>
-              </button>
-
-              <button
+                type="button"
                 onClick={() => setViewMode("list")}
-                title="List View"
-                className={`p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${viewMode === "list"
-                  ? "bg-accent text-white shadow-xs"
-                  : "text-secondary hover:text-primary hover:bg-surface"
-                  }`}
+                className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                  viewMode === "list"
+                    ? "bg-accent text-white shadow-xs"
+                    : "text-secondary hover:text-primary"
+                }`}
               >
-                <List size={16} />
-                <span className="hidden md:inline text-[11px]">{tProjects("listView")}</span>
+                <List size={15} />
+                <span>{tProjects("listView")}</span>
+                <span
+                  className={`w-4.5 h-4.5 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                    viewMode === "list" ? "bg-white/20 text-white" : "bg-surface-raised text-muted"
+                  }`}
+                >
+                  {projects.length}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setViewMode("grid")}
+                className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                  viewMode === "grid"
+                    ? "bg-accent text-white shadow-xs"
+                    : "text-secondary hover:text-primary"
+                }`}
+              >
+                <SquaresFour size={15} />
+                <span>{tProjects("gridView")}</span>
               </button>
             </div>
+          </div>
+
+          {/* Action Button & Search */}
+          <div className="flex items-center gap-3 self-start md:self-end">
+            <div className="flex items-center gap-2 bg-surface border border-border rounded-full px-4 py-2 text-xs text-muted w-52 sm:w-64 shadow-xs focus-within:border-accent transition-colors">
+              <MagnifyingGlass size={15} className="text-muted shrink-0" />
+              <input
+                type="text"
+                placeholder={tCommon("search")}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="bg-transparent text-primary outline-none w-full text-xs placeholder:text-muted"
+              />
+            </div>
+
+            <button
+              type="button"
+              onClick={handleCreateNewProject}
+              disabled={isCreatingProject}
+              className="px-5 py-2.5 bg-accent hover:bg-accent-hover text-white font-semibold text-xs rounded-full shadow-xs transition-all flex items-center gap-1.5 shrink-0 cursor-pointer disabled:opacity-50"
+            >
+              {isCreatingProject ? <CircleNotch size={16} className="animate-spin" /> : <Plus size={16} weight="bold" />}
+              <span>{tProjects("newProjectBtn")}</span>
+            </button>
           </div>
         </div>
 
@@ -238,20 +233,17 @@ export default function ProjectsPage() {
               <SkeletonCard />
             </div>
           ) : (
-            <div className="bg-surface border border-border rounded-2xl overflow-hidden shadow-sm">
-              <div className="p-6 border-b border-border">
-                <div className="animate-pulse bg-surface-raised h-5 w-48 rounded" />
-              </div>
+            <div className="bg-surface border border-border rounded-3xl overflow-hidden shadow-sm">
               <table className="w-full text-left text-xs">
-                <thead className="bg-bg text-primary uppercase font-bold text-[10px] tracking-wider border-b border-border">
+                <thead className="bg-surface-raised/40 border-b border-border text-secondary">
                   <tr>
-                    <th className="py-3.5 px-5">{tProjects("colName")}</th>
-                    <th className="py-3.5 px-5">{tProjects("labelTariff")}</th>
-                    <th className="py-3.5 px-5">{tProjects("labelProductType")}</th>
-                    <th className="py-3.5 px-5">{tProjects("labelDate")}</th>
-                    <th className="py-3.5 px-5">{tProjects("labelManufacturer")}</th>
-                    <th className="py-3.5 px-5">{tProjects("labelProjectVolume")}</th>
-                    <th className="py-3.5 px-5 text-right">{tCommon("actions")}</th>
+                    <th className="py-4 px-6">{tProjects("colName")}</th>
+                    <th className="py-4 px-6">{tProjects("labelTariff")}</th>
+                    <th className="py-4 px-6">{tProjects("labelProductType")}</th>
+                    <th className="py-4 px-6">{tProjects("labelDate")}</th>
+                    <th className="py-4 px-6">{tProjects("labelManufacturer")}</th>
+                    <th className="py-4 px-6">{tProjects("labelProjectVolume")}</th>
+                    <th className="py-4 px-6 text-right">{tCommon("actions")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -263,7 +255,7 @@ export default function ProjectsPage() {
             </div>
           )
         ) : filteredProjects.length === 0 ? (
-          <div className="bg-surface border border-border rounded-2xl p-12 text-center space-y-3">
+          <div className="bg-surface border border-border rounded-3xl p-12 text-center space-y-3 shadow-xs">
             <div className="w-12 h-12 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center mx-auto text-accent">
               <MagnifyingGlass size={24} />
             </div>
@@ -280,31 +272,31 @@ export default function ProjectsPage() {
             {filteredProjects.map((prj) => (
               <div
                 key={prj.id}
-                className="bg-surface border border-border hover:border-accent/40 rounded-2xl p-5 shadow-sm flex flex-col justify-between transition-all group relative"
+                className="bg-surface border border-border hover:border-accent/40 rounded-3xl p-6 shadow-xs flex flex-col justify-between transition-all group relative"
               >
                 <div>
-                  <div className="flex items-center justify-between pb-3 border-b border-border mb-3">
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`text-[10px] font-bold px-2 py-0.5 rounded ${prj.status.includes("Approved")
-                          ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
+                  <div className="flex items-center justify-between pb-3 border-b border-border/60 mb-3">
+                    <span
+                      className={`text-xs font-medium px-3 py-1 rounded-full ${
+                        prj.status.includes("Approved")
+                          ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
                           : "bg-accent/10 text-accent border border-accent/20"
-                          }`}
-                      >
-                        {translateValue(prj.status, locale, statusMapRu)}
-                      </span>
-                    </div>
+                      }`}
+                    >
+                      {translateValue(prj.status, locale, statusMapRu)}
+                    </span>
+                    <span className="text-[11px] text-muted font-mono">{prj.date}</span>
                   </div>
 
                   <h3 className="font-lexend font-bold text-base text-primary mb-1 group-hover:text-accent transition-colors">
                     {prj.productName}
                   </h3>
-                  <p className="text-xs text-secondary mb-3 flex items-center gap-1.5 font-medium">
+                  <p className="text-xs text-secondary mb-4 flex items-center gap-1.5 font-medium">
                     <Pill size={14} className="text-accent shrink-0" />
                     <span>{translateValue(prj.dosageForm, locale, dosageFormMapRu)}</span>
                   </p>
 
-                  <div className="space-y-2 bg-bg p-3 rounded-xl border border-border text-xs mb-4">
+                  <div className="space-y-2.5 bg-bg/70 p-3.5 rounded-2xl border border-border text-xs mb-4">
                     <div className="flex justify-between">
                       <span className="text-muted">{tProjects("labelManufacturer")}:</span>
                       <span className="text-primary font-medium truncate max-w-[150px]">{prj.manufacturer}</span>
@@ -319,14 +311,14 @@ export default function ProjectsPage() {
                     </div>
                     <div className="flex justify-between items-start">
                       <span className="text-muted shrink-0">{tProjects("labelTariff")}:</span>
-                      <span className="font-bold text-accent text-[11px]">{translateValue(prj.assignedTariff, locale, tariffMapRu)}</span>
+                      <span className="font-bold text-accent text-xs">{translateValue(prj.assignedTariff, locale, tariffMapRu)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted">{tProjects("labelResponsibleUser")}:</span>
                       <span className="text-primary font-semibold">{translateValue(prj.responsiblePerson, locale, responsibleUserMapRu)}</span>
                     </div>
                     {prj.additionalFeature && (
-                      <div className="pt-1.5 border-t border-border/60 text-[11px] text-secondary">
+                      <div className="pt-2 border-t border-border/60 text-[11px] text-secondary">
                         <span className="font-semibold text-accent">{tProjects("labelFeature")}: </span>
                         <span>{translateValue(prj.additionalFeature, locale, additionalFeatureMapRu)}</span>
                       </div>
@@ -334,22 +326,23 @@ export default function ProjectsPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between pt-3 border-t border-border">
-                  <span className="text-[10px] text-muted font-mono">{tProjects("labelDate")}: {prj.date}</span>
-                  <div className="flex items-center gap-1.5">
+                <div className="flex items-center justify-between pt-3 border-t border-border/60">
+                  <span className="text-[11px] text-muted font-mono">{prj.projectVolume || "1 Vol"}</span>
+                  <div className="flex items-center gap-2">
                     <button
+                      type="button"
                       onClick={() => setDeleteConfirmProject(prj)}
                       title={tCommon("delete")}
-                      className="p-1.5 bg-bg hover:bg-rose-500/10 text-secondary hover:text-rose-400 border border-border rounded-lg transition-colors cursor-pointer"
+                      className="w-8 h-8 rounded-full bg-surface-raised hover:bg-rose-500/10 text-secondary hover:text-rose-400 border border-border/60 transition-colors inline-flex items-center justify-center cursor-pointer shadow-xs"
                     >
-                      <Trash size={14} />
+                      <Trash size={15} />
                     </button>
                     <Link
                       href={`/projects/${prj.id}?tab=dossier-data`}
-                      className="px-3 py-1.5 bg-accent/15 hover:bg-accent/25 text-accent font-bold text-xs rounded-lg transition-colors flex items-center gap-1"
+                      className="px-4 py-1.5 bg-accent/15 hover:bg-accent/25 text-accent font-semibold text-xs rounded-full transition-colors flex items-center gap-1.5 border border-accent/20"
                     >
                       <span>{tProjects("openWorkspace")}</span>
-                      <ArrowRight size={14} />
+                      <ArrowRight size={13} weight="bold" />
                     </Link>
                   </div>
                 </div>
@@ -360,75 +353,106 @@ export default function ProjectsPage() {
 
         {/* 2. LIST VIEW MODEL */}
         {viewMode === "list" && filteredProjects.length > 0 && (
-          <div className="bg-surface border border-border rounded-2xl shadow-sm overflow-hidden">
+          <div className="bg-surface border border-border rounded-3xl shadow-xs overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs border-collapse">
+              <table className="w-full text-left text-xs">
                 <thead>
-                  <tr className="bg-bg border-b border-border text-muted font-bold uppercase tracking-wider text-[10px]">
-                    <th className="py-3.5 px-4">{tProjects("colName")}</th>
-                    <th className="py-3.5 px-4">{tProjects("labelTariff")}</th>
-                    <th className="py-3.5 px-4">{tProjects("labelProductType")}</th>
-                    <th className="py-3.5 px-4">{tProjects("labelDate")}</th>
-                    <th className="py-3.5 px-4">{tProjects("labelManufacturer")}</th>
-                    <th className="py-3.5 px-4">{tProjects("labelProjectVolume")}</th>
-                    <th className="py-3.5 px-4 text-center">{tCommon("actions")}</th>
+                  <tr className="border-b border-border/60 text-secondary">
+                    <th className="py-4.5 px-6 font-semibold">
+                      <span className="inline-flex items-center gap-1.5">
+                        {tProjects("colName")}
+                        <CaretUpDown size={14} className="text-muted/70" />
+                      </span>
+                    </th>
+                    <th className="py-4.5 px-6 font-semibold">
+                      <span className="inline-flex items-center gap-1.5">
+                        {tProjects("labelTariff")}
+                        <CaretUpDown size={14} className="text-muted/70" />
+                      </span>
+                    </th>
+                    <th className="py-4.5 px-6 font-semibold">
+                      <span className="inline-flex items-center gap-1.5">
+                        {tProjects("labelProductType")}
+                        <CaretUpDown size={14} className="text-muted/70" />
+                      </span>
+                    </th>
+                    <th className="py-4.5 px-6 font-semibold">
+                      <span className="inline-flex items-center gap-1.5">
+                        {tProjects("labelDate")}
+                        <CaretUpDown size={14} className="text-muted/70" />
+                      </span>
+                    </th>
+                    <th className="py-4.5 px-6 font-semibold">
+                      <span className="inline-flex items-center gap-1.5">
+                        {tProjects("labelManufacturer")}
+                        <CaretUpDown size={14} className="text-muted/70" />
+                      </span>
+                    </th>
+                    <th className="py-4.5 px-6 font-semibold">
+                      <span className="inline-flex items-center gap-1.5">
+                        {tProjects("labelProjectVolume")}
+                        <CaretUpDown size={14} className="text-muted/70" />
+                      </span>
+                    </th>
+                    <th className="py-4.5 px-6 text-right font-semibold">{tCommon("actions")}</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border">
+                <tbody className="divide-y divide-border/40">
                   {filteredProjects.map((prj) => (
-                    <tr key={prj.id} className="hover:bg-bg/60 transition-colors group">
+                    <tr key={prj.id} className="hover:bg-surface-raised/40 transition-colors group">
                       {/* 1. Name */}
-                      <td className="py-3.5 px-4">
-                        <div className="flex flex-col min-w-[140px]">
-                          <span className="font-lexend font-bold text-primary group-hover:text-accent transition-colors text-xs">
-                            {prj.productName}
-                          </span>
-                        </div>
+                      <td className="py-4.5 px-6">
+                        <span className="font-lexend font-bold text-primary group-hover:text-accent transition-colors text-sm">
+                          {prj.productName}
+                        </span>
                       </td>
 
                       {/* 2. Tariff */}
-                      <td className="py-3.5 px-4 min-w-[120px]">
-                        <span className="font-bold text-accent text-[11px] block">{translateValue(prj.assignedTariff, locale, tariffMapRu)}</span>
+                      <td className="py-4.5 px-6">
+                        <span className="font-bold text-accent text-xs">
+                          {translateValue(prj.assignedTariff, locale, tariffMapRu)}
+                        </span>
                       </td>
 
                       {/* 3. Product Type */}
-                      <td className="py-3.5 px-4 text-primary font-medium whitespace-nowrap">
-                        <span className="px-2 py-0.5 bg-bg border border-border rounded text-[11px]">
+                      <td className="py-4.5 px-6 text-primary font-medium whitespace-nowrap">
+                        <span className="px-2.5 py-1 bg-surface-raised border border-border/80 rounded-full text-xs text-secondary">
                           {translateValue(prj.drugType, locale, productTypeMapRu)}
                         </span>
                       </td>
 
                       {/* 4. Date */}
-                      <td className="py-3.5 px-4 text-secondary font-medium whitespace-nowrap">
+                      <td className="py-4.5 px-6 text-secondary font-mono text-xs whitespace-nowrap">
                         {prj.date}
                       </td>
 
                       {/* 5. Manufacturer */}
-                      <td className="py-3.5 px-4 text-primary font-medium min-w-[130px]">
+                      <td className="py-4.5 px-6 text-secondary text-xs">
                         {prj.manufacturer}
                       </td>
 
                       {/* 6. Project Volume */}
-                      <td className="py-3.5 px-4 text-secondary font-medium whitespace-nowrap">
+                      <td className="py-4.5 px-6 text-secondary text-xs whitespace-nowrap">
                         {prj.projectVolume || "1 Vol"}
                       </td>
 
-                      {/* 7. Actions (Edit, Remove, Open) */}
-                      <td className="py-3.5 px-4 text-center whitespace-nowrap">
-                        <div className="flex items-center justify-center gap-1.5">
+                      {/* 7. Actions */}
+                      <td className="py-4.5 px-6 text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-2">
                           <button
+                            type="button"
                             onClick={() => setDeleteConfirmProject(prj)}
                             title={tCommon("delete")}
-                            className="p-1.5 bg-bg hover:bg-rose-500/10 text-secondary hover:text-rose-400 border border-border rounded-lg transition-colors inline-flex items-center cursor-pointer"
+                            className="w-8 h-8 rounded-full bg-surface-raised hover:bg-rose-500/10 text-secondary hover:text-rose-400 border border-border/60 transition-all inline-flex items-center justify-center cursor-pointer shadow-xs"
                           >
-                            <Trash size={14} />
+                            <Trash size={15} />
                           </button>
                           <Link
                             href={`/projects/${prj.id}?tab=dossier-data`}
                             title={tProjects("openWorkspace")}
-                            className="p-1.5 bg-accent/15 hover:bg-accent/25 text-accent font-bold text-xs rounded-lg transition-colors inline-flex items-center"
+                            className="w-8 h-8 rounded-full bg-accent/15 hover:bg-accent/25 text-accent border border-accent/20 transition-all inline-flex items-center justify-center shadow-xs"
                           >
-                            <ArrowRight size={14} />
+                            <ArrowRight size={14} weight="bold" />
                           </Link>
                         </div>
                       </td>

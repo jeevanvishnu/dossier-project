@@ -54,6 +54,8 @@
     "accountSettings": "Account Settings",
     "activityLog": "Activity Log",
     "mainNavigation": "Main Navigation",
+    "mainMenu": "Main Menu",
+    "general": "General",
     "superAdminCompanies": "Companies",
     "superAdminCompanyAdmin": "Company Admin"
   },
@@ -167,7 +169,7 @@
     "signInTab": "Sign In",
     "signUpTab": "Register",
     "emailLabel": "Corporate Work Email",
-    "emailPlaceholder": "user@pharma.kz",
+    "emailPlaceholder": "Enter email",
     "passwordLabel": "Password",
     "passwordPlaceholder": "••••••••••••",
     "rememberMe": "Remember this device",

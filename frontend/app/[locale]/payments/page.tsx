@@ -3,12 +3,20 @@
 import React, { useState } from "react";
 import { AppShell } from "../../components/AppShell";
 import { useTranslations } from "next-intl";
-import { Receipt, CheckCircle, MagnifyingGlass, DownloadSimple } from "@phosphor-icons/react";
+import {
+  CheckCircle,
+  MagnifyingGlass,
+  DownloadSimple,
+  CaretUpDown,
+  FileArrowDown,
+} from "@phosphor-icons/react";
 import { toast } from "sonner";
 
 export default function PaymentsPage() {
   const tPayments = useTranslations("payments");
+  const tCommon = useTranslations("common");
   const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState<"all" | "completed">("all");
 
   const [transactions] = useState([
     {
@@ -43,101 +51,199 @@ export default function PaymentsPage() {
     },
   ]);
 
+  const completedCount = transactions.filter((t) => t.status === "Completed").length;
+
   const filtered = transactions.filter((t) => {
     const descLabel = tPayments.has(t.descKey as any) ? tPayments(t.descKey as any) : t.descDefault;
-    return (
+    const matchesSearch =
       t.txHash.toLowerCase().includes(searchTerm.toLowerCase()) ||
       t.invoiceNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      descLabel.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+      descLabel.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      t.method.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus =
+      filterStatus === "all" || (filterStatus === "completed" && t.status === "Completed");
+    return matchesSearch && matchesStatus;
   });
 
   return (
     <AppShell>
       <div className="space-y-6">
-        <div className="bg-surface border border-border p-5 rounded-2xl shadow-xs">
-          <span className="text-[10px] uppercase tracking-wider font-bold text-accent px-2 py-0.5 rounded bg-accent/10 border border-accent/20">
-            {tPayments("badgeLabel")}
-          </span>
-          <h1 className="font-lexend text-2xl font-bold text-primary mt-1">
-            {tPayments("title")}
-          </h1>
-          <p className="text-xs text-secondary">
-            {tPayments("sub")}
-          </p>
-        </div>
+        {/* Top Header Row matching the 'Employees' clean model */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-3">
+            <h1 className="font-lexend text-2xl font-bold text-primary tracking-tight">
+              {tPayments("title")}
+            </h1>
 
-        <div className="bg-surface border border-border p-4 rounded-2xl flex items-center justify-between gap-4 shadow-xs">
-          <div className="flex items-center gap-2 bg-bg border border-border rounded-xl px-3 py-2 text-xs text-muted w-full sm:w-80">
-            <MagnifyingGlass size={16} className="text-muted shrink-0" />
-            <input
-              type="text"
-              placeholder={tPayments("searchPlaceholder")}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="bg-transparent text-primary outline-none w-full text-xs"
-            />
+            {/* Segmented Pill Tabs */}
+            <div className="inline-flex items-center p-1 bg-surface border border-border rounded-full shadow-xs">
+              <button
+                type="button"
+                onClick={() => setFilterStatus("completed")}
+                className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                  filterStatus === "completed"
+                    ? "bg-accent text-white shadow-xs"
+                    : "text-secondary hover:text-primary"
+                }`}
+              >
+                <span>{tPayments("statusCompleted")}</span>
+                <span
+                  className={`w-4.5 h-4.5 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                    filterStatus === "completed" ? "bg-white/20 text-white" : "bg-surface-raised text-muted"
+                  }`}
+                >
+                  {completedCount}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setFilterStatus("all")}
+                className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                  filterStatus === "all"
+                    ? "bg-accent text-white shadow-xs"
+                    : "text-secondary hover:text-primary"
+                }`}
+              >
+                <span>{tCommon("viewAll") || "All"}</span>
+                <span
+                  className={`w-4.5 h-4.5 rounded-full flex items-center justify-center text-[10px] font-bold ${
+                    filterStatus === "all" ? "bg-white/20 text-white" : "bg-surface-raised text-muted"
+                  }`}
+                >
+                  {transactions.length}
+                </span>
+              </button>
+            </div>
           </div>
 
-          <button
-            onClick={() => toast.success(tPayments("exportedToast"))}
-            className="px-3 py-1.5 bg-bg hover:bg-surface-raised text-primary border border-border font-semibold text-xs rounded-lg transition-colors flex items-center gap-1.5 cursor-pointer"
-          >
-            <DownloadSimple size={14} className="text-accent" />
-            <span>{tPayments("exportCsv")}</span>
-          </button>
+          {/* Action Button & Search */}
+          <div className="flex items-center gap-3 self-start md:self-end">
+            <div className="flex items-center gap-2 bg-surface border border-border rounded-full px-4 py-2 text-xs text-muted w-52 sm:w-64 shadow-xs focus-within:border-accent transition-colors">
+              <MagnifyingGlass size={15} className="text-muted shrink-0" />
+              <input
+                type="text"
+                placeholder={tPayments("searchPlaceholder")}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="bg-transparent text-primary outline-none w-full text-xs placeholder:text-muted"
+              />
+            </div>
+
+            <button
+              type="button"
+              onClick={() => toast.success(tPayments("exportedToast"))}
+              className="px-5 py-2.5 bg-accent hover:bg-accent-hover text-white font-semibold text-xs rounded-full shadow-xs transition-all flex items-center gap-1.5 shrink-0 cursor-pointer"
+            >
+              <FileArrowDown size={16} weight="bold" />
+              <span>{tPayments("exportCsv")}</span>
+            </button>
+          </div>
         </div>
 
-        <div className="bg-surface border border-border rounded-2xl overflow-hidden shadow-sm">
-          <div className="p-5 border-b border-border flex items-center gap-2">
-            <Receipt size={20} className="text-accent" />
-            <h2 className="font-lexend font-bold text-base text-primary">
-              {tPayments("tableTitle")}
-            </h2>
-          </div>
-
+        {/* Clean Rounded Table Container */}
+        <div className="bg-surface border border-border rounded-3xl overflow-hidden shadow-xs">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-secondary">
-              <thead className="bg-bg text-primary uppercase font-bold text-[10px] tracking-wider border-b border-border">
-                <tr>
-                  <th className="py-3.5 px-4">{tPayments("colTxHash")}</th>
-                  <th className="py-3.5 px-4">{tPayments("colInvoiceNo")}</th>
-                  <th className="py-3.5 px-4">{tPayments("colDesc")}</th>
-                  <th className="py-3.5 px-4">{tPayments("colMethod")}</th>
-                  <th className="py-3.5 px-4">{tPayments("colDate")}</th>
-                  <th className="py-3.5 px-4">{tPayments("colAmount")}</th>
-                  <th className="py-3.5 px-4">{tPayments("colStatus")}</th>
-                  <th className="py-3.5 px-4 text-right">{tPayments("colReceipt")}</th>
+            <table className="w-full text-left text-xs">
+              <thead>
+                <tr className="border-b border-border/60 text-secondary">
+                  <th className="py-4.5 px-6 font-semibold">
+                    <span className="inline-flex items-center gap-1.5">
+                      {tPayments("colTxHash")}
+                      <CaretUpDown size={14} className="text-muted/70" />
+                    </span>
+                  </th>
+                  <th className="py-4.5 px-6 font-semibold">
+                    <span className="inline-flex items-center gap-1.5">
+                      {tPayments("colInvoiceNo")}
+                      <CaretUpDown size={14} className="text-muted/70" />
+                    </span>
+                  </th>
+                  <th className="py-4.5 px-6 font-semibold">
+                    <span className="inline-flex items-center gap-1.5">
+                      {tPayments("colDesc")}
+                      <CaretUpDown size={14} className="text-muted/70" />
+                    </span>
+                  </th>
+                  <th className="py-4.5 px-6 font-semibold">
+                    <span className="inline-flex items-center gap-1.5">
+                      {tPayments("colMethod")}
+                      <CaretUpDown size={14} className="text-muted/70" />
+                    </span>
+                  </th>
+                  <th className="py-4.5 px-6 font-semibold">
+                    <span className="inline-flex items-center gap-1.5">
+                      {tPayments("colDate")}
+                      <CaretUpDown size={14} className="text-muted/70" />
+                    </span>
+                  </th>
+                  <th className="py-4.5 px-6 font-semibold">
+                    <span className="inline-flex items-center gap-1.5">
+                      {tPayments("colAmount")}
+                      <CaretUpDown size={14} className="text-muted/70" />
+                    </span>
+                  </th>
+                  <th className="py-4.5 px-6 font-semibold">
+                    <span className="inline-flex items-center gap-1.5">
+                      {tPayments("colStatus")}
+                      <CaretUpDown size={14} className="text-muted/70" />
+                    </span>
+                  </th>
+                  <th className="py-4.5 px-6 text-right font-semibold">
+                    {tPayments("colReceipt")}
+                  </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border">
-                {filtered.map((t) => (
-                  <tr key={t.txHash} className="hover:bg-surface-raised transition-colors">
-                    <td className="py-3.5 px-4 font-mono font-bold text-accent">{t.txHash}</td>
-                    <td className="py-3.5 px-4 font-mono text-primary">{t.invoiceNo}</td>
-                    <td className="py-3.5 px-4 text-primary font-medium">
-                      {tPayments.has(t.descKey as any) ? tPayments(t.descKey as any) : t.descDefault}
-                    </td>
-                    <td className="py-3.5 px-4 text-secondary">{t.method}</td>
-                    <td className="py-3.5 px-4 font-medium">{t.date}</td>
-                    <td className="py-3.5 px-4 font-extrabold text-accent">{t.amountKzt}</td>
-                    <td className="py-3.5 px-4">
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
-                        <CheckCircle size={14} />
-                        {tPayments("statusCompleted")}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-4 text-right">
-                      <button
-                        onClick={() => toast.success(tPayments("downloadToast", { id: t.txHash }))}
-                        className="p-1 text-accent hover:bg-accent/15 rounded transition-colors inline-flex items-center gap-1 font-semibold cursor-pointer"
-                      >
-                        <DownloadSimple size={14} />
-                        <span>PDF</span>
-                      </button>
+              <tbody className="divide-y divide-border/40">
+                {filtered.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="py-12 text-center text-muted">
+                      No transactions found.
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  filtered.map((t) => (
+                    <tr
+                      key={t.txHash}
+                      className="hover:bg-surface-raised/40 transition-colors"
+                    >
+                      <td className="py-4.5 px-6 font-mono font-semibold text-accent text-xs">
+                        {t.txHash}
+                      </td>
+                      <td className="py-4.5 px-6 font-mono text-primary text-xs">
+                        {t.invoiceNo}
+                      </td>
+                      <td className="py-4.5 px-6 text-primary font-medium text-sm">
+                        {tPayments.has(t.descKey as any) ? tPayments(t.descKey as any) : t.descDefault}
+                      </td>
+                      <td className="py-4.5 px-6 text-secondary text-xs">
+                        {t.method}
+                      </td>
+                      <td className="py-4.5 px-6 text-secondary font-mono text-xs">
+                        {t.date}
+                      </td>
+                      <td className="py-4.5 px-6 font-bold text-accent text-xs">
+                        {t.amountKzt}
+                      </td>
+                      <td className="py-4.5 px-6">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                          <CheckCircle size={13} weight="fill" />
+                          {tPayments("statusCompleted")}
+                        </span>
+                      </td>
+                      <td className="py-4.5 px-6 text-right">
+                        <button
+                          type="button"
+                          onClick={() => toast.success(tPayments("downloadToast", { id: t.txHash }))}
+                          title={tPayments("colReceipt")}
+                          className="w-8 h-8 rounded-full bg-surface-raised hover:bg-accent/15 text-secondary hover:text-accent border border-border/60 transition-all inline-flex items-center justify-center cursor-pointer shadow-xs"
+                        >
+                          <DownloadSimple size={15} />
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
