@@ -58,11 +58,11 @@
     "superAdminCompanyAdmin": "Company Admin"
   },
   "hero": {
-    "title": "Streamlined Pharmaceutical Dossier & Regulatory Submission Platform",
-    "description": "Manage your contracts, track subscriptions, and seamlessly handle compliant regulatory workflows—all in one secure workspace.",
+    "title": "Automated eCTD Dossier & XML Generation Platform",
+    "description": "Build, validate, and generate compliant XML dossiers for pharmaceutical submissions in Kazakhstan and the EAEU—automated, secure, and ready for official regulatory review.",
     "startProject": "Start a project",
     "viewTariffs": "View Tariffs and Pricing",
-    "imgAlt": "Technical Architecture"
+    "imgAlt": "eCTD XML Dossier Generation Interface"
   },
   "features": {
     "f1Title": "The first Web portal",
@@ -86,10 +86,12 @@
   },
   "pricing": {
     "tag": "Tariffs & Pricing",
-    "title": "Flexible Regulatory Plans Built for Enterprise Scale",
+    "title": "Affordable Plans for Every Budget",
     "desc": "Select the optimal subscription tier for your organization's dossier volume and regulatory submission frequency.",
     "billingMonthly": "Monthly Billing",
     "billingAnnual": "Annual Billing (15% Off)",
+    "monthly": "Monthly",
+    "annual": "Annual",
     "tier1Title": "Standard Dossier",
     "tier1Price": "₸185,000",
     "tier1Period": "/ month",
@@ -131,19 +133,21 @@
     "step4Desc": "Submit directly to regulatory authorities with digital signature and complete audit trails."
   },
   "contact": {
-    "tag": "Get in Touch",
+    "tag": "Get in touch",
     "title": "Request a Demo or Technical Consultation",
     "desc": "Have questions about compliance, pricing, or system integration? Our regulatory specialists are standing by.",
-    "nameLabel": "Full Name",
-    "namePlaceholder": "Dr. Alexey Ivanov",
-    "emailLabel": "Work Email",
-    "emailPlaceholder": "a.ivanov@pharma.kz",
-    "subjectLabel": "Subject / Request Type",
-    "subjectPlaceholder": "Dossier Submission Consultation",
-    "messageLabel": "Detailed Message",
-    "messagePlaceholder": "Specify product type, submission deadline, or questions...",
-    "sendMessage": "Send Request",
-    "successToast": "Thank you! Your inquiry has been submitted successfully.",
+    "cardSubtitle": "We'd love to hear from you!",
+    "email": "info@ectc.kz",
+    "nameLabel": "Full name",
+    "namePlaceholder": "Your full name",
+    "emailLabel": "Email address",
+    "emailPlaceholder": "Email address",
+    "phoneLabel": "Phone number",
+    "phonePlaceholder": "Your phone number",
+    "messageLabel": "Message",
+    "messagePlaceholder": "Your messages here",
+    "sendMessage": "Send messages",
+    "successToast": "Thank you! Your message has been sent successfully.",
     "phone": "+7 (7172) 55-88-99",
     "office": "Astana, Kazakhstan, Regulatory Hub 12B",
     "schedule": "Mon-Fri: 09:00 - 18:00 (UTC+5)"

@@ -2,16 +2,13 @@
 
 import React, { useState } from "react";
 import {
-  User,
   Phone,
   EnvelopeSimple,
-  Buildings,
-  ChatTeardropText,
-  PaperPlaneRight,
+  MapPin,
   CheckCircle,
-  Clock,
   ShieldCheck,
-  ArrowClockwise
+  ArrowClockwise,
+  PaperPlaneRight
 } from "@phosphor-icons/react";
 import { useTranslations } from "next-intl";
 
@@ -20,9 +17,8 @@ export function ContactSection() {
 
   const [formData, setFormData] = useState({
     name: "",
-    phone: "",
     email: "",
-    company: "",
+    phone: "",
     reportDetails: ""
   });
 
@@ -31,7 +27,7 @@ export function ContactSection() {
   const [errorMsg, setErrorMsg] = useState("");
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -40,7 +36,7 @@ export function ContactSection() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name.trim() || !formData.email.trim() || !formData.phone.trim() || !formData.company.trim()) {
+    if (!formData.name.trim() || !formData.email.trim() || !formData.phone.trim()) {
       setErrorMsg("Please fill in all required fields.");
       return;
     }
@@ -51,132 +47,112 @@ export function ContactSection() {
     setTimeout(() => {
       setIsSubmitting(false);
       setIsSubmitted(true);
-    }, 1200);
+    }, 1000);
   };
 
   const handleReset = () => {
     setFormData({
       name: "",
-      phone: "",
       email: "",
-      company: "",
+      phone: "",
       reportDetails: ""
     });
     setIsSubmitted(false);
   };
 
   return (
-    <div className="w-full flex flex-col gap-12 lg:gap-16">
-      {/* Section Header */}
-      <div className="text-center max-w-5xl mx-auto flex flex-col items-center gap-3">
-        <span className="text-xs font-semibold tracking-[0.12em] text-accent uppercase">
-          {tContact("tag")}
-        </span>
-        
-        <h2 className="font-lexend text-2xl sm:text-3xl md:text-4xl lg:text-[2.5rem] font-bold text-primary tracking-tight leading-tight whitespace-nowrap">
+    <div className="w-full flex flex-col gap-10 md:gap-14">
+      {/* Section Header: Matching Pricing and Workflow typography */}
+      <div className="text-center max-w-4xl lg:max-w-5xl mx-auto flex flex-col items-center gap-2.5">
+        <h2 className="font-display font-bold text-2xl sm:text-3xl lg:text-[2.25rem] text-white tracking-tight leading-tight md:whitespace-nowrap">
           {tContact("title")}
         </h2>
         
-        <p className="text-secondary text-sm sm:text-base leading-relaxed mt-1 max-w-2xl">
+        <p className="font-inter text-sm sm:text-base text-slate-300 leading-relaxed max-w-xl sm:max-w-2xl mx-auto text-balance">
           {tContact("desc")}
         </p>
       </div>
 
-      {/* Single Master Unified Container Card */}
-      <div className="relative bg-surface/80 border border-border/80 rounded-3xl shadow-2xl backdrop-blur-md overflow-hidden">
-        <div className="absolute -top-32 -left-32 w-80 h-80 bg-accent/10 rounded-full blur-3xl pointer-events-none"></div>
-        <div className="absolute -bottom-32 -right-32 w-80 h-80 bg-accent/10 rounded-full blur-3xl pointer-events-none"></div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-12 items-stretch divide-y lg:divide-y-0 lg:divide-x divide-border/60 relative z-10">
+      {/* Redesigned Contact Card with Exact Application Color Theme */}
+      <div className="relative bg-white border border-slate-200/90 rounded-2xl p-3 sm:p-4 shadow-xl max-w-4xl lg:max-w-5xl mx-auto w-full">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-6 items-stretch">
           
-          {/* LEFT SIDE: Content & Benefits */}
-          <div className="lg:col-span-5 p-6 sm:p-8 lg:p-10 bg-gradient-to-b from-surface-raised/40 to-surface/20 flex flex-col justify-between gap-8">
-            <div className="flex flex-col gap-6">
-              <div>
-                <span className="text-xs font-bold uppercase tracking-widest text-accent mb-2 block">
-                  {tContact("tag")}
-                </span>
-                <h3 className="font-lexend text-xl sm:text-2xl font-bold text-primary leading-snug">
-                  {tContact("title")}
-                </h3>
-              </div>
-              
-              <p className="text-secondary text-sm sm:text-base leading-relaxed">
-                {tContact("desc")}
+          {/* LEFT SIDE: Brand Deep Navy Card (#0F2D5E) */}
+          <div className="lg:col-span-4 bg-[#0F2D5E] rounded-xl p-6 sm:p-7 flex flex-col justify-between text-white shadow-md min-h-[400px]">
+            <div>
+              <h3 className="font-display font-bold text-2xl sm:text-3xl text-white tracking-tight">
+                {tContact("tag")}
+              </h3>
+              <p className="font-inter text-slate-300 text-xs sm:text-sm mt-2 leading-relaxed">
+                {tContact("cardSubtitle")}
               </p>
-
-              {/* Quick Contact Info List */}
-              <div className="flex flex-col gap-3.5 pt-2">
-                <div className="flex items-center gap-3 p-3.5 rounded-xl bg-surface/80 border border-border/50">
-                  <Phone size={18} className="text-accent" />
-                  <span className="text-xs font-bold text-primary">{tContact("phone")}</span>
-                </div>
-                <div className="flex items-center gap-3 p-3.5 rounded-xl bg-surface/80 border border-border/50">
-                  <Buildings size={18} className="text-accent" />
-                  <span className="text-xs font-bold text-primary">{tContact("office")}</span>
-                </div>
-                <div className="flex items-center gap-3 p-3.5 rounded-xl bg-surface/80 border border-border/50">
-                  <Clock size={18} className="text-accent" />
-                  <span className="text-xs font-bold text-primary">{tContact("schedule")}</span>
-                </div>
-              </div>
             </div>
 
-            <div className="pt-6 border-t border-border/40 flex items-center gap-3 text-xs text-secondary">
-              <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
-              <span>Specialists Online • {tContact("schedule")}</span>
+            {/* Contact details with white circle icon badges in brand navy */}
+            <div className="flex flex-col gap-3.5 sm:gap-4 pt-6">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-white text-[#0F2D5E] flex items-center justify-center shrink-0 shadow-sm">
+                  <EnvelopeSimple size={16} weight="bold" />
+                </div>
+                <span className="font-inter text-xs sm:text-sm text-white font-medium truncate">{tContact("email")}</span>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-white text-[#0F2D5E] flex items-center justify-center shrink-0 shadow-sm">
+                  <Phone size={16} weight="fill" />
+                </div>
+                <span className="font-inter text-xs sm:text-sm text-white font-medium">{tContact("phone")}</span>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full bg-white text-[#0F2D5E] flex items-center justify-center shrink-0 shadow-sm">
+                  <MapPin size={16} weight="fill" />
+                </div>
+                <span className="font-inter text-xs sm:text-sm text-white font-medium leading-snug">{tContact("office")}</span>
+              </div>
             </div>
           </div>
 
-          {/* RIGHT SIDE: Form Section */}
-          <div className="lg:col-span-7 p-6 sm:p-8 lg:p-10 flex flex-col justify-center">
+          {/* RIGHT SIDE: Clean Form in Theme Colors */}
+          <div className="lg:col-span-8 flex flex-col justify-center p-2 sm:p-5 lg:p-6">
             {isSubmitted ? (
-              <div className="flex flex-col items-center justify-center py-6 px-4 text-center gap-6 animate-fadeIn">
-                <div className="w-16 h-16 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-500 shadow-inner">
+              <div className="flex flex-col items-center justify-center py-10 px-4 text-center gap-6 animate-fadeIn">
+                <div className="w-16 h-16 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 shadow-inner">
                   <CheckCircle size={36} weight="fill" />
                 </div>
 
                 <div className="flex flex-col gap-2 max-w-md">
-                  <h3 className="font-lexend text-2xl font-bold text-primary">
+                  <h3 className="font-display text-2xl font-bold text-slate-900">
                     {tContact("successToast")}
                   </h3>
-                  <p className="text-secondary text-sm leading-relaxed">
-                    Thank you, <span className="text-primary font-semibold">{formData.name}</span>.
+                  <p className="font-inter text-slate-600 text-sm leading-relaxed">
+                    Thank you, <span className="text-slate-900 font-semibold">{formData.name}</span>. We will contact you shortly.
                   </p>
                 </div>
 
                 <button
                   type="button"
                   onClick={handleReset}
-                  className="btn btn-outline border-border hover:bg-surface-raised text-secondary hover:text-primary rounded-xl px-6 py-2.5 h-auto text-xs font-semibold flex items-center gap-2 mt-2"
+                  className="border border-slate-300 hover:bg-slate-50 text-slate-700 rounded-xl px-6 py-2.5 text-xs font-display font-semibold flex items-center gap-2 mt-2 cursor-pointer transition-all"
                 >
                   <ArrowClockwise size={16} />
                   Submit Another Request
                 </button>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-                <div className="flex flex-col gap-1 border-b border-border/60 pb-5">
-                  <h3 className="font-lexend text-2xl font-bold text-primary tracking-tight">
-                    {tContact("title")}
-                  </h3>
-                  <p className="text-secondary text-xs sm:text-sm">
-                    {tContact("desc")}
-                  </p>
-                </div>
-
+              <form onSubmit={handleSubmit} className="flex flex-col gap-5">
                 {errorMsg && (
-                  <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-500 text-xs font-medium flex items-center gap-2">
+                  <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium flex items-center gap-2">
                     <ShieldCheck size={16} className="shrink-0" />
                     <span>{errorMsg}</span>
                   </div>
                 )}
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                  <div className="flex flex-col gap-2">
-                    <label htmlFor="name" className="text-xs font-semibold text-secondary flex items-center gap-1.5">
-                      <User size={14} className="text-accent" />
-                      {tContact("nameLabel")} <span className="text-rose-500">*</span>
+                {/* Row 1: Full name & Email address */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="name" className="text-xs sm:text-sm font-semibold text-slate-700 font-inter">
+                      {tContact("nameLabel")}
                     </label>
                     <input
                       type="text"
@@ -186,33 +162,13 @@ export function ContactSection() {
                       onChange={handleChange}
                       placeholder={tContact("namePlaceholder")}
                       required
-                      className="w-full bg-surface-raised border border-border rounded-xl px-4 py-3 text-sm text-primary placeholder:text-muted focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all"
+                      className="w-full bg-slate-50 border border-slate-200/90 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-[#0F2D5E] focus:ring-2 focus:ring-[#0F2D5E]/15 transition-all font-inter"
                     />
                   </div>
 
-                  <div className="flex flex-col gap-2">
-                    <label htmlFor="phone" className="text-xs font-semibold text-secondary flex items-center gap-1.5">
-                      <Phone size={14} className="text-accent" />
-                      Phone Number <span className="text-rose-500">*</span>
-                    </label>
-                    <input
-                      type="tel"
-                      id="phone"
-                      name="phone"
-                      value={formData.phone}
-                      onChange={handleChange}
-                      placeholder="+7 (701) 000-0000"
-                      required
-                      className="w-full bg-surface-raised border border-border rounded-xl px-4 py-3 text-sm text-primary placeholder:text-muted focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                  <div className="flex flex-col gap-2">
-                    <label htmlFor="email" className="text-xs font-semibold text-secondary flex items-center gap-1.5">
-                      <EnvelopeSimple size={14} className="text-accent" />
-                      {tContact("emailLabel")} <span className="text-rose-500">*</span>
+                  <div className="flex flex-col gap-1.5">
+                    <label htmlFor="email" className="text-xs sm:text-sm font-semibold text-slate-700 font-inter">
+                      {tContact("emailLabel")}
                     </label>
                     <input
                       type="email"
@@ -222,31 +178,31 @@ export function ContactSection() {
                       onChange={handleChange}
                       placeholder={tContact("emailPlaceholder")}
                       required
-                      className="w-full bg-surface-raised border border-border rounded-xl px-4 py-3 text-sm text-primary placeholder:text-muted focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all"
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    <label htmlFor="company" className="text-xs font-semibold text-secondary flex items-center gap-1.5">
-                      <Buildings size={14} className="text-accent" />
-                      {tContact("subjectLabel")} <span className="text-rose-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      id="company"
-                      name="company"
-                      value={formData.company}
-                      onChange={handleChange}
-                      placeholder={tContact("subjectPlaceholder")}
-                      required
-                      className="w-full bg-surface-raised border border-border rounded-xl px-4 py-3 text-sm text-primary placeholder:text-muted focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all"
+                      className="w-full bg-slate-50 border border-slate-200/90 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-[#0F2D5E] focus:ring-2 focus:ring-[#0F2D5E]/15 transition-all font-inter"
                     />
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-2">
-                  <label htmlFor="reportDetails" className="text-xs font-semibold text-secondary flex items-center gap-1.5">
-                    <ChatTeardropText size={14} className="text-accent" />
+                {/* Row 2: Phone number */}
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="phone" className="text-xs sm:text-sm font-semibold text-slate-700 font-inter">
+                    {tContact("phoneLabel")}
+                  </label>
+                  <input
+                    type="tel"
+                    id="phone"
+                    name="phone"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    placeholder={tContact("phonePlaceholder")}
+                    required
+                    className="w-full bg-slate-50 border border-slate-200/90 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-[#0F2D5E] focus:ring-2 focus:ring-[#0F2D5E]/15 transition-all font-inter"
+                  />
+                </div>
+
+                {/* Row 3: Message */}
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="reportDetails" className="text-xs sm:text-sm font-semibold text-slate-700 font-inter">
                     {tContact("messageLabel")}
                   </label>
                   <textarea
@@ -256,24 +212,27 @@ export function ContactSection() {
                     value={formData.reportDetails}
                     onChange={handleChange}
                     placeholder={tContact("messagePlaceholder")}
-                    className="w-full bg-surface-raised border border-border rounded-xl px-4 py-3 text-sm text-primary placeholder:text-muted focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent transition-all resize-none"
+                    className="w-full bg-slate-50 border border-slate-200/90 rounded-xl px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-[#0F2D5E] focus:ring-2 focus:ring-[#0F2D5E]/15 transition-all resize-none font-inter"
                   ></textarea>
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full btn btn-primary bg-accent hover:bg-accent-hover text-white border-none font-semibold rounded-xl py-3.5 min-h-[48px] text-sm flex items-center justify-center gap-2 shadow-md hover:shadow-accent/20 transition-all cursor-pointer disabled:opacity-70 mt-1"
-                >
-                  {isSubmitting ? (
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <>
-                      <span>{tContact("sendMessage")}</span>
-                      <PaperPlaneRight size={18} weight="bold" />
-                    </>
-                  )}
-                </button>
+                {/* Submit button: Reduced border radius to rounded-xl */}
+                <div className="pt-2">
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="rounded-xl px-7 py-3 min-h-[44px] text-sm text-white bg-[#0F2D5E] hover:bg-[#16386E] font-display font-semibold flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all cursor-pointer disabled:opacity-70"
+                  >
+                    {isSubmitting ? (
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        <span>{tContact("sendMessage")}</span>
+                        <PaperPlaneRight size={16} weight="bold" />
+                      </>
+                    )}
+                  </button>
+                </div>
               </form>
             )}
           </div>

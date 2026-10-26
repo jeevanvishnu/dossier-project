@@ -1,11 +1,25 @@
 import type { Metadata } from "next";
-import { Lexend, Source_Sans_3 } from "next/font/google";
+import { Plus_Jakarta_Sans, Inter, Lexend, Source_Sans_3 } from "next/font/google";
 import "../globals.css";
 import { ClientProviders } from "../components/ClientProviders";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages, setRequestLocale, getTranslations } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
+
+const plusJakartaSans = Plus_Jakarta_Sans({
+  variable: "--font-plus-jakarta",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  display: "swap",
+});
+
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+});
 
 const lexend = Lexend({
   variable: "--font-lexend",
@@ -55,7 +69,7 @@ export default async function RootLayout({
   return (
     <html
       lang={locale}
-      className={`${lexend.variable} ${sourceSans3.variable} h-full antialiased scroll-smooth`}
+      className={`${plusJakartaSans.variable} ${inter.variable} ${lexend.variable} ${sourceSans3.variable} h-full antialiased scroll-smooth`}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col" suppressHydrationWarning>

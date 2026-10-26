@@ -42,12 +42,12 @@ export function Navbar() {
   };
 
   return (
-    <header className="sticky top-0 w-full z-50 bg-bg/90 backdrop-blur-md shadow-xs border-b border-border/40">
-      <div className="w-full max-w-[1650px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+    <header className="sticky top-0 w-full z-50 bg-white/95 backdrop-blur-md shadow-xs border-b border-slate-200/80 transition-colors">
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         <Link
           href="/"
           onClick={(e) => handleNavClick(e, "/")}
-          className="font-lexend font-bold text-xl text-primary flex items-center"
+          className="font-display font-extrabold text-2xl text-[#0F2D5E] tracking-tight flex items-center"
         >
           {tNav("brand")}
         </Link>
@@ -59,7 +59,7 @@ export function Navbar() {
               key={link.name}
               href={link.href}
               onClick={(e) => handleNavClick(e, link.href)}
-              className="text-secondary hover:text-primary font-medium transition-colors text-sm"
+              className="text-slate-800 hover:text-[#0F2D5E] font-inter font-semibold transition-colors text-sm"
             >
               {link.name}
             </Link>
@@ -72,14 +72,14 @@ export function Navbar() {
           {isAuthenticated ? (
             <Link
               href="/dashboard"
-              className="btn btn-primary rounded-lg px-5 min-h-[38px] h-[38px] text-white bg-accent hover:bg-accent-hover border-none font-semibold text-sm shadow-sm flex items-center justify-center"
+              className="btn rounded-lg px-5 min-h-[38px] h-[38px] text-white bg-[#0F2D5E] hover:bg-[#16386E] border-none font-semibold text-sm shadow-sm flex items-center justify-center transition-all"
             >
               {tNav("dashboard")}
             </Link>
           ) : (
             <button
               onClick={() => openAuthModal("signin")}
-              className="btn btn-primary rounded-lg px-5 min-h-[38px] h-[38px] text-white bg-accent hover:bg-accent-hover border-none font-semibold text-sm shadow-sm cursor-pointer"
+              className="btn rounded-lg px-5 min-h-[38px] h-[38px] text-white bg-[#0F2D5E] hover:bg-[#16386E] border-none font-semibold text-sm shadow-sm cursor-pointer transition-all"
             >
               {tCommon("signIn")}
             </button>
@@ -90,7 +90,7 @@ export function Navbar() {
         <div className="flex items-center gap-2 sm:hidden">
           <LanguageSwitcher compact />
           <button
-            className="p-2 text-secondary cursor-pointer"
+            className="p-2 text-slate-700 hover:text-[#0F2D5E] cursor-pointer"
             onClick={() => setMobileMenuOpen(true)}
             aria-label="Open menu"
           >
@@ -103,13 +103,13 @@ export function Navbar() {
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-50 flex">
           <div
-            className="fixed inset-0 bg-secondary/20 backdrop-blur-sm"
+            className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs"
             onClick={() => setMobileMenuOpen(false)}
           />
-          <div className="relative ml-auto w-full max-w-xs bg-surface h-full shadow-lg flex flex-col pt-5 pb-6 px-4">
+          <div className="relative ml-auto w-full max-w-xs bg-white h-full shadow-2xl flex flex-col pt-5 pb-6 px-5 border-l border-slate-200">
             <div className="flex items-center justify-between mb-6">
-              <span className="font-lexend font-bold text-xl text-primary">{tNav("brand")}</span>
-              <button onClick={() => setMobileMenuOpen(false)} className="p-2 text-secondary hover:text-accent transition-colors cursor-pointer">
+              <span className="font-display font-extrabold text-xl text-[#0F2D5E] tracking-tight">{tNav("brand")}</span>
+              <button onClick={() => setMobileMenuOpen(false)} className="p-2 text-slate-500 hover:text-[#0F2D5E] transition-colors cursor-pointer">
                 <X size={24} />
               </button>
             </div>
@@ -123,7 +123,7 @@ export function Navbar() {
                 <Link
                   key={link.name}
                   href={link.href}
-                  className="text-base py-3 text-secondary font-medium hover:text-primary transition-colors border-b border-border/50"
+                  className="text-base py-3 text-slate-800 font-inter font-semibold hover:text-[#0F2D5E] transition-colors border-b border-slate-100"
                   onClick={(e) => {
                     handleNavClick(e, link.href);
                     setMobileMenuOpen(false);
@@ -139,7 +139,7 @@ export function Navbar() {
                 <Link
                   href="/dashboard"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="btn btn-primary w-full rounded-lg min-h-[40px] h-[40px] text-white bg-accent hover:bg-accent-hover border-none font-semibold text-sm flex items-center justify-center"
+                  className="btn w-full rounded-lg min-h-[40px] h-[40px] text-white bg-[#0F2D5E] hover:bg-[#16386E] border-none font-semibold text-sm flex items-center justify-center"
                 >
                   {tNav("dashboard")}
                 </Link>
@@ -149,7 +149,7 @@ export function Navbar() {
                     setMobileMenuOpen(false);
                     openAuthModal("signin");
                   }}
-                  className="btn btn-primary w-full rounded-lg min-h-[40px] h-[40px] text-white bg-accent hover:bg-accent-hover border-none font-semibold text-sm cursor-pointer"
+                  className="btn w-full rounded-lg min-h-[40px] h-[40px] text-white bg-[#0F2D5E] hover:bg-[#16386E] border-none font-semibold text-sm cursor-pointer"
                 >
                   {tCommon("signIn")}
                 </button>

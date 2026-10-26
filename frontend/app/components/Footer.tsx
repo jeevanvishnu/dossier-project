@@ -8,29 +8,29 @@ export function Footer() {
   const tNav = useTranslations("nav");
 
   return (
-    <footer className="bg-surface border-t border-border/40 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="w-full max-w-[1650px] mx-auto flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
+    <footer className="bg-[#0A1F3D] text-white border-t border-white/10 py-14 px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
         <div className="flex flex-col gap-2">
-          <Link href="/" className="font-lexend font-bold text-xl text-primary">
+          <Link href="/" className="font-display font-extrabold text-2xl text-white tracking-tight flex items-center justify-center md:justify-start">
             {tNav("brand")}
           </Link>
-          <p className="text-secondary text-xs max-w-md leading-relaxed">
+          <p className="text-slate-400 font-inter text-xs max-w-md leading-relaxed">
             {tF("tagline")}
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center justify-center gap-6 text-xs text-secondary font-medium">
-          <Link href="#about" className="hover:text-primary transition-colors">
+        <div className="flex flex-wrap items-center justify-center gap-6 text-xs text-slate-400 font-inter font-medium">
+          <Link href="#about" className="hover:text-white transition-colors">
             {tNav("about")}
           </Link>
-          <Link href="#pricing" className="hover:text-primary transition-colors">
+          <Link href="#pricing" className="hover:text-white transition-colors">
             {tNav("pricing")}
           </Link>
-          <Link href="#contact" className="hover:text-primary transition-colors">
+          <Link href="#contact" className="hover:text-white transition-colors">
             {tNav("contact")}
           </Link>
-          <span className="text-border">|</span>
-          <span className="text-muted">{tF("copyright")}</span>
+          <span className="text-white/20">|</span>
+          <span className="text-slate-500">{tF("copyright")}</span>
         </div>
       </div>
     </footer>

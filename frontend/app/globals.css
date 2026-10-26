@@ -120,6 +120,12 @@ html.light {
 
   --font-lexend: var(--font-lexend), ui-sans-serif, system-ui, sans-serif;
   --font-source-sans: var(--font-source-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-jakarta: var(--font-plus-jakarta), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-inter: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --color-navy: #0F2D5E;
+  --color-navy-dark: #0A1F3D;
+  --color-navy-surface: #14356B;
+  --color-navy-border: #1E3A5F;
 }
 
 @layer base {
@@ -128,7 +134,7 @@ html.light {
   }
 
   body {
-    font-family: var(--font-source-sans);
+    font-family: var(--font-inter);
     background-color: var(--color-bg);
     color: var(--color-secondary);
     transition: background-color 0.2s ease, color 0.2s ease;
@@ -140,13 +146,37 @@ html.light {
   h4,
   h5,
   h6 {
-    font-family: var(--font-lexend);
+    font-family: var(--font-jakarta);
     color: var(--color-primary);
   }
 }
 
 /* Base Utility Classes */
 @layer utilities {
+  .font-display {
+    font-family: var(--font-jakarta);
+  }
+
+  .font-inter {
+    font-family: var(--font-inter);
+  }
+
+  .bg-navy {
+    background-color: #0F2D5E;
+  }
+
+  .bg-navy-dark {
+    background-color: #0A1F3D;
+  }
+
+  .bg-navy-surface {
+    background-color: #14356B;
+  }
+
+  .border-navy-border {
+    border-color: #1E3A5F;
+  }
+
   .bg-bg {
     background-color: var(--color-bg);
   }

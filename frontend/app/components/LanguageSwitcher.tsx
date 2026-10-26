@@ -54,18 +54,18 @@ export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
           setIsOpen((prev) => !prev);
         }}
         disabled={isPending}
-        className={`flex items-center gap-1.5 rounded-xl border border-border/80 bg-bg hover:bg-surface-raised transition-all text-xs font-bold text-primary px-3 py-1.5 shadow-xs cursor-pointer disabled:opacity-60 select-none ${
+        className={`flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 transition-all text-xs font-bold text-slate-800 px-3 py-1.5 shadow-xs cursor-pointer disabled:opacity-60 select-none ${
           compact ? "px-2.5 py-1" : ""
         }`}
         aria-label="Select language"
       >
-        <Globe size={15} className="text-accent shrink-0" />
+        <Globe size={15} className="text-blue-600 shrink-0" />
         <span className="tracking-wide uppercase text-xs font-bold">{currentLang.label}</span>
-        <CaretDown size={12} className={`text-secondary transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
+        <CaretDown size={12} className={`text-slate-500 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-1.5 w-32 rounded-xl border border-border/80 bg-surface shadow-xl z-50 p-1 font-sans text-xs animate-in fade-in zoom-in-95 duration-150 backdrop-blur-md">
+        <div className="absolute right-0 mt-1.5 w-32 rounded-xl border border-slate-200 bg-white shadow-xl z-50 p-1 font-sans text-xs animate-in fade-in zoom-in-95 duration-150">
           {languages.map((lang) => {
             const isSelected = lang.code === locale;
             return (
@@ -78,15 +78,15 @@ export function LanguageSwitcher({ compact = false }: { compact?: boolean }) {
                 }}
                 className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-left font-semibold transition-colors cursor-pointer ${
                   isSelected
-                    ? "bg-accent/15 text-accent font-bold"
-                    : "text-secondary hover:text-primary hover:bg-surface-raised"
+                    ? "bg-blue-50 text-blue-700 font-bold"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
                 }`}
               >
                 <div className="flex items-center gap-2">
                   <span className="font-bold text-xs uppercase tracking-wide w-5">{lang.label}</span>
                   <span className="text-[11px] font-medium opacity-80">{lang.name}</span>
                 </div>
-                {isSelected && <Check size={14} className="text-accent shrink-0" weight="bold" />}
+                {isSelected && <Check size={14} className="text-blue-600 shrink-0" weight="bold" />}
               </button>
             );
           })}
