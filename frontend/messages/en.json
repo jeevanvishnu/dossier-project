@@ -88,14 +88,14 @@
     "imgAlt": "eCTD XML Dossier Generation Interface"
   },
   "features": {
-    "f1Title": "The first Web portal",
-    "f1Sub": "in Kazakhstan for the formation of the registration dossier",
-    "f2Title": "24/7 access",
-    "f2Sub": "All you need for work is the Internet",
-    "f3Title": "Advantageous tariff",
-    "f3Sub": "Allows to plan according to the size of the dossier",
-    "f4Title": "User-friendly interface",
-    "f4Sub": "Quick user adaptability"
+    "f1Title": "Regulatory-ready structure",
+    "f1Sub": "",
+    "f2Title": "XML validation",
+    "f2Sub": "",
+    "f3Title": "Secure document handling",
+    "f3Sub": "",
+    "f4Title": "Faster dossier preparation",
+    "f4Sub": ""
   },
   "about": {
     "tag": "About Us",

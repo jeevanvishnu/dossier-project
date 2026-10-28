@@ -4,10 +4,10 @@ import Image from "next/image";
 import { Link } from "../../i18n/routing";
 import {
   CheckCircle,
-  RocketLaunch,
-  Clock,
-  Wallet,
-  Desktop,
+  FileText,
+  ShieldCheck,
+  Lock,
+  Lightning,
   ArrowRight,
 } from "@phosphor-icons/react";
 import { Navbar } from "../components/Navbar";
@@ -116,47 +116,50 @@ export default function Home() {
           <div className="absolute bottom-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-blue-200/60 to-transparent pointer-events-none" />
         </Section>
 
-        {/* Section 2: Regulatory Compliance Strip (BLUE SECTION) */}
+        {/* Section 2: Regulatory Compliance Strip (BLUE SECTION - REFERENCE DESIGN) */}
         <Section
-          className="bg-[#0F2D5E] text-white py-10 md:py-14 border-y border-white/10"
+          className="bg-[#0F2D5E] text-white py-6 md:py-8 border-y border-white/10"
           containerClassName="xl:max-w-[1360px] 2xl:max-w-[1460px]"
           id="features"
         >
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 items-center">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 items-center gap-4 sm:gap-y-6 lg:gap-0">
             {[
               {
-                icon: <RocketLaunch size={24} className="text-sky-300" weight="duotone" />,
-                heading: tFeat("f1Title"),
-                subheading: tFeat("f1Sub")
+                icon: <FileText size={24} className="text-white" weight="regular" />,
+                title: tFeat("f1Title"),
               },
               {
-                icon: <Clock size={24} className="text-sky-300" weight="duotone" />,
-                heading: tFeat("f2Title"),
-                subheading: tFeat("f2Sub")
+                icon: <ShieldCheck size={24} className="text-white" weight="regular" />,
+                title: tFeat("f2Title"),
               },
               {
-                icon: <Wallet size={24} className="text-sky-300" weight="duotone" />,
-                heading: tFeat("f3Title"),
-                subheading: tFeat("f3Sub")
+                icon: <Lock size={24} className="text-white" weight="regular" />,
+                title: tFeat("f3Title"),
               },
               {
-                icon: <Desktop size={24} className="text-sky-300" weight="duotone" />,
-                heading: tFeat("f4Title"),
-                subheading: tFeat("f4Sub")
-              }
+                icon: <Lightning size={24} className="text-white" weight="regular" />,
+                title: tFeat("f4Title"),
+              },
             ].map((feature, i) => (
-              <div key={i} className="flex items-start gap-4 p-3 rounded-2xl bg-white/[0.04] border border-white/10 hover:bg-white/[0.08] transition-all">
-                <div className="w-12 h-12 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center shrink-0 shadow-sm">
+              <div
+                key={i}
+                className="relative flex items-center gap-3.5 sm:gap-4 py-2 sm:py-3 px-3 sm:px-5 lg:px-6 justify-start lg:justify-center"
+              >
+                <div className="w-12 h-12 rounded-full border border-white/40 flex items-center justify-center shrink-0 text-white">
                   {feature.icon}
                 </div>
-                <div className="flex flex-col gap-1 pt-0.5">
-                  <h3 className="font-display text-base font-bold text-white leading-tight">
-                    {feature.heading}
-                  </h3>
-                  <p className="font-inter text-slate-300 text-xs leading-relaxed">
-                    {feature.subheading}
-                  </p>
-                </div>
+                <span className="font-display font-medium text-white text-sm sm:text-[0.95rem] xl:text-base leading-snug">
+                  {feature.title}
+                </span>
+
+                {/* Vertical Divider matching reference image */}
+                {i < 3 && (
+                  <div
+                    className={`hidden lg:block absolute right-0 top-1/2 -translate-y-1/2 h-10 w-px bg-white/20 ${
+                      i === 1 ? "" : "sm:block"
+                    }`}
+                  />
+                )}
               </div>
             ))}
           </div>
