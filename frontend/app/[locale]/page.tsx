@@ -48,73 +48,69 @@ export default function Home() {
       <Navbar />
       <main className="flex-1 flex flex-col">
 
-        {/* Section 1: Hero (80VH ELEVATED DESIGN WITH RICH DEPTH & ENLARGED VISUALS) */}
-        <Section
-          className="relative bg-gradient-to-b from-[#E9F2FC] via-[#F3F8FE] to-[#F8FAFC] !py-10 lg:!py-0 flex items-center min-h-[80vh] lg:h-[80vh] lg:min-h-[660px] overflow-hidden"
-          containerClassName="w-full h-full flex items-center xl:max-w-[1360px] 2xl:max-w-[1460px]"
+        {/* Section 1: Hero (FULL-BLEED BACKGROUND SHOWCASE WITH LAPTOP & ECTD WORKFLOW) */}
+        <section
           id="hero"
+          className="relative w-full text-white flex items-center min-h-[90vh] lg:h-[90vh] lg:min-h-[740px] xl:h-[92vh] xl:min-h-[780px] overflow-hidden"
         >
-          {/* Subtle tech blueprint grid overlay */}
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,#0F2D5E08_1px,transparent_1px),linear-gradient(to_bottom,#0F2D5E08_1px,transparent_1px)] bg-[size:3.5rem_3.5rem] [mask-image:radial-gradient(ellipse_75%_65%_at_50%_35%,#000_70%,transparent_100%)] pointer-events-none" />
+          {/* Background Graphic Asset — positioned absolute filling entire section */}
+          <Image
+            src="/images/hero-bg-hd.png"
+            alt="ITAVE eCTD Dossier & XML Submission Platform"
+            fill
+            priority
+            sizes="100vw"
+            quality={100}
+            className="absolute inset-0 object-cover object-right"
+          />
 
-          {/* Glowing ambient radial mesh gradient orbs */}
-          <div className="absolute -top-32 right-12 w-[680px] h-[680px] bg-gradient-to-br from-blue-300/35 via-sky-200/25 to-transparent rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-28 -left-20 w-[600px] h-[600px] bg-gradient-to-tr from-sky-200/40 via-blue-100/30 to-transparent rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_100%_70%_at_50%_-10%,rgba(186,220,253,0.45),rgba(255,255,255,0))] pointer-events-none" />
+          {/* Minimal left-side scrim only for text legibility — no tint on the image itself */}
+          <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/20 to-transparent pointer-events-none" />
+          {/* Mobile: slight overall overlay so text stays readable */}
+          <div className="absolute inset-0 bg-black/20 lg:hidden pointer-events-none" />
 
-          <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-8 xl:gap-10 items-center w-full py-4">
-            {/* Left Column: Enlarged Headline, Subheading, CTAs & Badge */}
-            <div className="lg:col-span-5 flex flex-col items-start pt-2 lg:pt-0">
-              {/* Heading */}
-              <h1 className="font-display font-bold text-3xl sm:text-4xl md:text-5xl lg:text-[2.85rem] xl:text-[3.35rem] 2xl:text-[3.65rem] text-slate-900 tracking-tight leading-[1.12] max-w-[20ch]">
-                {tHero("title")}
-              </h1>
+          {/* Content */}
+          <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 xl:max-w-[1360px] 2xl:max-w-[1460px] h-full flex items-center py-14 lg:py-0">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center w-full">
+              {/* Left Column: Headline, Description & CTAs */}
+              <div className="lg:col-span-6 xl:col-span-5 flex flex-col items-start pt-2 lg:pt-0">
+                {/* Heading */}
+                <h1 className="font-display font-bold text-3xl sm:text-4xl md:text-5xl lg:text-[2.75rem] xl:text-[3.25rem] text-white tracking-tight leading-[1.14] max-w-[20ch]">
+                  {tHero("title")}
+                </h1>
 
-              {/* Increased Text Size Description */}
-              <p className="font-inter text-slate-600 text-base sm:text-lg lg:text-[1.125rem] leading-relaxed max-w-[48ch] mt-4 sm:mt-6">
-                {tHero("description")}
-              </p>
+                {/* Description */}
+                <p className="font-inter text-blue-100/90 text-base sm:text-lg lg:text-[1.125rem] leading-relaxed max-w-[46ch] mt-4 sm:mt-6">
+                  {tHero("description")}
+                </p>
 
-              {/* Enhanced Action Buttons */}
-              <div className="mt-6 sm:mt-8 flex flex-wrap items-center gap-3.5">
-                <Link
-                  href="#contact"
-                  className="rounded-xl px-6 sm:px-7 py-3.5 sm:py-4 text-white bg-gradient-to-r from-[#0F2D5E] via-[#163E78] to-[#1E529E] hover:from-[#0d254e] hover:to-[#174384] font-display font-semibold text-sm sm:text-base shadow-lg shadow-blue-950/20 hover:shadow-xl hover:shadow-blue-950/30 hover:-translate-y-0.5 active:translate-y-0 transition-all inline-flex items-center gap-2.5 group cursor-pointer"
-                >
-                  <span>{tHero("startProject")}</span>
-                  <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" weight="bold" />
-                </Link>
+                {/* Action Buttons */}
+                <div className="mt-7 sm:mt-9 flex flex-wrap items-center gap-3.5 sm:gap-4">
+                  <Link
+                    href="#contact"
+                    className="rounded-xl px-6 sm:px-7 py-3.5 sm:py-4 text-white bg-blue-600 hover:bg-blue-500 active:bg-blue-700 font-display font-semibold text-sm sm:text-base shadow-lg shadow-blue-950/30 hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0 transition-all inline-flex items-center gap-2.5 group cursor-pointer"
+                  >
+                    <span>{tHero("startProject")}</span>
+                    <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" weight="bold" />
+                  </Link>
 
-                <Link
-                  href="#pricing"
-                  className="rounded-xl px-5 sm:px-6 py-3.5 sm:py-4 text-slate-700 hover:text-slate-900 bg-white/85 hover:bg-white border border-slate-300/80 hover:border-slate-400 font-display font-medium text-sm sm:text-base shadow-2xs hover:shadow-sm transition-all inline-flex items-center justify-center cursor-pointer backdrop-blur-xs"
-                >
-                  {tHero("viewTariffs")}
-                </Link>
+                  <Link
+                    href="#pricing"
+                    className="rounded-xl px-5 sm:px-6 py-3.5 sm:py-4 text-white bg-white/10 hover:bg-white/20 border border-white/30 backdrop-blur-sm font-display font-medium text-sm sm:text-base transition-all inline-flex it-center justify-center cursor-pointer"
+                  >
+                    {tHero("viewTariffs")}
+                  </Link>
+                </div>
               </div>
-            </div>
 
-            {/* Right Column: Significantly Enlarged Monitor Showcase with Halo Glow */}
-            <div className="lg:col-span-7 relative w-full flex items-center justify-center lg:justify-end py-2">
-              <div className="relative w-full lg:w-[114%] xl:w-[122%] 2xl:w-[128%] lg:-mr-6 xl:-mr-12 2xl:-mr-16 aspect-[1024/518]">
-                {/* Backlight / Ambient glow behind the monitor */}
-                <div className="absolute inset-0 max-w-[90%] max-h-[85%] m-auto bg-gradient-to-tr from-sky-400/25 via-blue-500/15 to-transparent blur-3xl rounded-full pointer-events-none -z-10" />
-
-                <Image
-                  src="/images/hero-monitor-front.png"
-                  alt={tHero("imgAlt")}
-                  fill
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 68vw, 1000px"
-                  className="object-contain object-center lg:object-right drop-shadow-[0_25px_45px_rgba(15,45,94,0.2)]"
-                  priority
-                />
-              </div>
+              {/* Right spacer so the background image is fully visible */}
+              <div className="hidden lg:block lg:col-span-6 xl:col-span-7 pointer-events-none" />
             </div>
           </div>
 
-          {/* Bottom subtle divider line */}
-          <div className="absolute bottom-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-blue-200/60 to-transparent pointer-events-none" />
-        </Section>
+          {/* Bottom divider line */}
+          <div className="absolute bottom-0 inset-x-0 h-px bg-white/10 pointer-events-none" />
+        </section>
 
         {/* Section 2: Regulatory Compliance Strip (BLUE SECTION - REFERENCE DESIGN) */}
         <Section
@@ -173,12 +169,16 @@ export default function Home() {
         >
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 xl:gap-16 items-center">
 
-            <div className="lg:col-span-6 relative w-full aspect-[1.45/1] flex items-center justify-center">
+            <div className="lg:col-span-6 relative w-full aspect-[1024/518] flex items-center justify-center">
+              {/* Subtle ambient backlight glow */}
+              <div className="absolute inset-0 max-w-[90%] max-h-[85%] m-auto bg-gradient-to-tr from-sky-400/20 via-blue-500/10 to-transparent blur-2xl rounded-full pointer-events-none -z-10" />
+
               <Image
-                src="/images/about-architecture-aligned.png"
-                alt="Pharmaceutical Regulatory Platform Architecture"
+                src="/images/about-dossier-preview.png"
+                alt={tAbout("imgAlt")}
                 fill
-                className="object-contain"
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 700px"
+                className="object-contain drop-shadow-[0_20px_35px_rgba(15,45,94,0.14)]"
                 priority
               />
             </div>
