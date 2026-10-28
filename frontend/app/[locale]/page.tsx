@@ -55,7 +55,7 @@ export default function Home() {
         >
           {/* Background Graphic Asset — positioned absolute filling entire section */}
           <Image
-            src="/images/hero-bg-hd.png"
+            src="/images/hero-bg-hd.webp"
             alt="ITAVE eCTD Dossier & XML Submission Platform"
             fill
             priority
