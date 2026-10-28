@@ -43,7 +43,7 @@ export function Navbar() {
 
   return (
     <header className="sticky top-0 w-full z-50 bg-white/95 backdrop-blur-md shadow-xs border-b border-slate-200/80 transition-colors">
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div className="w-full max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 h-16 flex items-center justify-between">
         <Link
           href="/"
           onClick={(e) => handleNavClick(e, "/")}

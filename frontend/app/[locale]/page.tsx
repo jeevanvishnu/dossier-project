@@ -8,6 +8,7 @@ import {
   Clock,
   Wallet,
   Desktop,
+  ArrowRight,
 } from "@phosphor-icons/react";
 import { Navbar } from "../components/Navbar";
 import { Footer } from "../components/Footer";
@@ -47,43 +48,72 @@ export default function Home() {
       <Navbar />
       <main className="flex-1 flex flex-col">
 
-        {/* Section 1: Hero (VISIBLE SOFT BLUE / SLATE MESH GRADIENT) */}
-        <Section className="relative bg-gradient-to-b from-blue-100/70 via-sky-50/50 to-white !py-10 md:!py-14 lg:!py-16 flex items-center min-h-[68vh] overflow-hidden" id="hero">
-          {/* Visible ambient radial mesh gradient orbs */}
-          <div className="absolute -top-32 right-0 w-[680px] h-[680px] bg-gradient-to-br from-blue-200/70 via-sky-200/50 to-transparent rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-24 -left-20 w-[550px] h-[550px] bg-gradient-to-tr from-slate-200/70 via-blue-100/60 to-transparent rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_100%_70%_at_50%_-10%,rgba(186,220,253,0.55),rgba(255,255,255,0))] pointer-events-none" />
+        {/* Section 1: Hero (80VH ELEVATED DESIGN WITH RICH DEPTH & ENLARGED VISUALS) */}
+        <Section
+          className="relative bg-gradient-to-b from-[#E9F2FC] via-[#F3F8FE] to-[#F8FAFC] !py-10 lg:!py-0 flex items-center min-h-[80vh] lg:h-[80vh] lg:min-h-[660px] overflow-hidden"
+          containerClassName="w-full h-full flex items-center xl:max-w-[1360px] 2xl:max-w-[1460px]"
+          id="hero"
+        >
+          {/* Subtle tech blueprint grid overlay */}
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,#0F2D5E08_1px,transparent_1px),linear-gradient(to_bottom,#0F2D5E08_1px,transparent_1px)] bg-[size:3.5rem_3.5rem] [mask-image:radial-gradient(ellipse_75%_65%_at_50%_35%,#000_70%,transparent_100%)] pointer-events-none" />
 
-          <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 xl:gap-14 items-center w-full">
+          {/* Glowing ambient radial mesh gradient orbs */}
+          <div className="absolute -top-32 right-12 w-[680px] h-[680px] bg-gradient-to-br from-blue-300/35 via-sky-200/25 to-transparent rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-28 -left-20 w-[600px] h-[600px] bg-gradient-to-tr from-sky-200/40 via-blue-100/30 to-transparent rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_100%_70%_at_50%_-10%,rgba(186,220,253,0.45),rgba(255,255,255,0))] pointer-events-none" />
+
+          <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-8 xl:gap-10 items-center w-full py-4">
+            {/* Left Column: Enlarged Headline, Subheading, CTAs & Badge */}
             <div className="lg:col-span-5 flex flex-col items-start pt-2 lg:pt-0">
-              <h1 className="font-display font-bold text-2xl sm:text-3xl lg:text-[2.5rem] xl:text-[2.75rem] text-slate-900 tracking-tight leading-[1.2] max-w-[18ch]">
+              {/* Heading */}
+              <h1 className="font-display font-bold text-3xl sm:text-4xl md:text-5xl lg:text-[2.85rem] xl:text-[3.35rem] 2xl:text-[3.65rem] text-slate-900 tracking-tight leading-[1.12] max-w-[20ch]">
                 {tHero("title")}
               </h1>
 
-              <p className="font-inter text-slate-600 text-sm sm:text-base leading-relaxed max-w-[46ch] mt-5">
+              {/* Increased Text Size Description */}
+              <p className="font-inter text-slate-600 text-base sm:text-lg lg:text-[1.125rem] leading-relaxed max-w-[48ch] mt-4 sm:mt-6">
                 {tHero("description")}
               </p>
 
-              <div className="mt-6">
+              {/* Enhanced Action Buttons */}
+              <div className="mt-6 sm:mt-8 flex flex-wrap items-center gap-3.5">
                 <Link
                   href="#contact"
-                  className="rounded-lg sm:rounded-xl px-5 sm:px-6 py-2.5 sm:py-3 text-white bg-gradient-to-r from-[#0F2D5E] via-[#153C75] to-[#1C4E91] hover:from-[#133568] hover:to-[#225CA8] font-display font-medium text-xs sm:text-sm shadow-sm hover:shadow-md transition-all inline-flex items-center justify-center cursor-pointer"
+                  className="rounded-xl px-6 sm:px-7 py-3.5 sm:py-4 text-white bg-gradient-to-r from-[#0F2D5E] via-[#163E78] to-[#1E529E] hover:from-[#0d254e] hover:to-[#174384] font-display font-semibold text-sm sm:text-base shadow-lg shadow-blue-950/20 hover:shadow-xl hover:shadow-blue-950/30 hover:-translate-y-0.5 active:translate-y-0 transition-all inline-flex items-center gap-2.5 group cursor-pointer"
                 >
-                  {tHero("startProject")}
+                  <span>{tHero("startProject")}</span>
+                  <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" weight="bold" />
+                </Link>
+
+                <Link
+                  href="#pricing"
+                  className="rounded-xl px-5 sm:px-6 py-3.5 sm:py-4 text-slate-700 hover:text-slate-900 bg-white/85 hover:bg-white border border-slate-300/80 hover:border-slate-400 font-display font-medium text-sm sm:text-base shadow-2xs hover:shadow-sm transition-all inline-flex items-center justify-center cursor-pointer backdrop-blur-xs"
+                >
+                  {tHero("viewTariffs")}
                 </Link>
               </div>
             </div>
 
-            <div className="lg:col-span-7 relative w-full h-[280px] sm:h-[380px] md:h-[440px] lg:h-[480px] xl:h-[520px] flex items-center justify-center">
-              <Image
-                src="/images/hero-ectd-validator.png"
-                alt={tHero("imgAlt")}
-                fill
-                className="object-contain"
-                priority
-              />
+            {/* Right Column: Significantly Enlarged Monitor Showcase with Halo Glow */}
+            <div className="lg:col-span-7 relative w-full flex items-center justify-center lg:justify-end py-2">
+              <div className="relative w-full lg:w-[114%] xl:w-[122%] 2xl:w-[128%] lg:-mr-6 xl:-mr-12 2xl:-mr-16 aspect-[1024/518]">
+                {/* Backlight / Ambient glow behind the monitor */}
+                <div className="absolute inset-0 max-w-[90%] max-h-[85%] m-auto bg-gradient-to-tr from-sky-400/25 via-blue-500/15 to-transparent blur-3xl rounded-full pointer-events-none -z-10" />
+
+                <Image
+                  src="/images/hero-monitor-front.png"
+                  alt={tHero("imgAlt")}
+                  fill
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 68vw, 1000px"
+                  className="object-contain object-center lg:object-right drop-shadow-[0_25px_45px_rgba(15,45,94,0.2)]"
+                  priority
+                />
+              </div>
             </div>
           </div>
+
+          {/* Bottom subtle divider line */}
+          <div className="absolute bottom-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-blue-200/60 to-transparent pointer-events-none" />
         </Section>
 
         {/* Section 2: Regulatory Compliance Strip (BLUE SECTION) */}
