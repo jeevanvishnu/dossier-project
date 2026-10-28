@@ -117,7 +117,11 @@ export default function Home() {
         </Section>
 
         {/* Section 2: Regulatory Compliance Strip (BLUE SECTION) */}
-        <Section className="bg-[#0F2D5E] text-white py-10 md:py-14 border-y border-white/10" id="features">
+        <Section
+          className="bg-[#0F2D5E] text-white py-10 md:py-14 border-y border-white/10"
+          containerClassName="xl:max-w-[1360px] 2xl:max-w-[1460px]"
+          id="features"
+        >
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8 items-center">
             {[
               {
@@ -159,7 +163,11 @@ export default function Home() {
         </Section>
 
         {/* Section 3: Enterprise Platform Architecture (WHITE SECTION) */}
-        <Section className="bg-white py-16 md:py-24" id="about">
+        <Section
+          className="bg-white py-16 md:py-24"
+          containerClassName="xl:max-w-[1360px] 2xl:max-w-[1460px]"
+          id="about"
+        >
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 xl:gap-16 items-center">
 
             <div className="lg:col-span-6 relative w-full aspect-[1.45/1] flex items-center justify-center">
