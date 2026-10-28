@@ -51,7 +51,7 @@ export default function Home() {
         {/* Section 1: Hero (FULL-BLEED BACKGROUND SHOWCASE WITH LAPTOP & ECTD WORKFLOW) */}
         <section
           id="hero"
-          className="relative w-full text-white flex items-center min-h-[90vh] lg:h-[90vh] lg:min-h-[740px] xl:h-[92vh] xl:min-h-[780px] overflow-hidden"
+          className="relative w-full text-white flex items-center min-h-[90vh] lg:h-[90vh] lg:min-h-[740px] xl:h-[92vh] xl:min-h-[780px] overflow-hidden bg-[#0F2D5E]"
         >
           {/* Background Graphic Asset — positioned absolute filling entire section */}
           <Image
