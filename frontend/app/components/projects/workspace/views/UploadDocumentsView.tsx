@@ -28,6 +28,7 @@ import { Virtuoso } from "react-virtuoso";
 import { ECTD_FULL_TREE, CTDNode } from "@/app/constants/ctdStructure";
 import { api, handleApiError } from "@/app/lib/axios";
 import { SkeletonTableRow } from "@/app/components/ui/Skeleton";
+import { uploadFileToR2, getDocumentPresignedUrl } from "@/app/lib/r2Upload";
 
 interface UploadedFile {
   id: string;
@@ -36,6 +37,8 @@ interface UploadedFile {
   uploadDate: string;
   completionDate: string;
   md5Hash: string;
+  storageUrl?: string;
+  storageKey?: string;
   imageKitUrl?: string;
   issueDate?: string;
   expirationDate?: string;
@@ -305,7 +308,9 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
             uploadDate: isNaN(uploadedAtDate.getTime()) ? new Date().toLocaleDateString() : uploadedAtDate.toLocaleDateString(),
             completionDate: isNaN(uploadedAtDate.getTime()) ? new Date().toLocaleDateString() : uploadedAtDate.toLocaleDateString(),
             md5Hash: doc.md5Checksum ? (doc.md5Checksum.length > 15 ? doc.md5Checksum.slice(0, 10) + "..." : doc.md5Checksum) : "MD5",
-            imageKitUrl: doc.imageKitUrl,
+            storageUrl: doc.storageUrl || doc.imageKitUrl,
+            storageKey: doc.storageKey || doc.imageKitFileId,
+            imageKitUrl: doc.storageUrl || doc.imageKitUrl,
             issueDate: doc.issueDate ? new Date(doc.issueDate).toISOString() : undefined,
             expirationDate: doc.expirationDate ? new Date(doc.expirationDate).toISOString() : undefined,
           };
@@ -336,6 +341,32 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
   );
 
   const currentFiles = moduleFiles[selectedModuleId] || [];
+
+  const [openingDocId, setOpeningDocId] = useState<string | null>(null);
+
+  const handleOpenDocument = async (file: UploadedFile) => {
+    const keyOrUrl = file.storageKey || file.storageUrl || file.imageKitUrl;
+
+    if (!keyOrUrl) {
+      toast.error("Document file not found in storage. Re-upload required.");
+      return;
+    }
+
+    if (keyOrUrl.startsWith("http://") || keyOrUrl.startsWith("https://")) {
+      window.open(keyOrUrl, "_blank", "noopener,noreferrer");
+      return;
+    }
+
+    try {
+      setOpeningDocId(file.id);
+      const presignedUrl = await getDocumentPresignedUrl(file.id);
+      window.open(presignedUrl, "_blank", "noopener,noreferrer");
+    } catch (err: any) {
+      toast.error(err.message || "Failed to open document.");
+    } finally {
+      setOpeningDocId(null);
+    }
+  };
 
   const toggleExpand = (nodeId: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -372,7 +403,7 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const file = e.dataTransfer.files[0];
       // Pre-upload client file size validation (50MB Limit)
-      if (file.size > 50 * 1024 * 1024) {
+      if (file.size > 10 * 1024 * 1024 * 1024) {
         toast.error(tErrors("fileSizeLimit50MB"));
         return;
       }
@@ -384,7 +415,7 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       // Pre-upload client file size validation (50MB Limit)
-      if (file.size > 50 * 1024 * 1024) {
+      if (file.size > 10 * 1024 * 1024 * 1024) {
         toast.error(tErrors("fileSizeLimit50MB"));
         return;
       }
@@ -414,42 +445,50 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
     setIsUploading(true);
 
     try {
-      const formData = new FormData();
-      if (file) {
-        formData.append("file", file);
-      }
-      formData.append("operation", selectedOperation);
-      if (selectedDocCode) {
-        formData.append("docCode", selectedDocCode);
-      }
-
       // Read the active dossier config ID to tag this upload with its dossier
       let activeDossierConfigId: string | undefined = undefined;
       if (typeof window !== "undefined") {
         activeDossierConfigId = sessionStorage.getItem(`active_dossier_id_${projectId}`) || undefined;
       }
 
-      const response = await api.post(
-        `/projects/${projectId}/documents/${selectedModuleId}?operation=${selectedOperation}${selectedDocCode ? `&docCode=${selectedDocCode}` : ""}${activeDossierConfigId ? `&dossierConfigId=${activeDossierConfigId}` : ""}`,
-        formData,
-        {
-          onUploadProgress: (progressEvent) => {
-            if (progressEvent.total) {
-              const percent = Math.min(99, Math.round((progressEvent.loaded * 100) / progressEvent.total));
-              setUploadProgress(percent);
-              if (percent >= 99) {
-                setUploadStatus("processing");
-              }
-            }
-          },
-        }
-      );
+      let doc: any = null;
 
-      if (response.data?.success && response.data?.data) {
+      if (file) {
+        const uploadResult = await uploadFileToR2(
+          file,
+          {
+            projectId,
+            nodeId: selectedModuleId,
+            operation: selectedOperation as "new" | "replace",
+            dossierConfigId: activeDossierConfigId,
+            docCode: selectedDocCode || undefined,
+          },
+          {
+            onStatusChange: (status) => {
+              if (status === "hashing" || status === "completing") {
+                setUploadStatus("processing");
+              } else if (status === "uploading") {
+                setUploadStatus("uploading");
+              } else if (status === "success") {
+                setUploadStatus("success");
+              }
+            },
+            onProgress: (info) => {
+              setUploadProgress(info.percent);
+            },
+          }
+        );
+
+        doc = uploadResult.data;
+      } else {
+        const response = await api.delete(`/projects/${projectId}/documents/${selectedModuleId}`);
+        doc = response.data?.data;
+      }
+      if (doc) {
         setUploadProgress(100);
         setUploadStatus("success");
 
-        const doc = response.data.data;
+        // doc resolved from R2 upload or delete endpoint
         if (selectedOperation === "delete" || doc.status === "deleted") {
           setModuleFiles((prev) => ({
             ...prev,
@@ -465,7 +504,9 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
             uploadDate: isNaN(uploadedAtDate.getTime()) ? new Date().toLocaleDateString() : uploadedAtDate.toLocaleDateString(),
             completionDate: isNaN(uploadedAtDate.getTime()) ? new Date().toLocaleDateString() : uploadedAtDate.toLocaleDateString(),
             md5Hash: doc.md5Checksum ? doc.md5Checksum.slice(0, 10) + "..." : "MD5",
-            imageKitUrl: doc.imageKitUrl,
+            storageUrl: doc.storageUrl || doc.imageKitUrl,
+            storageKey: doc.storageKey || doc.imageKitFileId,
+            imageKitUrl: doc.storageUrl || doc.imageKitUrl,
             issueDate: doc.issueDate ? new Date(doc.issueDate).toISOString() : undefined,
             expirationDate: doc.expirationDate ? new Date(doc.expirationDate).toISOString() : undefined,
           };
@@ -731,6 +772,7 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
                   <span className="truncate">{tab.label}</span>
                 </button>
               );
+
             })}
           </div>
         </div>
@@ -811,6 +853,7 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
                     </div>
                   </div>
                 );
+
               }}
             />
           </div>
@@ -924,14 +967,35 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
                       <tr key={file.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                         <td className="py-2.5 px-3 font-semibold text-sky-700 dark:text-sky-400 flex items-center gap-1.5">
                           <FilePdf size={16} className="text-sky-600 dark:text-sky-400 shrink-0" weight="fill" />
-                          <a
+                          <button
+                            type="button"
+                            onClick={() => handleOpenDocument(file)}
+                            disabled={openingDocId === file.id}
+                            className="truncate max-w-[160px] text-left cursor-pointer hover:underline font-semibold text-sky-700 dark:text-sky-400 disabled:opacity-50"
+                            title="Click to view/download document via secure Cloudflare R2 presigned URL"
+                          >
+                            {openingDocId === file.id ? (
+                              <span className="flex items-center gap-1">
+                                <CircleNotch size={12} className="animate-spin text-sky-500" />
+                                <span>Opening...</span>
+                              </span>
+                            ) : (
+                              file.name
+                            )}
+                          </button>
+                          {!file.storageKey && !file.storageUrl && !file.imageKitUrl && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 font-medium shrink-0">
+                              Re-upload Required
+                            </span>
+                          )}
+                          {false && <a
                             href={file.imageKitUrl || "#"}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="truncate max-w-[160px] cursor-pointer hover:underline"
                           >
                             {file.name}
-                          </a>
+                          </a>}
                         </td>
                         <td className="py-2.5 px-3 font-mono font-bold text-slate-900 dark:text-slate-100">{file.sequence}</td>
                         <td className="py-2.5 px-3 font-mono text-[11px]">

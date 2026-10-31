@@ -10,7 +10,7 @@ import {
   updateCompanyMemberSchema,
 } from "../validators/company.validator";
 import { UserManagementService } from "../services/user.service";
-import { uploadToImageKit, deleteFromImageKit } from "../services/imagekit.service";
+import { uploadBufferToR2, deleteFromR2 } from "../services/r2.service";
 import bcrypt from "bcrypt";
 import { getResendClient } from "../services/email.service";
 
@@ -224,16 +224,18 @@ export async function createCompanyMember(req: Request, res: Response): Promise<
 
     // 2. Upload avatar to ImageKit if provided
     let imageUrl: string | null = null;
-    let imageKitFileId: string | null = null;
+    let storageKey: string | null = null;
 
     if (imageBase64 && imageBase64.trim()) {
       try {
         const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, "");
         const buffer = Buffer.from(cleanBase64, "base64");
         const fileName = `admin_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.png`;
-        const ikResult = await uploadToImageKit(buffer, fileName, "/company-admins");
+        const r2Key = `company-admins/${fileName}`;
+        await uploadBufferToR2(buffer, r2Key, "image/png");
+        const ikResult = { url: r2Key, fileId: r2Key };
         imageUrl = ikResult.url;
-        imageKitFileId = ikResult.fileId;
+        storageKey = ikResult.fileId;
       } catch (uploadError: any) {
         console.error("[COMPANY_CONTROLLER] Failed to upload admin avatar:", uploadError);
       }
@@ -245,7 +247,8 @@ export async function createCompanyMember(req: Request, res: Response): Promise<
       email,
       role: "admin",
       imageUrl,
-      imageKitFileId,
+      storageKey,
+      imageKitFileId: storageKey,
     });
 
     // 4. Link user to company
@@ -339,7 +342,8 @@ export async function updateCompanyMember(req: Request, res: Response): Promise<
         maxUsers: companyMembers.maxUsers,
         storageGb: companyMembers.storageGb,
         userEmail: users.email,
-        userImageKitFileId: users.imageKitFileId,
+        userStorageKey: users.storageKey,
+        userImageKitFileId: users.storageKey,
         userImageUrl: users.imageUrl,
       })
       .from(companyMembers)
@@ -379,7 +383,7 @@ export async function updateCompanyMember(req: Request, res: Response): Promise<
       try {
         // Delete old image from ImageKit if it exists
         if (existingMember.userImageKitFileId) {
-          deleteFromImageKit(existingMember.userImageKitFileId).catch((err) =>
+          deleteFromR2(existingMember.userImageKitFileId).catch((err) =>
             console.warn("[COMPANY_CONTROLLER] Error deleting old admin avatar:", err?.message)
           );
         }
@@ -387,7 +391,9 @@ export async function updateCompanyMember(req: Request, res: Response): Promise<
         const cleanBase64 = imageBase64.replace(/^data:image\/\w+;base64,/, "");
         const buffer = Buffer.from(cleanBase64, "base64");
         const fileName = `admin_${Date.now()}_${Math.random().toString(36).substring(2, 7)}.png`;
-        const ikResult = await uploadToImageKit(buffer, fileName, "/company-admins");
+        const r2Key = `company-admins/${fileName}`;
+        await uploadBufferToR2(buffer, r2Key, "image/png");
+        const ikResult = { url: r2Key, fileId: r2Key };
         newImageUrl = ikResult.url;
         newImageKitFileId = ikResult.fileId;
       } catch (uploadError: any) {
@@ -402,7 +408,7 @@ export async function updateCompanyMember(req: Request, res: Response): Promise<
       if (email) userUpdates.email = email;
       if (newImageUrl !== undefined) {
         userUpdates.imageUrl = newImageUrl;
-        userUpdates.imageKitFileId = newImageKitFileId;
+        userUpdates.storageKey = newImageKitFileId;
       }
 
       await db.update(users).set(userUpdates).where(eq(users.id, existingMember.userId));

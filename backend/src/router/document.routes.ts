@@ -9,6 +9,7 @@ import {
   deleteDocumentByNode,
   seedSorbitDossier,
   updateDocumentDates,
+  getDocumentPresignedUrl,
 } from "../controller/document.controller";
 
 const router = Router();
@@ -29,11 +30,24 @@ router.post(
   uploadDocument
 );
 
-// View document metadata & ImageKit URL for a specific nodeId
+// View document metadata for a specific nodeId
 router.get(
   "/:id/documents/:nodeId",
   protect,
   getDocumentByNode
+);
+
+// Get presigned R2 download URL by docId or nodeId
+router.get(
+  "/:id/documents/url/:docId",
+  protect,
+  getDocumentPresignedUrl
+);
+
+router.get(
+  "/:id/documents/:nodeId/url",
+  protect,
+  getDocumentPresignedUrl
 );
 
 // Update document issue and expiration dates (Requires owner or editor)

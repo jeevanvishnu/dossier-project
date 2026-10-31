@@ -1,7 +1,8 @@
 import { ZipArchive } from "archiver";
 import * as archiverModule from "archiver";
 import { Writable } from "stream";
-import { downloadFileBuffer } from "./imagekit.service";
+import { downloadBufferFromR2 } from "./r2.service";
+import axios from "axios";
 import { calculateMD5 } from "../utils/crypto.util";
 import { ProjectDocument, Project, DossierConfig } from "../db/schema";
 import { generateEaeuManifestXml, getRussianDocName, mapNodeIdToEaeuCode } from "./eaeu-manifest.service";
@@ -125,12 +126,19 @@ export async function compileEctdPackage(
 
   // 1. Concurrently download physical document buffers (filtering out 'delete' tombstones)
   const docsToDownload = validDocs.filter(
-    (d) => d.status !== "deleted" && d.operation !== "delete" && !!d.imageKitUrl
+    (d) => d.status !== "deleted" && d.operation !== "delete" && (!!d.storageKey || !!d.storageUrl)
   );
 
   const downloadedDocs = await mapConcurrent(docsToDownload, 5, async (doc) => {
     try {
-      const buffer = await downloadFileBuffer(doc.imageKitUrl!);
+      const keyOrUrl = doc.storageKey || doc.storageUrl!;
+      let buffer: Buffer;
+      if (keyOrUrl.startsWith("http://") || keyOrUrl.startsWith("https://")) {
+        const response = await axios.get(keyOrUrl, { responseType: "arraybuffer", timeout: 30000 });
+        buffer = Buffer.from(response.data);
+      } else {
+        buffer = await downloadBufferFromR2(keyOrUrl);
+      }
       const realMd5 = calculateMD5(buffer);
       return { doc: { ...doc, md5Checksum: realMd5 }, buffer };
     } catch (err: any) {

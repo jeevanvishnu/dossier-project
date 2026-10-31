@@ -173,78 +173,166 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                {/* Speedometer Gauge Meter Widget */}
+                {/* Speedometer Segmented Gauge Meter Widget (Segmented pill design with needle & tick scale) */}
                 {(() => {
-                  const needleAngle = 5 + (rawGaugePercent / 100) * 170;
-                  const dashOffset = 151 * (1 - rawGaugePercent / 100);
                   const isRed = rawGaugePercent >= 90;
-                  const strokeColor = isRed ? "#ef4444" : "#10b981";
+                  const isWarning = rawGaugePercent >= 75 && rawGaugePercent < 90;
+                  const activeColor = isRed
+                    ? "#ef4444"
+                    : isWarning
+                    ? "#f59e0b"
+                    : "#10b981";
                   const glowColor = isRed
-                    ? "rgba(239, 68, 68, 0.6)"
-                    : "rgba(16, 185, 129, 0.6)";
+                    ? "rgba(239, 68, 68, 0.45)"
+                    : isWarning
+                    ? "rgba(245, 158, 11, 0.45)"
+                    : "rgba(16, 185, 129, 0.4)";
                   const textColorClass = isRed
-                    ? "text-red-400"
-                    : "text-emerald-400";
+                    ? "text-red-500"
+                    : isWarning
+                    ? "text-amber-500"
+                    : "text-emerald-500";
+
+                  // Gauge geometry
+                  const cx = 105;
+                  const cy = 96;
+                  const rIn = 45;
+                  const rOut = 65;
+                  const strokeWidth = 7;
+                  const totalSegments = 14;
+
+                  // 14 pill segments fanning from 180° (left) to 0° (right)
+                  const segments = Array.from({ length: totalSegments }, (_, i) => {
+                    const deg = 180 - (i * 180) / (totalSegments - 1);
+                    const rad = (deg * Math.PI) / 180;
+                    const x1 = cx + rIn * Math.cos(rad);
+                    const y1 = cy - rIn * Math.sin(rad);
+                    const x2 = cx + rOut * Math.cos(rad);
+                    const y2 = cy - rOut * Math.sin(rad);
+                    const threshold = (i / (totalSegments - 1)) * 100;
+                    const isActive =
+                      rawGaugePercent > 0 && threshold <= rawGaugePercent + 0.5;
+
+                    return {
+                      i,
+                      deg,
+                      x1,
+                      y1,
+                      x2,
+                      y2,
+                      isActive,
+                    };
+                  });
+
+                  // Scale numeric labels matching reference design (0, 25, 35, 50, 65, 85, 100)
+                  const scaleLabels = [
+                    { text: "0", x: 18, y: 99, anchor: "end" },
+                    { text: "25", x: 38, y: 52, anchor: "middle" },
+                    { text: "35", x: 58, y: 31, anchor: "middle" },
+                    { text: "50", x: 105, y: 14, anchor: "middle" },
+                    { text: "65", x: 152, y: 31, anchor: "middle" },
+                    { text: "85", x: 172, y: 52, anchor: "middle" },
+                    { text: "100", x: 192, y: 99, anchor: "start" },
+                  ];
+
+                  // Needle angle (-90deg at 0% to +90deg at 100%)
+                  const needleAngle = -90 + (rawGaugePercent / 100) * 180;
 
                   return (
-                    <div className="flex flex-col items-center justify-center shrink-0 text-center">
-                      <div className="relative w-36 h-22 shrink-0 flex flex-col items-center justify-center pt-1">
-                        <svg className="w-full h-full" viewBox="0 0 140 90">
-                          {/* Background Arc Track */}
-                          <path
-                            d="M 22 75 A 48 48 0 0 1 118 75"
-                            fill="none"
-                            stroke="#262d3d"
-                            strokeWidth="14"
-                            strokeLinecap="round"
-                          />
-                          {/* Active Filled Progress Arc: Green -> Red if >= 90% */}
-                          <path
-                            d="M 22 75 A 48 48 0 0 1 118 75"
-                            fill="none"
-                            stroke={strokeColor}
-                            strokeWidth="14"
-                            strokeLinecap="round"
+                    <div className="flex flex-col items-center justify-center shrink-0 text-center w-[195px] sm:w-[210px]">
+                      <div className="relative w-full h-[114px] flex items-center justify-center select-none">
+                        <svg
+                          className="w-full h-full overflow-visible"
+                          viewBox="0 0 210 114"
+                        >
+                          {/* Radial segmented capsules */}
+                          {segments.map((seg) => (
+                            <line
+                              key={seg.i}
+                              x1={seg.x1.toFixed(1)}
+                              y1={seg.y1.toFixed(1)}
+                              x2={seg.x2.toFixed(1)}
+                              y2={seg.y2.toFixed(1)}
+                              strokeWidth={strokeWidth}
+                              strokeLinecap="round"
+                              stroke={seg.isActive ? activeColor : undefined}
+                              className={
+                                seg.isActive
+                                  ? "transition-all duration-300"
+                                  : "stroke-slate-200 dark:stroke-[#243045] transition-all duration-300"
+                              }
+                              style={
+                                seg.isActive
+                                  ? { filter: `drop-shadow(0 0 3.5px ${glowColor})` }
+                                  : undefined
+                              }
+                            />
+                          ))}
+
+                          {/* Outer scale numbers (0, 25, 35, 50, 65, 85, 100) */}
+                          {scaleLabels.map((lbl) => (
+                            <text
+                              key={lbl.text}
+                              x={lbl.x}
+                              y={lbl.y}
+                              textAnchor={lbl.anchor as "end" | "middle" | "start"}
+                              className="fill-muted font-sans font-semibold text-[8.5px] select-none"
+                            >
+                              {lbl.text}
+                            </text>
+                          ))}
+
+                          {/* Tapered Needle Dial */}
+                          <g
                             style={{
-                              strokeDasharray: 151,
-                              strokeDashoffset: dashOffset,
-                              transition: "stroke 0.4s ease, filter 0.4s ease",
-                              filter: `drop-shadow(0px 0px 8px ${glowColor})`,
+                              transform: `rotate(${needleAngle}deg)`,
+                              transformOrigin: `${cx}px ${cy}px`,
+                              transition:
+                                "transform 0.7s cubic-bezier(0.34, 1.3, 0.64, 1)",
                             }}
-                          />
-                          {/* Needle Dial */}
-                          <line
-                            x1="70"
-                            y1="75"
-                            x2="28"
-                            y2="75"
-                            stroke={isRed ? "#ef4444" : "#10b981"}
-                            strokeWidth="3.5"
-                            strokeLinecap="round"
-                            transform={`rotate(${needleAngle}, 70, 75)`}
-                          />
-                          {/* Pivot Center Dot */}
-                          <circle
-                            cx="70"
-                            cy="75"
-                            r="5.5"
-                            fill={isRed ? "#ef4444" : "#10b981"}
-                          />
-                          <circle cx="70" cy="75" r="2.5" fill="#ffffff" />
-                        </svg>
-                        <div className="flex items-center gap-1 -mt-1">
-                          <span
-                            className={`text-[11px] font-black tracking-wider transition-colors duration-300 ${textColorClass}`}
                           >
-                            {rawGaugePercent}%
-                          </span>
-                        </div>
+                            <polygon
+                              points={`${cx - 2.2},${cy} ${cx - 0.7},${cy - 43} ${
+                                cx + 0.7
+                              },${cy - 43} ${cx + 2.2},${cy}`}
+                              className="fill-slate-800 dark:fill-slate-100"
+                              style={{
+                                filter: "drop-shadow(0px 1px 2px rgba(0,0,0,0.35))",
+                              }}
+                            />
+                          </g>
+
+                          {/* Needle Pivot Hub */}
+                          <circle
+                            cx={cx}
+                            cy={cy}
+                            r="6.5"
+                            className="fill-slate-900 dark:fill-slate-800 stroke-slate-300 dark:stroke-slate-600"
+                            strokeWidth="1.5"
+                          />
+                          <circle
+                            cx={cx}
+                            cy={cy}
+                            r="2.2"
+                            fill={activeColor}
+                            style={{ filter: `drop-shadow(0 0 2px ${activeColor})` }}
+                          />
+                        </svg>
                       </div>
-                      <span className="text-[10px] text-muted font-medium mt-1">
-                        {loadingStats
-                          ? "Loading storage..."
-                          : `${formattedUsedStorage} / ${stats?.storageGb ?? 1} GB`}
-                      </span>
+
+                      {/* Percentage & Capacity readout */}
+                      <div className="flex flex-col items-center mt-0.5">
+                        <span
+                          className={`text-sm font-extrabold font-lexend tracking-tight transition-colors duration-300 ${textColorClass}`}
+                        >
+                          {rawGaugePercent}%
+                        </span>
+                        <span className="text-[10px] text-muted font-medium mt-0.5">
+                          {loadingStats
+                            ? "Loading storage..."
+                            : `${formattedUsedStorage} / ${stats?.storageGb ?? 1} GB`}
+                        </span>
+                      </div>
                     </div>
                   );
                 })()}

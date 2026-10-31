@@ -60,6 +60,15 @@ interface ProjectItem {
   sequence: string;
 }
 
+function formatBytes(bytes: number, decimals = 2): string {
+  if (!bytes || bytes <= 0) return "-";
+  const k = 1024;
+  const dm = decimals < 0 ? 0 : decimals;
+  const sizes = ["Bytes", "KB", "MB", "GB", "TB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + " " + sizes[i];
+}
+
 export default function ProjectsPage() {
   const router = useRouter();
   const tProjects = useTranslations("projects");
@@ -104,7 +113,7 @@ export default function ProjectsPage() {
             assignedTariff: p.tariff || "Tariff OWN",
             tariffComment: "eCTD Regulatory Submission License",
             date: p.createdAt ? p.createdAt.split("T")[0] : new Date().toISOString().split("T")[0],
-            projectVolume: "-",
+            projectVolume: formatBytes(Number(p.totalFileSizeBytes ?? p.dossierSize ?? 0)),
             status: p.status || "In Progress",
             country: p.dossierConfig?.submissionCountry || "-",
             role: p.dossierConfig?.role || "-",

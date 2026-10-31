@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { db } from "../db/db";
 import { projects, dossierConfig, projectDocuments, packageArchives, auditLogs } from "../db/schema";
 import { compileEctdPackage, sanitizeSequence } from "../services/compilation.service";
-import { uploadToImageKit } from "../services/imagekit.service";
+import { uploadBufferToR2, generateR2Key, getPresignedDownloadUrl } from "../services/r2.service";
 import { resolveProjectId } from "../utils/params.util";
 import { eq, and, desc, inArray, ne, or } from "drizzle-orm";
 
@@ -166,11 +166,15 @@ export async function compileProjectPackage(req: Request, res: Response): Promis
     console.log(`[eCTD Compiler] Compiling ${docsToCompile.length} active documents for Project ${projectId} (Sequence ${targetSequence})...`);
     const compilation = await compileEctdPackage(project, targetConfig || null, docsToCompile);
 
-    const ikResult = await uploadToImageKit(
-      compilation.zipBuffer,
-      compilation.fullName,
-      `/ectd-archives/proj-${projectId}`
-    );
+    const archiveKey = generateR2Key(projectId, compilation.fullName, "ectd-archives");
+    await uploadBufferToR2(compilation.zipBuffer, archiveKey, "application/zip");
+    const archiveDownloadUrl = await getPresignedDownloadUrl(archiveKey, 86400);
+    const ikResult = { url: archiveDownloadUrl, key: archiveKey };
+
+
+
+
+
 
     const createdArchive = await db.transaction(async (tx) => {
       const [archiveRecord] = await tx
@@ -182,6 +186,7 @@ export async function compileProjectPackage(req: Request, res: Response): Promis
           xmlChecksum: compilation.xmlChecksum,
           zipChecksum: compilation.zipChecksum,
           downloadUrl: ikResult.url,
+          storageKey: archiveKey,
         })
         .returning();
 

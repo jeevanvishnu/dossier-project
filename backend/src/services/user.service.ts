@@ -80,7 +80,7 @@ export class UserManagementService {
         password: hashedPassword,
         role: input.role || "user",
         imageUrl: input.imageUrl || null,
-        imageKitFileId: input.imageKitFileId || null,
+        storageKey: (input as any).storageKey || input.imageKitFileId || null,
         isBlocked: false,
       })
       .returning({
@@ -89,7 +89,7 @@ export class UserManagementService {
         email: users.email,
         role: users.role,
         imageUrl: users.imageUrl,
-        imageKitFileId: users.imageKitFileId,
+        storageKey: users.storageKey,
         isBlocked: users.isBlocked,
         createdAt: users.createdAt,
         updatedAt: users.updatedAt,

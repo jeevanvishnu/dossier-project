@@ -13,6 +13,7 @@ export const createUserSchema = z.object({
     .optional(),
   role: z.enum(["user", "admin", "superadmin"]).default("user"),
   imageUrl: z.string().optional().nullable(),
+  storageKey: z.string().optional().nullable(),
   imageKitFileId: z.string().optional().nullable(),
 });
 
@@ -26,6 +27,7 @@ export const updateUserSchema = z.object({
     .optional(),
   role: z.enum(["user", "admin", "superadmin"]).optional(),
   imageUrl: z.string().optional().nullable(),
+  storageKey: z.string().optional().nullable(),
   imageKitFileId: z.string().optional().nullable(),
 });
 

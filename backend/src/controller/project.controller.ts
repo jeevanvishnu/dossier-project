@@ -3,8 +3,8 @@ import { db } from "../db/db";
 import { projects, dossierConfig, projectMembers, auditLogs, packageArchives, projectDocuments, companyMembers } from "../db/schema";
 import { createProjectSchema, updateDossierDataSchema } from "../validators/project.validator";
 import { parseIdParam, resolveProjectId } from "../utils/params.util";
-import { deleteFromImageKit } from "../services/imagekit.service";
-import { eq, and, desc, isNotNull, sql, count } from "drizzle-orm";
+import { deleteMultipleFromR2 } from "../services/r2.service";
+import { eq, and, desc, isNotNull, sql, count, inArray } from "drizzle-orm";
 import { CacheService, CacheKeys } from "../lib/cache";
 
 import crypto from "crypto";
@@ -37,10 +37,39 @@ export async function getProjects(req: Request, res: Response): Promise<void> {
 
     const totalCount = Number(countResult[0]?.count || 0);
 
+    const projectIds = projectsList.map((p) => p.id);
+    const sizeMap: Record<string, number> = {};
+
+    if (projectIds.length > 0) {
+      const sizes = await db
+        .select({
+          projectId: projectDocuments.projectId,
+          totalSize: sql<string>`COALESCE(SUM(${projectDocuments.fileSize}), 0)`,
+        })
+        .from(projectDocuments)
+        .where(
+          and(
+            inArray(projectDocuments.projectId, projectIds),
+            eq(projectDocuments.status, "active")
+          )
+        )
+        .groupBy(projectDocuments.projectId);
+
+      for (const row of sizes) {
+        sizeMap[row.projectId] = Number(row.totalSize || 0);
+      }
+    }
+
+    const projectsWithVolume = projectsList.map((p) => ({
+      ...p,
+      totalFileSizeBytes: sizeMap[p.id] || 0,
+      dossierSize: sizeMap[p.id] || 0,
+    }));
+
     res.status(200).json({
       success: true,
-      count: projectsList.length,
-      data: projectsList,
+      count: projectsWithVolume.length,
+      data: projectsWithVolume,
       pagination: {
         total: totalCount,
         page,
@@ -203,12 +232,24 @@ export async function getDossierData(req: Request, res: Response): Promise<void>
 
     const { dossierConfig: config, documents, ...project } = projectData;
 
-    const totalFileSize = (documents || []).reduce((sum: number, doc: any) => sum + (doc.fileSize || 0), 0);
+    // Filter only active documents to prevent superseded/deleted files from inflating dossier size
+    const activeDocs = (documents || []).filter((doc: any) => doc.status === "active");
+    const totalFileSize = activeDocs.reduce((sum: number, doc: any) => sum + (Number(doc.fileSize) || 0), 0);
+
+    const configsWithSize = allConfigs.map((cfg) => {
+      const cfgActiveSize = activeDocs
+        .filter((d: any) => d.dossierConfigId === cfg.id || (!d.dossierConfigId && cfg.id === allConfigs[0]?.id))
+        .reduce((sum: number, doc: any) => sum + (Number(doc.fileSize) || 0), 0);
+      return {
+        ...cfg,
+        dossierSize: cfgActiveSize,
+      };
+    });
 
     const responseData = {
       project,
-      dossierConfig: allConfigs[0] || config || null,
-      dossierConfigs: allConfigs,
+      dossierConfig: configsWithSize[0] || config || null,
+      dossierConfigs: configsWithSize,
       dossierSize: totalFileSize,
     };
 
@@ -380,6 +421,22 @@ export async function updateDossierData(req: Request, res: Response): Promise<vo
         where: eq(dossierConfig.projectId, projectId),
       });
 
+      const activeDocs = await tx.query.projectDocuments.findMany({
+        where: and(eq(projectDocuments.projectId, projectId), eq(projectDocuments.status, "active")),
+      });
+
+      const totalFileSize = activeDocs.reduce((sum: number, doc: any) => sum + (Number(doc.fileSize) || 0), 0);
+
+      const configsWithSize = allConfigs.map((cfg) => {
+        const cfgActiveSize = activeDocs
+          .filter((d: any) => d.dossierConfigId === cfg.id || (!d.dossierConfigId && cfg.id === allConfigs[0]?.id))
+          .reduce((sum: number, doc: any) => sum + (Number(doc.fileSize) || 0), 0);
+        return {
+          ...cfg,
+          dossierSize: cfgActiveSize,
+        };
+      });
+
       await tx.insert(auditLogs).values({
         projectId,
         logType: "SUCCESS",
@@ -387,7 +444,12 @@ export async function updateDossierData(req: Request, res: Response): Promise<vo
         userCredentials: currentUser ? `${currentUser.email} (${currentUser.role})` : "System",
       });
 
-      return { project: updatedProject, dossierConfig: updatedConfig, dossierConfigs: allConfigs };
+      return {
+        project: updatedProject,
+        dossierConfig: configsWithSize.find((c) => c.id === updatedConfig?.id) || configsWithSize[0] || updatedConfig,
+        dossierConfigs: configsWithSize,
+        dossierSize: totalFileSize,
+      };
     });
 
     await CacheService.del(CacheKeys.projectDossier(projectId));
@@ -441,14 +503,22 @@ export async function deleteProject(req: Request, res: Response): Promise<void> 
       return;
     }
 
-    // Collect any ImageKit asset IDs before deleting project document records
-    const docRecords = await db.query.projectDocuments.findMany({
-      where: eq(projectDocuments.projectId, projectId),
-      columns: { imageKitFileId: true },
-    });
-    const imageKitFileIds = docRecords
-      .map((d) => d.imageKitFileId)
-      .filter((id): id is string => Boolean(id));
+    // Collect all R2 storage keys (both individual dossier documents and compiled ZIP archives)
+    const [docRecords, archiveRecords] = await Promise.all([
+      db.query.projectDocuments.findMany({
+        where: eq(projectDocuments.projectId, projectId),
+        columns: { storageKey: true },
+      }),
+      db.query.packageArchives.findMany({
+        where: eq(packageArchives.projectId, projectId),
+        columns: { storageKey: true },
+      }),
+    ]);
+
+    const storageKeys = [
+      ...docRecords.map((d) => d.storageKey),
+      ...archiveRecords.map((a) => a.storageKey),
+    ].filter((key): key is string => Boolean(key));
 
     // Perform full atomic transaction across all associated tables
     const deletedProject = await db.transaction(async (tx) => {
@@ -477,8 +547,8 @@ export async function deleteProject(req: Request, res: Response): Promise<void> 
     });
 
     // Asynchronously delete cloud storage assets (ImageKit) without blocking response
-    if (imageKitFileIds.length > 0) {
-      Promise.allSettled(imageKitFileIds.map((fileId) => deleteFromImageKit(fileId))).catch((err) => {
+    if (storageKeys.length > 0) {
+      deleteMultipleFromR2(storageKeys).catch((err) => {
         console.warn("[Delete Project] Cloud asset cleanup warning:", err);
       });
     }

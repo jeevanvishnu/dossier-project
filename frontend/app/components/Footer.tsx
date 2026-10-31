@@ -9,7 +9,7 @@ export function Footer() {
 
   return (
     <footer className="bg-[#0A1F3D] text-white border-t border-white/10 py-5 sm:py-6 px-4 sm:px-6 lg:px-8">
-      <div className="w-full max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 md:gap-6 text-center md:text-left">
+      <div className="w-full max-w-7xl mx-auto xl:max-w-[1360px] 2xl:max-w-[1460px] flex flex-col md:flex-row items-center justify-between gap-4 md:gap-6 text-center md:text-left">
         <div className="flex flex-col gap-1">
           <Link href="/" className="font-display font-extrabold text-xl text-white tracking-tight flex items-center justify-center md:justify-start">
             {tNav("brand")}

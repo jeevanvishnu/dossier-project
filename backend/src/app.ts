@@ -18,6 +18,7 @@ import userRoutes from "./router/user.routes";
 import companyRoutes from "./router/company.routes";
 import statsRoutes from "./router/stats.routes";
 import dashboardRoutes from "./router/dashboard.routes";
+import uploadRoutes from "./router/upload.routes";
 
 const app = express();
 
@@ -78,6 +79,9 @@ app.use("/api/admin", userRoutes);
 app.use("/api/admin", companyRoutes);
 app.use("/api/admin", statsRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+
+// Direct Cloudflare R2 Upload Endpoints
+app.use("/api/upload", uploadRoutes);
 
 // eCTD Project & Dossier Management Routes
 app.use("/api/projects", projectRoutes);

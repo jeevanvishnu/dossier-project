@@ -4,7 +4,7 @@
     "description": "Manage your contracts, track subscriptions, and seamlessly handle compliant regulatory workflows—all in one secure workspace."
   },
   "auth": {
-    "modalTitle": "Access ITAVE Portal",
+    "modalTitle": "Access CTDex Portal",
     "modalSubtitle": "Sign in to your regulatory workspace or request corporate access",
     "signInTab": "Sign In",
     "signUpTab": "Register",
@@ -19,7 +19,7 @@
     "adminRole": "Admin Role",
     "userRole": "User Role",
     "superAdminRole": "Super Admin Role",
-    "loginTitle": "ITAVE Unified Portal Login",
+    "loginTitle": "CTDex Unified Portal Login",
     "loginSub": "Kazakhstan Pharmaceutical & Medical Regulatory Submission Platform",
     "authenticating": "Authenticating...",
     "demoGranted": "Demo Access Granted as",
@@ -60,8 +60,8 @@
     "inReview": "In Review"
   },
   "nav": {
-    "brand": "ITAVE",
-    "portal": "ITAVE Portal",
+    "brand": "CTDex",
+    "portal": "CTDex Portal",
     "home": "Home",
     "about": "About",
     "pricing": "Pricing",
@@ -100,7 +100,7 @@
   "about": {
     "tag": "About Us",
     "title": "Accelerating Regulatory & Dossier Submissions",
-    "imgAlt": "ITAVE Regulatory Dossier Submission Workspace",
+    "imgAlt": "CTDex Regulatory Dossier Submission Workspace",
     "p1": "Our platform is engineered specifically to simplify and accelerate the preparation, management, and regulatory submission of pharmaceutical dossiers. Designed to meet industry standards, we bridge the gap between complex legal requirements and efficient digital workflows.",
     "p2": "Whether you are managing multi-country product submissions, tracking contract lifecycles, or monitoring subscription tariffs and document sequences, our centralized portal gives your team total control with 24/7 access, guaranteed security, and an intuitive interface built for rapid adaptation.",
     "check1": "Multi-country product submissions",
@@ -183,10 +183,10 @@
     "privacy": "Privacy Policy",
     "terms": "Terms of Service",
     "cookies": "Cookie Policy",
-    "copyright": "© 2026 ITAVE Portal. All rights reserved."
+    "copyright": "© 2026 CTDex Portal. All rights reserved."
   },
   "appShell": {
-    "workspaceTitle": "ITAVE Workspace",
+    "workspaceTitle": "CTDex Workspace",
     "breadcrumbOverview": "Dashboard Overview",
     "breadcrumbContracts": "My Contracts & Agreements",
     "breadcrumbTariffs": "Subscription & Storage Tariffs",
@@ -492,7 +492,7 @@
   },
   "tour": {
     "title": "System Tour & Technical Support",
-    "sub": "Interactive walkthrough of the ITAVE Pharmaceutical Dossier Portal features.",
+    "sub": "Interactive walkthrough of the CTDex Pharmaceutical Dossier Portal features.",
     "welcomeStepTitle": "1. Unified Dashboard",
     "welcomeStepDesc": "Access all your projects, active contracts, and tariffs in one single workspace.",
     "dossierStepTitle": "2. Automated eCTD Validation",
@@ -511,7 +511,7 @@
     "responseDetail": "Maximum 2-hour reaction SLA for active tickets",
     "ruleLabel": "Rule",
     "ruleDetail": "Always provide your Organization User ID (e.g. USR-101) when requesting support",
-    "telegramBtn": "Contact Technical Support (@itave_support)",
+    "telegramBtn": "Contact Technical Support (@ctdex_support)",
     "faqTitle": "Frequently Asked Questions & Friction Resolution",
     "modulesTitle": "In-Depth Module Walkthrough Descriptions",
     "faq1Q": "What should I do if my contract is expiring soon?",

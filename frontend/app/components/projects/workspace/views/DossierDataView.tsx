@@ -346,6 +346,7 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
               const rawCountry = cfg.submissionCountry;
               const normalizedCountry = (!rawCountry || rawCountry === "US" || rawCountry === "KZ") ? "KAZAKHSTAN" : rawCountry;
               const dossierIdNum = String(cfg.id).startsWith("DOS-") ? String(cfg.id) : `DOS-${String(cfg.id).padStart(4, "0")}`;
+              const cfgSize = typeof cfg.dossierSize === "number" ? cfg.dossierSize : (response.data?.data?.dossierSize || 0);
 
               return {
                 id: String(cfg.id),
@@ -359,7 +360,7 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
                 dateOfCreation: project?.createdAt
                   ? new Date(project.createdAt).toLocaleDateString("en-GB")
                   : new Date().toLocaleDateString("en-GB"),
-                dossierSize: formattedSize,
+                dossierSize: formatBytes(cfgSize),
                 rawConfig: cfg,
               };
             });
@@ -669,6 +670,7 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
             const rawCountry = cfg.submissionCountry;
             const normalizedCountry = (!rawCountry || rawCountry === "US" || rawCountry === "KZ") ? "KAZAKHSTAN" : rawCountry;
             const dossierIdNum = String(cfg.id).startsWith("DOS-") ? String(cfg.id) : `DOS-${String(cfg.id).padStart(4, "0")}`;
+            const cfgSize = typeof cfg.dossierSize === "number" ? cfg.dossierSize : (response.data?.data?.dossierSize || 0);
             return {
               id: String(cfg.id),
               dossierIdNumber: dossierIdNum,
@@ -679,7 +681,7 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
               typeOfProcedure: cfg.typeOfProcedure || "Bringing into conformity",
               sequence: cfg.dossierSequence || "Sequence 0000",
               dateOfCreation: new Date().toLocaleDateString("en-GB"),
-              dossierSize: formattedSize,
+              dossierSize: formatBytes(cfgSize),
               rawConfig: cfg,
             };
           });

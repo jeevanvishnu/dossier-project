@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { db } from "../db/db";
-import { projectDocuments, auditLogs, dossierConfig } from "../db/schema";
-import { uploadToImageKit, deleteFromImageKit } from "../services/imagekit.service";
+import { projectDocuments, auditLogs, dossierConfig, packageArchives } from "../db/schema";
+import { uploadBufferToR2, deleteFromR2, deleteMultipleFromR2, getPresignedDownloadUrl, generateR2Key } from "../services/r2.service";
 import { StorageService } from "../services/storage.service";
 import { CacheService, CacheKeys } from "../lib/cache";
 import { compileEctdPackage, sanitizeSequence } from "../services/compilation.service";
@@ -76,8 +76,8 @@ export async function uploadDocument(req: Request, res: Response): Promise<void>
             projectId,
             nodeId,
             originalName: existingActive.originalName,
-            imageKitUrl: null,
-            imageKitFileId: null,
+            storageUrl: null,
+            storageKey: null,
             fileSize: 0,
             sequence: currentSeq,
             md5Checksum: existingActive.md5Checksum,
@@ -97,12 +97,12 @@ export async function uploadDocument(req: Request, res: Response): Promise<void>
       });
 
       // Physically delete old file from ImageKit remote storage
-      if (existingActive.imageKitFileId) {
+      if (existingActive.storageKey) {
         try {
-          await deleteFromImageKit(existingActive.imageKitFileId);
+          await deleteFromR2(existingActive.storageKey);
         } catch (ikErr: any) {
           console.warn(
-            `[ImageKit Deletion Warning] Could not remove cloud file ${existingActive.imageKitFileId}: ${ikErr.message}`
+            `[R2 Deletion Warning] Could not remove cloud file ${existingActive.storageKey}: ${ikErr.message}`
           );
         }
       }
@@ -201,12 +201,16 @@ export async function uploadDocument(req: Request, res: Response): Promise<void>
   }
 
   try {
-    const ikResult = await uploadToImageKit(
+    const r2Key = generateR2Key(projectId, file.originalname, "ectd-dossiers");
+    await uploadBufferToR2(file.buffer, r2Key, file.mimetype);
+    uploadedFileId = r2Key;
+    const ikResult = { url: r2Key, fileId: r2Key };
+    /*
       file.buffer,
       file.originalname,
       `/ectd-dossiers/proj-${projectId}`
     );
-    uploadedFileId = ikResult.fileId;
+    */
 
     const rawDocCode = req.query.docCode || req.body?.docCode;
     const rawDocType = req.query.docType || req.body?.docType;
@@ -229,8 +233,8 @@ export async function uploadDocument(req: Request, res: Response): Promise<void>
           docCode,
           docType,
           originalName: file.originalname,
-          imageKitUrl: ikResult.url,
-          imageKitFileId: ikResult.fileId,
+          storageUrl: ikResult.url,
+          storageKey: ikResult.fileId,
           fileSize: file.size,
           sequence: currentSeq,
           dossierConfigId: resolvedDossierConfigId,
@@ -267,7 +271,7 @@ export async function uploadDocument(req: Request, res: Response): Promise<void>
     if (uploadedFileId) {
       console.warn(`[Distributed Rollback] Cleaning up orphaned ImageKit file: ${uploadedFileId}`);
       try {
-        await deleteFromImageKit(uploadedFileId);
+        await deleteFromR2(uploadedFileId);
       } catch (cleanupErr) {
         console.error(`[Distributed Rollback Failed] Could not delete orphaned file ${uploadedFileId}:`, cleanupErr);
       }
@@ -411,8 +415,8 @@ export async function deleteDocumentByNode(req: Request, res: Response): Promise
           projectId,
           nodeId: activeDoc.nodeId || nodeId,
           originalName: activeDoc.originalName,
-          imageKitUrl: null,
-          imageKitFileId: null,
+          storageUrl: null,
+          storageKey: null,
           fileSize: 0,
           sequence: currentSeq,
           md5Checksum: activeDoc.md5Checksum,
@@ -431,12 +435,32 @@ export async function deleteDocumentByNode(req: Request, res: Response): Promise
       return tombstone;
     });
 
-    if (activeDoc.imageKitFileId) {
+    if (activeDoc.storageKey) {
       try {
-        await deleteFromImageKit(activeDoc.imageKitFileId);
+        await deleteFromR2(activeDoc.storageKey);
       } catch (ikErr: any) {
-        console.warn(`[Delete Document Warning] Failed to delete file ${activeDoc.imageKitFileId} from ImageKit`, ikErr);
+        console.warn(`[Delete Document Warning] Failed to delete file ${activeDoc.storageKey} from R2`, ikErr);
       }
+    }
+
+    // Invalidate and purge any previously compiled archive ZIPs from R2,
+    // since deleting a document makes the compiled package obsolete.
+    const staleArchives = await db.query.packageArchives.findMany({
+      where: eq(packageArchives.projectId, projectId),
+      columns: { id: true, storageKey: true },
+    });
+
+    if (staleArchives.length > 0) {
+      const archiveKeys = staleArchives
+        .map((a) => a.storageKey)
+        .filter((k): k is string => Boolean(k));
+
+      if (archiveKeys.length > 0) {
+        deleteMultipleFromR2(archiveKeys).catch((err) => {
+          console.warn("[Delete Document] Failed to clean up stale package archives from R2:", err);
+        });
+      }
+      await db.delete(packageArchives).where(eq(packageArchives.projectId, projectId));
     }
 
     res.status(200).json({
@@ -511,8 +535,8 @@ export async function seedSorbitDossier(req: Request, res: Response): Promise<vo
         uploadedAt: new Date(),
         status: "active" as const,
         operation: "new" as const,
-        imageKitUrl: item.imageKitUrl,
-        imageKitFileId: item.imageKitFileId,
+        storageUrl: item.storageUrl,
+        storageKey: item.storageKey,
         fileSize: item.fileSize,
         md5Checksum: item.md5Checksum,
       }));
@@ -633,6 +657,80 @@ export async function updateDocumentDates(req: Request, res: Response): Promise<
   } catch (error: any) {
     console.error("[Update Document Dates Error]", error);
     res.status(500).json({ success: false, message: error.message || "Failed to update document dates" });
+  }
+}
+
+
+/**
+ * Generates an on-demand presigned GET URL with a 1-hour expiration for viewing or downloading a document.
+ */
+export async function getDocumentPresignedUrl(req: Request, res: Response): Promise<void> {
+  try {
+    const projectId = await resolveProjectId(req.params.id);
+    const docIdParam = req.params.docId || req.query.docId;
+    const nodeIdParam = req.params.nodeId || req.query.nodeId;
+
+    if (!projectId) {
+      res.status(400).json({ success: false, message: "Invalid project ID." });
+      return;
+    }
+
+    let doc = null;
+    if (docIdParam) {
+      doc = await db.query.projectDocuments.findFirst({
+        where: and(
+          eq(projectDocuments.projectId, projectId),
+          eq(projectDocuments.id, String(docIdParam))
+        ),
+      });
+    } else if (nodeIdParam) {
+      doc = await db.query.projectDocuments.findFirst({
+        where: and(
+          eq(projectDocuments.projectId, projectId),
+          eq(projectDocuments.nodeId, String(nodeIdParam)),
+          eq(projectDocuments.status, "active")
+        ),
+      });
+    }
+
+    if (!doc) {
+      res.status(404).json({ success: false, message: "Document not found." });
+      return;
+    }
+
+    const key = doc.storageKey || doc.storageUrl;
+    if (!key) {
+      res.status(404).json({
+        success: false,
+        message: "This document does not have a Cloudflare R2 storage key. Re-upload is required.",
+      });
+      return;
+    }
+
+    // Backwards-compatibility for older full URLs
+    if (key.startsWith("http://") || key.startsWith("https://")) {
+      res.status(200).json({
+        success: true,
+        url: key,
+        expiresAt: new Date(Date.now() + 3600_000).toISOString(),
+      });
+      return;
+    }
+
+    const presignedUrl = await getPresignedDownloadUrl(key, 3600);
+    const expiresAt = new Date(Date.now() + 3600_000).toISOString();
+
+    res.status(200).json({
+      success: true,
+      url: presignedUrl,
+      expiresAt,
+    });
+  } catch (error: any) {
+    console.error("[Get Document Presigned URL Error]", error);
+    res.status(500).json({ success: false, message: error.message || "Failed to generate presigned download URL." });
+
+
+
   }
 }
 

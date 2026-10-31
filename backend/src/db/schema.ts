@@ -1,4 +1,4 @@
-import { pgEnum, pgTable, uuid, text, timestamp, varchar, integer, boolean, index, uniqueIndex, jsonb } from "drizzle-orm/pg-core";
+import { pgEnum, pgTable, uuid, text, timestamp, varchar, integer, bigint, boolean, index, uniqueIndex, jsonb } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
 // ─── ENUMS ───────────────────────────────────────────────────────────────────
@@ -15,7 +15,7 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   role: roleEnum("role").default("user").notNull(),
   imageUrl: text("image_url"),
-  imageKitFileId: text("imagekit_file_id"),
+  storageKey: text("storage_key"),
   isBlocked: boolean("is_blocked").default(false).notNull(),
   resetPasswordToken: text("reset_password_token"),
   resetPasswordExpires: timestamp("reset_password_expires"),
@@ -148,9 +148,9 @@ export const projectDocuments = pgTable("project_documents", {
   docCode: varchar("doc_code", { length: 5 }),
   docType: varchar("doc_type", { length: 100 }),
   originalName: text("original_name").notNull(),
-  imageKitUrl: text("image_kit_url"),
-  imageKitFileId: text("image_kit_file_id"),
-  fileSize: integer("file_size").default(0).notNull(),
+  storageUrl: text("storage_url"),
+  storageKey: text("storage_key"),
+  fileSize: bigint("file_size", { mode: "number" }).default(0).notNull(),
   sequence: text("sequence").default("0000").notNull(),
   md5Checksum: text("md5_checksum"),
   status: documentStatusEnum("status").default("active").notNull(),
@@ -186,10 +186,11 @@ export const packageArchives = pgTable("package_archives", {
     .references(() => projects.id, { onDelete: "cascade" })
     .notNull(),
   fullName: text("full_name").notNull(),
-  size: integer("size").notNull(),
+  size: bigint("size", { mode: "number" }).notNull(),
   xmlChecksum: text("xml_checksum").notNull(),
   zipChecksum: text("zip_checksum").notNull(),
   downloadUrl: text("download_url").notNull(),
+  storageKey: text("storage_key"),
   generatedAt: timestamp("generated_at").defaultNow().notNull(),
 }, (table) => [
   index("idx_package_archives_project_id").on(table.projectId),
