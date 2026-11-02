@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link } from "../../../i18n/routing";
 import { AppShell } from "../../components/AppShell";
 import {
@@ -93,13 +93,42 @@ export default function DashboardPage() {
     return <SuperAdminDashboard />;
   }
 
-  // Calculate storage usage percentage
-  const storageLimitBytes = (stats?.storageGb ?? 1) * 1024 * 1024 * 1024;
+  // ── Storage gauge: animated 100% → actual used% ──────────────────────────
+  // ── Storage Capacity & Quota: animated 100% full capacity reducing by user usage ──
+  // Storage capacity defaults to 5 GB (or stats.storageGb if assigned higher)
+  const totalCapacityGb = stats?.storageGb && stats.storageGb > 0 ? stats.storageGb : 5;
+  const storageLimitBytes = totalCapacityGb * 1024 * 1024 * 1024;
   const usedBytes = stats?.usedStorageBytes ?? 0;
-  const rawGaugePercent = Math.min(
+  const usedPercent = Math.min(
     100,
-    Math.round((usedBytes / storageLimitBytes) * 100)
+    Math.max(0, Math.round((usedBytes / storageLimitBytes) * 100))
   );
+
+  // Remaining capacity percentage: Full 100% minus the user's used storage
+  // e.g. 0 GB used -> 100% remaining (full tank)
+  // e.g. 1 GB used of 5 GB (20%) -> 80% remaining
+  const remainingPercent = Math.max(0, 100 - usedPercent);
+
+  // displayPercent drives the visual gauge:
+  // Starts at 100% (Full capacity) on reload, then reduces down to remainingPercent
+  const [displayPercent, setDisplayPercent] = useState(100);
+  const gaugeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (gaugeTimerRef.current) clearTimeout(gaugeTimerRef.current);
+    if (!loadingStats) {
+      // Pause at 100% for 350 ms so the user sees full capacity before reducing
+      gaugeTimerRef.current = setTimeout(() => {
+        setDisplayPercent(remainingPercent);
+      }, 350);
+    } else {
+      // While loading: pin gauge at 100% (full capacity)
+      setDisplayPercent(100);
+    }
+    return () => {
+      if (gaugeTimerRef.current) clearTimeout(gaugeTimerRef.current);
+    };
+  }, [loadingStats, remainingPercent]);
 
   // Format used storage display
   const usedMB = (usedBytes / (1024 * 1024)).toFixed(1);
@@ -131,9 +160,9 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                {rawGaugePercent >= 90 && (
+                {remainingPercent <= 15 && !loadingStats && (
                   <span className="px-2.5 py-1 rounded-full bg-red-500/15 border border-red-500/30 text-red-500 font-semibold text-[11px] flex items-center gap-1">
-                    <Warning size={14} weight="fill" /> High Storage Usage
+                    <Warning size={14} weight="fill" /> Low Storage (&lt; 15% Left)
                   </span>
                 )}
               </div>
@@ -166,7 +195,7 @@ export default function DashboardPage() {
                       <span>
                         Storage Capacity:{" "}
                         <strong className="text-primary font-semibold">
-                          {loadingStats ? "..." : `${stats?.storageGb ?? 1} GB`}
+                          {loadingStats ? "..." : `${totalCapacityGb} GB`}
                         </strong>
                       </span>
                     </div>
@@ -175,8 +204,8 @@ export default function DashboardPage() {
 
                 {/* Speedometer Segmented Gauge Meter Widget (Segmented pill design with needle & tick scale) */}
                 {(() => {
-                  const isRed = rawGaugePercent >= 90;
-                  const isWarning = rawGaugePercent >= 75 && rawGaugePercent < 90;
+                  const isRed = displayPercent <= 15;
+                  const isWarning = displayPercent > 15 && displayPercent <= 40;
                   const activeColor = isRed
                     ? "#ef4444"
                     : isWarning
@@ -211,7 +240,7 @@ export default function DashboardPage() {
                     const y2 = cy - rOut * Math.sin(rad);
                     const threshold = (i / (totalSegments - 1)) * 100;
                     const isActive =
-                      rawGaugePercent > 0 && threshold <= rawGaugePercent + 0.5;
+                      displayPercent > 0 && threshold <= displayPercent + 0.5;
 
                     return {
                       i,
@@ -236,7 +265,7 @@ export default function DashboardPage() {
                   ];
 
                   // Needle angle (-90deg at 0% to +90deg at 100%)
-                  const needleAngle = -90 + (rawGaugePercent / 100) * 180;
+                  const needleAngle = -90 + (displayPercent / 100) * 180;
 
                   return (
                     <div className="flex flex-col items-center justify-center shrink-0 text-center w-[195px] sm:w-[210px]">
@@ -288,7 +317,7 @@ export default function DashboardPage() {
                               transform: `rotate(${needleAngle}deg)`,
                               transformOrigin: `${cx}px ${cy}px`,
                               transition:
-                                "transform 0.7s cubic-bezier(0.34, 1.3, 0.64, 1)",
+                                "transform 1.4s cubic-bezier(0.34, 1.56, 0.64, 1)",
                             }}
                           >
                             <polygon
@@ -325,12 +354,12 @@ export default function DashboardPage() {
                         <span
                           className={`text-sm font-extrabold font-lexend tracking-tight transition-colors duration-300 ${textColorClass}`}
                         >
-                          {rawGaugePercent}%
+                          {displayPercent}% Available
                         </span>
                         <span className="text-[10px] text-muted font-medium mt-0.5">
                           {loadingStats
                             ? "Loading storage..."
-                            : `${formattedUsedStorage} / ${stats?.storageGb ?? 1} GB`}
+                            : `${formattedUsedStorage} used of ${totalCapacityGb} GB`}
                         </span>
                       </div>
                     </div>
