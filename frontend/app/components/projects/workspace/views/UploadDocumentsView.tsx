@@ -402,11 +402,6 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
     setDragActive(false);
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const file = e.dataTransfer.files[0];
-      // Pre-upload client file size validation (50MB Limit)
-      if (file.size > 10 * 1024 * 1024 * 1024) {
-        toast.error(tErrors("fileSizeLimit50MB"));
-        return;
-      }
       uploadFileToBackend(file);
     }
   };
@@ -414,11 +409,6 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
-      // Pre-upload client file size validation (50MB Limit)
-      if (file.size > 10 * 1024 * 1024 * 1024) {
-        toast.error(tErrors("fileSizeLimit50MB"));
-        return;
-      }
       uploadFileToBackend(file);
     }
   };
@@ -929,7 +919,6 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
                       ? tWorkspace("uploadDropzoneReplace")
                       : tWorkspace("uploadDropzoneNew")}
                 </p>
-                <p className="text-[10.5px] text-muted mt-1">{tWorkspace("maxFileLimit")}</p>
               </div>
             )}
           </div>

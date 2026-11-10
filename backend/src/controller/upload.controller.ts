@@ -28,8 +28,6 @@ const ALLOWED_MIMES = [
   "image/webp",
 ];
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024 * 1024; // 10 GB hard limit (supports 100MB * 100 parts)
-
 /**
  * POST /api/upload/initiate
  * Validates file meta, enforces company quota, and generates multipart presigned PUT URLs.
@@ -62,15 +60,6 @@ export async function initiateUpload(req: Request, res: Response): Promise<void>
     if (isNaN(numericSize) || numericSize <= 0) {
       console.warn(`[Upload Controller] Invalid fileSize: ${fileSize}`);
       res.status(400).json({ success: false, message: "Invalid fileSize specified." });
-      return;
-    }
-
-    if (numericSize > MAX_FILE_SIZE) {
-      console.warn(`[Upload Controller] File size exceeds 5 GB limit: ${numericSize} bytes`);
-      res.status(413).json({
-        success: false,
-        message: `File size exceeds the maximum limit of 5 GB (${(numericSize / (1024 * 1024 * 1024)).toFixed(2)} GB).`,
-      });
       return;
     }
 

@@ -3,7 +3,7 @@ import { Request, Response, NextFunction } from "express";
 
 const multiOrSingleUpload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 50 * 1024 * 1024, files: 1 }, // 50MB Limit, max 1 file
+  limits: { files: 1 }, // max 1 file, no artificial file size limit
 }).fields([
   { name: "file", maxCount: 1 },
   { name: "document", maxCount: 1 },
@@ -23,7 +23,7 @@ export function uploadMiddleware(req: Request, res: Response, next: NextFunction
       if (err.code === "LIMIT_FILE_SIZE") {
         res.status(413).json({
           success: false,
-          message: "Payload Too Large: Uploaded file exceeds maximum allowed limit of 50MB.",
+          message: "Payload Too Large: Uploaded file exceeds maximum allowed limit.",
         });
         return;
       }

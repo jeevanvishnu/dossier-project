@@ -142,14 +142,7 @@ export async function uploadDocument(req: Request, res: Response): Promise<void>
   }
 
   // --- Upload Security Validations ---
-  // 1. File Size Validation (Max 50MB)
-  const MAX_FILE_SIZE = 50 * 1024 * 1024;
-  if (file.size > MAX_FILE_SIZE) {
-    res.status(413).json({ success: false, message: "File exceeds the maximum allowed size of 50MB." });
-    return;
-  }
-
-  // 2. MIME Type / Extension Validation
+  // MIME Type / Extension Validation
   const allowedMimes = [
     "application/pdf",
     "application/msword",
