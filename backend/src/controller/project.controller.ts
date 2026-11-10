@@ -4,7 +4,7 @@ import { projects, dossierConfig, projectMembers, auditLogs, packageArchives, pr
 import { createProjectSchema, updateDossierDataSchema } from "../validators/project.validator";
 import { parseIdParam, resolveProjectId } from "../utils/params.util";
 import { deleteMultipleFromR2 } from "../services/r2.service";
-import { eq, and, desc, isNotNull, sql, count, inArray } from "drizzle-orm";
+import { eq, and, desc, isNotNull, sql, count, inArray, ne } from "drizzle-orm";
 import { CacheService, CacheKeys } from "../lib/cache";
 
 import crypto from "crypto";
@@ -27,7 +27,7 @@ export async function getProjects(req: Request, res: Response): Promise<void> {
     const [projectsList, countResult] = await Promise.all([
       db.query.projects.findMany({
         where: companyFilter,
-        with: { dossierConfig: true },
+        with: { dossierConfig: true, dossierConfigs: true },
         orderBy: [desc(projects.createdAt)],
         limit,
         offset,
@@ -60,11 +60,15 @@ export async function getProjects(req: Request, res: Response): Promise<void> {
       }
     }
 
-    const projectsWithVolume = projectsList.map((p) => ({
-      ...p,
-      totalFileSizeBytes: sizeMap[p.id] || 0,
-      dossierSize: sizeMap[p.id] || 0,
-    }));
+    const projectsWithVolume = projectsList.map((p) => {
+      const activeConfig = p.dossierConfigs?.find((c) => c.isDossierSaved) || p.dossierConfig;
+      return {
+        ...p,
+        dossierConfig: activeConfig,
+        totalFileSizeBytes: sizeMap[p.id] || 0,
+        dossierSize: sizeMap[p.id] || 0,
+      };
+    });
 
     res.status(200).json({
       success: true,
@@ -228,6 +232,7 @@ export async function getDossierData(req: Request, res: Response): Promise<void>
 
     const allConfigs = await db.query.dossierConfig.findMany({
       where: eq(dossierConfig.projectId, projectId),
+      orderBy: [desc(dossierConfig.isDossierSaved), desc(dossierConfig.id)],
     });
 
     const { dossierConfig: config, documents, ...project } = projectData;
@@ -246,9 +251,12 @@ export async function getDossierData(req: Request, res: Response): Promise<void>
       };
     });
 
+    const savedConfig = configsWithSize.find((c) => c.isDossierSaved);
+    const primaryConfig = savedConfig || configsWithSize[0] || config || null;
+
     const responseData = {
       project,
-      dossierConfig: configsWithSize[0] || config || null,
+      dossierConfig: primaryConfig,
       dossierConfigs: configsWithSize,
       dossierSize: totalFileSize,
     };
@@ -399,26 +407,69 @@ export async function updateDossierData(req: Request, res: Response): Promise<vo
             .returning();
           updatedConfig = conf;
         } else {
-          const [conf] = await tx
-            .insert(dossierConfig)
-            .values({
-              projectId,
-              submissionCountry: input.submissionCountry || "KAZAKHSTAN",
-              role: input.role || "Reference Member State (RMS)",
-              procedureType: input.procedureType || "Mutual Recognition (MRP)",
-              typeOfProcedure: input.typeOfProcedure || "Bringing into conformity",
-              applicationNumber: input.applicationNumber || "",
-              dossierSequence: input.dossierSequence || "Sequence 0000",
-              isDossierSaved: true,
-              dossierDetails: input.dossierDetails || mergedDetails || null,
-            })
-            .returning();
-          updatedConfig = conf;
+          // If creating a new dossier, first check if an unsaved placeholder config already exists
+          // (such as the default created by createProject). If so, update that placeholder instead of
+          // creating an extra duplicate empty row in the database.
+          const unsavedPlaceholder = await tx.query.dossierConfig.findFirst({
+            where: and(
+              eq(dossierConfig.projectId, projectId),
+              eq(dossierConfig.isDossierSaved, false)
+            ),
+          });
+
+          if (unsavedPlaceholder) {
+            const [conf] = await tx
+              .update(dossierConfig)
+              .set({
+                ...configFields,
+                submissionCountry: input.submissionCountry || unsavedPlaceholder.submissionCountry || "KAZAKHSTAN",
+                role: input.role || unsavedPlaceholder.role || "Reference Member State (RMS)",
+                procedureType: input.procedureType || unsavedPlaceholder.procedureType || "Mutual Recognition (MRP)",
+                typeOfProcedure: input.typeOfProcedure || unsavedPlaceholder.typeOfProcedure || "Bringing into conformity",
+                applicationNumber: input.applicationNumber ?? unsavedPlaceholder.applicationNumber ?? "",
+                dossierSequence: input.dossierSequence || unsavedPlaceholder.dossierSequence || "Sequence 0000",
+                isDossierSaved: true,
+                dossierDetails: input.dossierDetails || mergedDetails || null,
+              })
+              .where(eq(dossierConfig.id, unsavedPlaceholder.id))
+              .returning();
+            updatedConfig = conf;
+          } else {
+            const [conf] = await tx
+              .insert(dossierConfig)
+              .values({
+                projectId,
+                submissionCountry: input.submissionCountry || "KAZAKHSTAN",
+                role: input.role || "Reference Member State (RMS)",
+                procedureType: input.procedureType || "Mutual Recognition (MRP)",
+                typeOfProcedure: input.typeOfProcedure || "Bringing into conformity",
+                applicationNumber: input.applicationNumber || "",
+                dossierSequence: input.dossierSequence || "Sequence 0000",
+                isDossierSaved: true,
+                dossierDetails: input.dossierDetails || mergedDetails || null,
+              })
+              .returning();
+            updatedConfig = conf;
+          }
+        }
+
+        // Clean up any other remaining unsaved empty placeholder rows for this project so no duplicates linger
+        if (updatedConfig) {
+          await tx
+            .delete(dossierConfig)
+            .where(
+              and(
+                eq(dossierConfig.projectId, projectId),
+                eq(dossierConfig.isDossierSaved, false),
+                ne(dossierConfig.id, updatedConfig.id)
+              )
+            );
         }
       }
 
       const allConfigs = await tx.query.dossierConfig.findMany({
         where: eq(dossierConfig.projectId, projectId),
+        orderBy: [desc(dossierConfig.isDossierSaved), desc(dossierConfig.id)],
       });
 
       const activeDocs = await tx.query.projectDocuments.findMany({
@@ -446,7 +497,7 @@ export async function updateDossierData(req: Request, res: Response): Promise<vo
 
       return {
         project: updatedProject,
-        dossierConfig: configsWithSize.find((c) => c.id === updatedConfig?.id) || configsWithSize[0] || updatedConfig,
+        dossierConfig: configsWithSize.find((c) => c.id === updatedConfig?.id) || configsWithSize.find((c) => c.isDossierSaved) || configsWithSize[0] || updatedConfig,
         dossierConfigs: configsWithSize,
         dossierSize: totalFileSize,
       };

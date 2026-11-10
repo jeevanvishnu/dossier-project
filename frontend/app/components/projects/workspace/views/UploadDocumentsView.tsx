@@ -22,6 +22,7 @@ import {
   Warning,
   UploadSimple,
   DownloadSimple,
+  FileCode,
 } from "@phosphor-icons/react";
 import { toast } from "sonner";
 import { Virtuoso } from "react-virtuoso";
@@ -90,11 +91,13 @@ function getAncestorNodeIds(nodes: CTDNode[], targetId: string, currentPath: str
 interface UploadDocumentsViewProps {
   projectId?: string;
   isDossierComplete?: boolean;
+  onNavigateToHistory?: () => void;
 }
 
 export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
   projectId = "1",
   isDossierComplete = true,
+  onNavigateToHistory,
 }) => {
   const tWorkspace = useTranslations("workspace");
   const tCommon = useTranslations("common");
@@ -199,10 +202,10 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
         sequence: activeSeq,
         dossierConfigId: activeConfigId || undefined,
       });
-      if (compileRes.data?.success && compileRes.data?.data?.downloadUrl) {
-        const downloadUrl = compileRes.data.data.downloadUrl;
-        window.open(downloadUrl, "_blank");
-        toast.success(tToasts("zipCompiled"), { id: "zip-download-toast" });
+      if (compileRes.data?.success && compileRes.data?.data) {
+        toast.success(tToasts("zipCompiled"), {
+          id: "zip-download-toast",
+        });
       } else {
         toast.error(tErrors("noDocsToCompile"), { id: "zip-download-toast" });
       }
@@ -1342,21 +1345,17 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
 
             {/* Actions */}
             <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50">
-              {duplicateWarningData?.downloadUrl && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (duplicateWarningData.downloadUrl) {
-                      window.open(duplicateWarningData.downloadUrl, "_blank");
-                    }
-                    setIsDuplicateWarningOpen(false);
-                  }}
-                  className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white transition-colors cursor-pointer flex items-center gap-1.5 shadow-xs"
-                >
-                  <DownloadSimple size={14} weight="bold" />
-                  <span>{tWorkspace("duplicateCompileDownloadExistingBtn")}</span>
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsDuplicateWarningOpen(false);
+                  onNavigateToHistory?.();
+                }}
+                className="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white transition-colors cursor-pointer flex items-center gap-1.5 shadow-xs"
+              >
+                <FileCode size={14} weight="bold" />
+                <span>{tWorkspace("goToXmlHistory")}</span>
+              </button>
               <button
                 type="button"
                 onClick={() => setIsDuplicateWarningOpen(false)}

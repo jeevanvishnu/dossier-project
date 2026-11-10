@@ -724,7 +724,9 @@
     "duplicateCompileWarningSubtitle": "XML Package Already Up to Date",
     "duplicateCompileWarningBody": "An XML dossier package was already generated on {date}. No new documents or dossier modifications have been made since the last compilation.",
     "duplicateCompileDownloadExistingBtn": "Download Existing Package",
-    "duplicateCompileDismissBtn": "Understood"
+    "duplicateCompileDismissBtn": "Understood",
+    "goToXmlHistory": "Go to Compilations & XML History",
+    "viewInHistory": "View in History"
   },
   "status": {
     "active": "Active",
@@ -1077,7 +1079,7 @@
     "loggedOut": "Logged out successfully.",
     "dossierUnlocked": "Dossier unlocked for editing.",
     "dossierLocked": "Dossier locked & verified.",
-    "zipCompiled": "eCTD ZIP downloaded successfully.",
+    "zipCompiled": "eCTD ZIP package generated successfully! You can download it from Compilations & XML History.",
     "tombstoneCreated": "Marked section as deleted.",
     "datesUpdated": "Document dates updated.",
     "dossierConfigDeleted": "Dossier configuration deleted.",

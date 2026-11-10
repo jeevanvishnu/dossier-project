@@ -19,10 +19,25 @@ export async function getPackageArchives(req: Request, res: Response): Promise<v
       orderBy: [desc(packageArchives.generatedAt)],
     });
 
+    // Refresh presigned download URLs for stored archives so downloads from history never expire
+    const refreshedArchives = await Promise.all(
+      archives.map(async (archive) => {
+        if (archive.storageKey) {
+          try {
+            const freshUrl = await getPresignedDownloadUrl(archive.storageKey, 86400);
+            return { ...archive, downloadUrl: freshUrl };
+          } catch {
+            return archive;
+          }
+        }
+        return archive;
+      })
+    );
+
     res.status(200).json({
       success: true,
-      count: archives.length,
-      data: archives,
+      count: refreshedArchives.length,
+      data: refreshedArchives,
     });
   } catch (error: any) {
     console.error("[Get Package Archives Error]", error);
@@ -61,14 +76,20 @@ export async function compileProjectPackage(req: Request, res: Response): Promis
       const cleanSeq = sanitizeSequence(String(targetSeqParam));
       const allConfigs = await db.query.dossierConfig.findMany({
         where: eq(dossierConfig.projectId, projectId),
-        orderBy: [desc(dossierConfig.id)],
+        orderBy: [desc(dossierConfig.isDossierSaved), desc(dossierConfig.id)],
       });
-      targetConfig = allConfigs.find((c) => sanitizeSequence(c.dossierSequence) === cleanSeq) || allConfigs[0] || null;
+      targetConfig =
+        allConfigs.find((c) => sanitizeSequence(c.dossierSequence) === cleanSeq && c.isDossierSaved) ||
+        allConfigs.find((c) => sanitizeSequence(c.dossierSequence) === cleanSeq) ||
+        allConfigs.find((c) => c.isDossierSaved) ||
+        allConfigs[0] ||
+        null;
     } else {
-      targetConfig = await db.query.dossierConfig.findFirst({
+      const allConfigs = await db.query.dossierConfig.findMany({
         where: eq(dossierConfig.projectId, projectId),
-        orderBy: [desc(dossierConfig.id)],
+        orderBy: [desc(dossierConfig.isDossierSaved), desc(dossierConfig.id)],
       });
+      targetConfig = allConfigs.find((c) => c.isDossierSaved) || allConfigs[0] || null;
     }
 
     const targetSequence = sanitizeSequence(targetConfig?.dossierSequence);

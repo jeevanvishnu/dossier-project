@@ -686,6 +686,11 @@ export const DossierDataView: React.FC<DossierDataViewProps> = ({
             };
           });
           setDossierList(updatedItems);
+          const activeItem = updatedItems[updatedItems.length - 1];
+          if (activeItem && typeof window !== "undefined") {
+            sessionStorage.setItem(`active_dossier_sequence_${currentProjectId}`, activeItem.sequence);
+            sessionStorage.setItem(`active_dossier_id_${currentProjectId}`, String(activeItem.id));
+          }
         }
 
         // Return to the Created Dossiers list view

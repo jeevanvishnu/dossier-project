@@ -104,7 +104,16 @@ function ProjectWorkspaceContent({ id }: { id: string }) {
         />
       )}
       {activeTab === "upload-docs" && (
-        <UploadDocumentsView projectId={id} isDossierComplete={isDossierComplete} />
+        <UploadDocumentsView
+          projectId={id}
+          isDossierComplete={isDossierComplete}
+          onNavigateToHistory={() => {
+            setActiveTab("xml-history");
+            if (typeof window !== "undefined") {
+              window.history.replaceState(null, "", `/projects/${id}?tab=xml-history`);
+            }
+          }}
+        />
       )}
       {activeTab === "dossier-history" && <DossierHistoryView projectId={id} />}
       {activeTab === "xml-history" && <XmlCreationHistoryView projectId={id} />}

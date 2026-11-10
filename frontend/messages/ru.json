@@ -724,7 +724,9 @@
     "duplicateCompileWarningSubtitle": "XML-пакет уже актуален",
     "duplicateCompileWarningBody": "Пакет XML досье уже был сформирован {date}. С момента последней сборки новые документы или изменения не вносились.",
     "duplicateCompileDownloadExistingBtn": "Скачать существующий пакет",
-    "duplicateCompileDismissBtn": "Понятно"
+    "duplicateCompileDismissBtn": "Понятно",
+    "goToXmlHistory": "Перейти в историю компиляций и XML",
+    "viewInHistory": "Посмотреть в истории"
   },
   "status": {
     "active": "Активный",
@@ -1077,7 +1079,7 @@
     "loggedOut": "Вы успешно вышли из системы.",
     "dossierUnlocked": "Структура досье разблокирована.",
     "dossierLocked": "Структура досье заблокирована.",
-    "zipCompiled": "Архив eCTD ZIP успешно скачан.",
+    "zipCompiled": "ZIP-пакет eCTD успешно сформирован! Вы можете скачать его в истории компиляций и XML.",
     "tombstoneCreated": "Раздел помечен как удаленный.",
     "datesUpdated": "Даты документа обновлены.",
     "dossierConfigDeleted": "Конфигурация досье удалена.",

@@ -1,13 +1,13 @@
 import { Request, Response } from "express";
 import { db } from "../db/db";
-import { projectDocuments, auditLogs, dossierConfig, packageArchives } from "../db/schema";
-import { uploadBufferToR2, deleteFromR2, deleteMultipleFromR2, getPresignedDownloadUrl, generateR2Key } from "../services/r2.service";
+import { projectDocuments, auditLogs, dossierConfig } from "../db/schema";
+import { uploadBufferToR2, deleteFromR2, getPresignedDownloadUrl, generateR2Key } from "../services/r2.service";
 import { StorageService } from "../services/storage.service";
 import { CacheService, CacheKeys } from "../lib/cache";
 import { compileEctdPackage, sanitizeSequence } from "../services/compilation.service";
 import { calculateMD5 } from "../utils/crypto.util";
 import { resolveProjectId, getSingleParam } from "../utils/params.util";
-import { eq, and } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 
 export async function uploadDocument(req: Request, res: Response): Promise<void> {
   const projectId = await resolveProjectId(req.params.id);
@@ -30,7 +30,10 @@ export async function uploadDocument(req: Request, res: Response): Promise<void>
 
   const config = dossierConfigIdParam
     ? await db.query.dossierConfig.findFirst({ where: eq(dossierConfig.id, dossierConfigIdParam) })
-    : await db.query.dossierConfig.findFirst({ where: eq(dossierConfig.projectId, projectId) });
+    : (await db.query.dossierConfig.findFirst({
+        where: and(eq(dossierConfig.projectId, projectId), eq(dossierConfig.isDossierSaved, true)),
+        orderBy: [desc(dossierConfig.id)],
+      })) || (await db.query.dossierConfig.findFirst({ where: eq(dossierConfig.projectId, projectId) }));
   const currentSeq = sanitizeSequence(config?.dossierSequence);
   const resolvedDossierConfigId: string | null = config?.id ?? null;
 
@@ -434,26 +437,6 @@ export async function deleteDocumentByNode(req: Request, res: Response): Promise
       } catch (ikErr: any) {
         console.warn(`[Delete Document Warning] Failed to delete file ${activeDoc.storageKey} from R2`, ikErr);
       }
-    }
-
-    // Invalidate and purge any previously compiled archive ZIPs from R2,
-    // since deleting a document makes the compiled package obsolete.
-    const staleArchives = await db.query.packageArchives.findMany({
-      where: eq(packageArchives.projectId, projectId),
-      columns: { id: true, storageKey: true },
-    });
-
-    if (staleArchives.length > 0) {
-      const archiveKeys = staleArchives
-        .map((a) => a.storageKey)
-        .filter((k): k is string => Boolean(k));
-
-      if (archiveKeys.length > 0) {
-        deleteMultipleFromR2(archiveKeys).catch((err) => {
-          console.warn("[Delete Document] Failed to clean up stale package archives from R2:", err);
-        });
-      }
-      await db.delete(packageArchives).where(eq(packageArchives.projectId, projectId));
     }
 
     res.status(200).json({

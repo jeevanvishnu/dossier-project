@@ -30,18 +30,8 @@ export const XmlCreationHistoryView: React.FC<XmlCreationHistoryViewProps> = ({ 
   const tWorkspace = useTranslations("workspace");
   const tToasts = useTranslations("toasts");
   const tErrors = useTranslations("errors");
-  const [xmlPackages, setXmlPackages] = useState<XmlPackageRow[]>([
-    {
-      id: "pkg-1",
-      fullName: "eCTD_PRJ-KZ-2026-001_Seq0000.zip",
-      date: "2026-09-13 12:40:00",
-      size: "24.5 MB",
-      xmlChecksum: "9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d",
-      zipChecksum: "e4d909c290d0fb1ca068ffaddf22cbd0",
-      downloadUrl: "#",
-    },
-  ]);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [xmlPackages, setXmlPackages] = useState<XmlPackageRow[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const fetchPackages = async () => {
     if (!projectId) return;
