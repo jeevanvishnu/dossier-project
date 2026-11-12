@@ -12,6 +12,7 @@ export interface R2UploadMeta {
   dossierConfigId?: string;
   docCode?: string;
   docType?: string;
+  replaceDocId?: string;
 }
 
 export interface UploadProgressInfo {
@@ -233,6 +234,7 @@ export async function uploadFileToR2(
       nodeId: meta.nodeId,
       operation: meta.operation,
       dossierConfigId: meta.dossierConfigId,
+      replaceDocId: meta.replaceDocId,
     });
 
     if (!initiateRes.data?.success) {
@@ -326,6 +328,7 @@ export async function uploadFileToR2(
       docCode: meta.docCode,
       docType: meta.docType,
       originalName: file.name,
+      replaceDocId: meta.replaceDocId,
     });
 
     if (!completeRes.data?.success) {

@@ -37,23 +37,33 @@ export async function uploadDocument(req: Request, res: Response): Promise<void>
   const currentSeq = sanitizeSequence(config?.dossierSequence);
   const resolvedDossierConfigId: string | null = config?.id ?? null;
 
-  // Check for pre-existing active document at this nodeId, scoped to the current dossier.
-  // When a dossierConfigId is known, only documents belonging to THAT dossier are considered.
-  // This prevents a document uploaded in Dossier 0001 from blocking uploads in Dossier 0000.
-  const existingActive = await db.query.projectDocuments.findFirst({
-    where: resolvedDossierConfigId
-      ? and(
+  const rawDocId = req.query.replaceDocId || req.body?.replaceDocId || req.query.docId || req.body?.docId;
+  const targetDocId = rawDocId ? String(rawDocId) : undefined;
+
+  // Check for pre-existing active document at this nodeId (used for replace/delete).
+  // Multiple active documents are allowed per nodeId for 'new' uploads.
+  const existingActive = targetDocId
+    ? await db.query.projectDocuments.findFirst({
+        where: and(
+          eq(projectDocuments.id, targetDocId),
           eq(projectDocuments.projectId, projectId),
-          eq(projectDocuments.nodeId, nodeId),
-          eq(projectDocuments.status, "active"),
-          eq(projectDocuments.dossierConfigId, resolvedDossierConfigId)
-        )
-      : and(
-          eq(projectDocuments.projectId, projectId),
-          eq(projectDocuments.nodeId, nodeId),
           eq(projectDocuments.status, "active")
         ),
-  });
+      })
+    : await db.query.projectDocuments.findFirst({
+        where: resolvedDossierConfigId
+          ? and(
+              eq(projectDocuments.projectId, projectId),
+              eq(projectDocuments.nodeId, nodeId),
+              eq(projectDocuments.status, "active"),
+              eq(projectDocuments.dossierConfigId, resolvedDossierConfigId)
+            )
+          : and(
+              eq(projectDocuments.projectId, projectId),
+              eq(projectDocuments.nodeId, nodeId),
+              eq(projectDocuments.status, "active")
+            ),
+      });
 
   // ─── 1. OPERATION = 'delete' ───────────────────────────────────────────────
   if (operation === "delete") {
@@ -136,14 +146,6 @@ export async function uploadDocument(req: Request, res: Response): Promise<void>
     return;
   }
 
-  if (operation === "new" && existingActive) {
-    res.status(400).json({
-      success: false,
-      message: `An active document already exists at node '${nodeId}'. Use 'replace' operation to supersede it.`,
-    });
-    return;
-  }
-
   // --- Upload Security Validations ---
   // MIME Type / Extension Validation
   const allowedMimes = [
@@ -214,7 +216,7 @@ export async function uploadDocument(req: Request, res: Response): Promise<void>
     const docType = rawDocType ? rawDocType.toString() : undefined;
 
     const newDocRecord = await db.transaction(async (tx) => {
-      if (existingActive) {
+      if (operation === "replace" && existingActive) {
         await tx
           .update(projectDocuments)
           .set({ status: "superseded" })

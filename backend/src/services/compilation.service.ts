@@ -5,7 +5,7 @@ import { downloadBufferFromR2 } from "./r2.service";
 import axios from "axios";
 import { calculateMD5 } from "../utils/crypto.util";
 import { ProjectDocument, Project, DossierConfig } from "../db/schema";
-import { generateEaeuManifestXml, getRussianDocName, mapNodeIdToEaeuCode } from "./eaeu-manifest.service";
+import { generateEaeuManifestXml, resolveUniqueDocumentPaths } from "./eaeu-manifest.service";
 
 /**
  * Concurrency helper to download files without pulling in ESM-only limiters
@@ -189,14 +189,18 @@ export async function compileEctdPackage(
   // Append single project-named XML manifest into the root of the archive (e.g. sorbit_0000.xml)
   archive.append(Buffer.from(xmlContent, "utf-8"), { name: projectXmlFileName });
 
+  // Resolve deduplicated ZIP paths consistent with the XML manifest
+  const resolvedPaths = resolveUniqueDocumentPaths(updatedDocuments, country, {
+    sanitizeFileNameFn: sanitizeFileName,
+    getEctdFolderPathFn: (nodeId, countryStr, docCode) => getEctdFolderPath(nodeId, countryStr, docCode),
+  });
+
   // Append physical documents into their respective eCTD folders
-  for (const { doc, buffer } of downloadedDocs) {
-    const eaeuDocCode = mapNodeIdToEaeuCode(doc.nodeId, doc.docCode || undefined);
-    const effectiveDocName = getRussianDocName(doc.originalName, eaeuDocCode, doc.nodeId);
-    const folderPath = getEctdFolderPath(doc.nodeId, country, doc.docCode || undefined);
-    const sanitizedName = sanitizeFileName(effectiveDocName);
-    const fullZipEntryName = `${folderPath.replace(/[\/\\]+$/, "")}\\${sanitizedName}`.replace(/\\\\+/g, "\\");
-    archive.append(buffer, { name: fullZipEntryName });
+  for (let i = 0; i < downloadedDocs.length; i++) {
+    const { doc, buffer } = downloadedDocs[i];
+    const resolved = resolvedPaths.get(doc.id || String(i));
+    if (!resolved) continue;
+    archive.append(buffer, { name: resolved.relativeZipPath });
   }
 
   await archive.finalize();

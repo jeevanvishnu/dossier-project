@@ -589,7 +589,7 @@
     "m5Label": "5. Клинические отчёты",
     "btnLockStructure": "Заблокировать структуру досье",
     "btnUnlockStructure": "Разблокировать структуру",
-    "btnDownloadZip": "Скачать ZIP-пакет",
+    "btnDownloadZip": "Сгенерировать ZIP-пакет",
     "pleaseAddFile": "Пожалуйста, добавьте файл",
     "btnLoadRussianDossier": "Загрузить досье клиента (11 док.)",
     "tableColDocumentName": "НАИМЕНОВАНИЕ ДОКУМЕНТА / ПУТЬ МОДУЛЯ",

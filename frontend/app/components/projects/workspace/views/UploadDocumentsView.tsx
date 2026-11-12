@@ -9,7 +9,7 @@ import {
   Trash,
   List,
   LockKey,
-  Package,
+  FileZip,
   CaretDown,
   CaretRight,
   MagnifyingGlass,
@@ -403,29 +403,37 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const file = e.dataTransfer.files[0];
-      uploadFileToBackend(file);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const files = Array.from(e.dataTransfer.files);
+      uploadFilesToBackend(files);
     }
   };
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      uploadFileToBackend(file);
+    if (e.target.files && e.target.files.length > 0) {
+      const files = Array.from(e.target.files);
+      e.target.value = "";
+      uploadFilesToBackend(files);
+    }
+  };
+
+  const uploadFilesToBackend = async (files: File[]) => {
+    for (let i = 0; i < files.length; i++) {
+      const labelPrefix = files.length > 1 ? `(${i + 1}/${files.length}) ` : "";
+      await uploadFileToBackend(files[i], labelPrefix);
     }
   };
 
   const [selectedDocCode, setSelectedDocCode] = useState<string>("");
 
-  const uploadFileToBackend = async (file?: File) => {
+  const uploadFileToBackend = async (file?: File, labelPrefix = "") => {
     if ((selectedOperation === "new" || selectedOperation === "replace") && !file) {
       toast.error(tErrors("selectFileToAttach"));
       return;
     }
 
     if (file) {
-      setUploadingFileName(file.name);
+      setUploadingFileName(`${labelPrefix}${file.name}`);
       setUploadingFileSize(formatBytes(file.size));
       setUploadProgress(0);
       setUploadStatus("uploading");
@@ -506,7 +514,10 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
 
           setModuleFiles((prev) => ({
             ...prev,
-            [selectedModuleId]: [newFileItem],
+            [selectedModuleId]:
+              selectedOperation === "replace"
+                ? [newFileItem]
+                : [...(prev[selectedModuleId] || []), newFileItem],
           }));
 
           expandAncestors(selectedModuleId);
@@ -702,12 +713,12 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
         </div>
 
         {/* Top Right Action Icons */}
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-2">
           {/* Icon 1: Lock / Unlock Toggle Button */}
           <button
             type="button"
             onClick={handleToggleLock}
-            className={`p-1.5 rounded transition-all cursor-pointer border ${isDossierLocked
+            className={`p-2 rounded-lg transition-all cursor-pointer border ${isDossierLocked
               ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20"
               : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 hover:bg-amber-500/20"
               }`}
@@ -717,15 +728,15 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
                 : tWorkspace("btnLockStructure")
             }
           >
-            {isDossierLocked ? <LockKey size={16} weight="bold" /> : <LockKeyOpen size={16} weight="bold" />}
+            {isDossierLocked ? <LockKey size={22} weight="bold" /> : <LockKeyOpen size={22} weight="bold" />}
           </button>
 
-          {/* Icon 3: Download ZIP Package */}
+          {/* Icon 3: Generate ZIP Package */}
           <button
             type="button"
             onClick={handleDownloadZip}
             disabled={!isDossierLocked || isDownloadingZip}
-            className="p-1.5 rounded bg-surface-raised hover:bg-border text-primary hover:text-accent transition-colors border border-border cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            className="p-2 rounded-lg bg-surface-raised hover:bg-border text-primary hover:text-accent transition-colors border border-border cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
             title={
               !isDossierLocked
                 ? tWorkspace("uploadDropzoneLocked")
@@ -733,9 +744,9 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
             }
           >
             {isDownloadingZip ? (
-              <CircleNotch size={16} className="animate-spin text-accent" weight="bold" />
+              <CircleNotch size={22} className="animate-spin text-accent" weight="bold" />
             ) : (
-              <Package size={16} weight="bold" />
+              <FileZip size={22} weight="bold" />
             )}
           </button>
         </div>
@@ -870,6 +881,7 @@ export const UploadDocumentsView: React.FC<UploadDocumentsViewProps> = ({
           >
             <input
               type="file"
+              multiple
               disabled={isUploading || isDossierLocked}
               onChange={handleFileInput}
               className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10 disabled:cursor-not-allowed"

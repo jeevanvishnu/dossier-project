@@ -33,7 +33,7 @@ const ALLOWED_MIMES = [
  * Validates file meta, enforces company quota, and generates multipart presigned PUT URLs.
  */
 export async function initiateUpload(req: Request, res: Response): Promise<void> {
-  const { fileName, fileSize, mimeType, projectId, nodeId, operation, dossierConfigId } = req.body || {};
+  const { fileName, fileSize, mimeType, projectId, nodeId, operation, dossierConfigId, replaceDocId } = req.body || {};
 
   console.log(`[Upload Controller] 📥 POST /api/upload/initiate received:`, {
     fileName,
@@ -86,22 +86,34 @@ export async function initiateUpload(req: Request, res: Response): Promise<void>
       return;
     }
 
-    // Check for existing active document to accurately calculate delta for quota
-    const existingActive = await db.query.projectDocuments.findFirst({
-      where: and(
-        eq(projectDocuments.projectId, resolvedProjectId),
-        eq(projectDocuments.nodeId, nodeId),
-        eq(projectDocuments.status, "active")
-      ),
-    });
-
-    if (operation === "new" && existingActive) {
-      console.warn(`[Upload Controller] Active document already exists at node '${nodeId}'`);
-      res.status(409).json({
-        success: false,
-        message: `An active document already exists at node '${nodeId}'. Use 'replace' operation to supersede it.`,
-      });
-      return;
+    // Check for existing active document only when replacing, to accurately calculate delta for quota.
+    // Multiple active documents are allowed per nodeId for 'new' uploads.
+    let existingActive = null;
+    if (operation === "replace") {
+      if (replaceDocId) {
+        existingActive = await db.query.projectDocuments.findFirst({
+          where: and(
+            eq(projectDocuments.id, String(replaceDocId)),
+            eq(projectDocuments.projectId, resolvedProjectId),
+            eq(projectDocuments.status, "active")
+          ),
+        });
+      } else {
+        existingActive = await db.query.projectDocuments.findFirst({
+          where: dossierConfigId
+            ? and(
+                eq(projectDocuments.projectId, resolvedProjectId),
+                eq(projectDocuments.nodeId, nodeId),
+                eq(projectDocuments.status, "active"),
+                eq(projectDocuments.dossierConfigId, String(dossierConfigId))
+              )
+            : and(
+                eq(projectDocuments.projectId, resolvedProjectId),
+                eq(projectDocuments.nodeId, nodeId),
+                eq(projectDocuments.status, "active")
+              ),
+        });
+      }
     }
 
     // BUG-4 FIX: Enforce authentication and storage quota. Never skip if user context is missing.
@@ -178,6 +190,7 @@ export async function completeUpload(req: Request, res: Response): Promise<void>
     docCode,
     docType,
     originalName,
+    replaceDocId,
   } = req.body || {};
 
   console.log(`[Upload Controller] 📥 POST /api/upload/complete received:`, {
@@ -244,29 +257,39 @@ export async function completeUpload(req: Request, res: Response): Promise<void>
     let oldStorageKeyToDelete: string | null = null;
 
     const newDoc = await db.transaction(async (tx) => {
-      const existingActive = await tx.query.projectDocuments.findFirst({
-        where: resolvedDossierConfigId
-          ? and(
-              eq(projectDocuments.projectId, resolvedProjectId),
-              eq(projectDocuments.nodeId, nodeId),
-              eq(projectDocuments.status, "active"),
-              eq(projectDocuments.dossierConfigId, resolvedDossierConfigId)
-            )
-          : and(
-              eq(projectDocuments.projectId, resolvedProjectId),
-              eq(projectDocuments.nodeId, nodeId),
-              eq(projectDocuments.status, "active")
-            ),
-      });
+      if (operation === "replace") {
+        const targetToReplace = replaceDocId
+          ? await tx.query.projectDocuments.findFirst({
+              where: and(
+                eq(projectDocuments.id, String(replaceDocId)),
+                eq(projectDocuments.projectId, resolvedProjectId),
+                eq(projectDocuments.status, "active")
+              ),
+            })
+          : await tx.query.projectDocuments.findFirst({
+              where: resolvedDossierConfigId
+                ? and(
+                    eq(projectDocuments.projectId, resolvedProjectId),
+                    eq(projectDocuments.nodeId, nodeId),
+                    eq(projectDocuments.status, "active"),
+                    eq(projectDocuments.dossierConfigId, resolvedDossierConfigId)
+                  )
+                : and(
+                    eq(projectDocuments.projectId, resolvedProjectId),
+                    eq(projectDocuments.nodeId, nodeId),
+                    eq(projectDocuments.status, "active")
+                  ),
+            });
 
-      if (existingActive && operation === "replace") {
-        await tx
-          .update(projectDocuments)
-          .set({ status: "superseded" })
-          .where(eq(projectDocuments.id, existingActive.id));
+        if (targetToReplace) {
+          await tx
+            .update(projectDocuments)
+            .set({ status: "superseded" })
+            .where(eq(projectDocuments.id, targetToReplace.id));
 
-        if (existingActive.storageKey && existingActive.storageKey !== key) {
-          oldStorageKeyToDelete = existingActive.storageKey;
+          if (targetToReplace.storageKey && targetToReplace.storageKey !== key) {
+            oldStorageKeyToDelete = targetToReplace.storageKey;
+          }
         }
       }
 

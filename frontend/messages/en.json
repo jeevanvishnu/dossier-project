@@ -589,7 +589,7 @@
     "m5Label": "5. Clinical study reports",
     "btnLockStructure": "Lock Dossier Structure",
     "btnUnlockStructure": "Unlock Structure",
-    "btnDownloadZip": "Download ZIP Package",
+    "btnDownloadZip": "Generate ZIP Package",
     "pleaseAddFile": "Please add file",
     "btnLoadRussianDossier": "Load Client Dossier (11 Docs)",
     "tableColDocumentName": "DOCUMENT NAME / MODULE PATH",

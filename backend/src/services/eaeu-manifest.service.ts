@@ -113,6 +113,65 @@ export interface EaeuManifestOptions {
   getEctdFolderPathFn: (nodeId: string, countryStr?: string | null, docCode?: string) => string;
 }
 
+export interface ResolvedDocumentPath {
+  eaeuDocCode: string;
+  effectiveDocName: string;
+  relativeZipPath: string;
+}
+
+/**
+ * Resolves unique ZIP entry paths and display names for all documents in a compilation run.
+ * Prevents filename collisions when multiple active documents exist under the same nodeId.
+ */
+export function resolveUniqueDocumentPaths(
+  documents: ProjectDocument[],
+  countryCode: string,
+  helpers: Pick<EaeuManifestOptions, "sanitizeFileNameFn" | "getEctdFolderPathFn">
+): Map<string, ResolvedDocumentPath> {
+  const seenPaths = new Set<string>();
+  const resolved = new Map<string, ResolvedDocumentPath>();
+
+  for (let i = 0; i < documents.length; i++) {
+    const doc = documents[i];
+    const docKey = doc.id || String(i);
+    const eaeuDocCode = mapNodeIdToEaeuCode(doc.nodeId, doc.docCode || undefined);
+    const baseEffectiveName = getRussianDocName(doc.originalName, eaeuDocCode, doc.nodeId);
+    const baseSanitizedName = helpers.sanitizeFileNameFn(baseEffectiveName);
+    const rawFolderPath = helpers.getEctdFolderPathFn(doc.nodeId, countryCode, doc.docCode || eaeuDocCode);
+    const cleanFolderPath = rawFolderPath.replace(/[\/\\]+$/, "");
+
+    let candidateDocName = baseEffectiveName;
+    let candidateSanitized = baseSanitizedName;
+    let candidateZipPath = `${cleanFolderPath}\\${candidateSanitized}`.replace(/\\\\+/g, "\\");
+
+    if (seenPaths.has(candidateZipPath.toLowerCase())) {
+      const extMatch = baseSanitizedName.match(/\.[a-zA-Z0-9]+$/);
+      const ext = extMatch ? extMatch[0] : "";
+      const stem = ext ? baseSanitizedName.slice(0, -ext.length) : baseSanitizedName;
+      const docNameExtMatch = baseEffectiveName.match(/\.[a-zA-Z0-9]+$/);
+      const docNameExt = docNameExtMatch ? docNameExtMatch[0] : "";
+      const docNameStem = docNameExt ? baseEffectiveName.slice(0, -docNameExt.length) : baseEffectiveName;
+
+      let counter = 2;
+      while (seenPaths.has(candidateZipPath.toLowerCase())) {
+        candidateSanitized = helpers.sanitizeFileNameFn(`${stem}_${counter}${ext}`);
+        candidateDocName = `${docNameStem}_${counter}${docNameExt}`;
+        candidateZipPath = `${cleanFolderPath}\\${candidateSanitized}`.replace(/\\\\+/g, "\\");
+        counter++;
+      }
+    }
+
+    seenPaths.add(candidateZipPath.toLowerCase());
+    resolved.set(docKey, {
+      eaeuDocCode,
+      effectiveDocName: candidateDocName,
+      relativeZipPath: candidateZipPath,
+    });
+  }
+
+  return resolved;
+}
+
 /**
  * Generates an EAEU R.022 DrugRegistrationDocDossierContentDetails XML document matching
  * urn:EEC:R:DrugRegistrationDocDossierContentDetails:v1.1.0 schema using xmlbuilder2.
@@ -148,15 +207,14 @@ export function generateEaeuManifestXml(
   root.ele("csdo:UnifiedCountryCode", { codeListId: "P.CLS.019" }).txt(countryCode).up();
   root.ele("hcsdo:RegistrationKindCode").txt("01").up();
 
+  const resolvedPaths = resolveUniqueDocumentPaths(documents, countryCode, helpers);
+
   // Document Iteration
-  for (const doc of documents) {
+  for (let i = 0; i < documents.length; i++) {
+    const doc = documents[i];
     const docId = crypto.randomUUID();
-    const eaeuDocCode = mapNodeIdToEaeuCode(doc.nodeId, doc.docCode || undefined);
-    const effectiveDocName = getRussianDocName(doc.originalName, eaeuDocCode, doc.nodeId);
-    const sanitizedName = helpers.sanitizeFileNameFn(effectiveDocName);
-    const rawFolderPath = helpers.getEctdFolderPathFn(doc.nodeId, countryCode, doc.docCode || eaeuDocCode);
-    const cleanFolderPath = rawFolderPath.replace(/[\/\\]+$/, "");
-    const relativeZipPath = `${cleanFolderPath}\\${sanitizedName}`.replace(/\\\\+/g, "\\");
+    const resolved = resolvedPaths.get(doc.id || String(i))!;
+    const { eaeuDocCode, effectiveDocName, relativeZipPath } = resolved;
     const creationDate = doc.uploadedAt
       ? new Date(doc.uploadedAt).toISOString().split("T")[0]
       : nowIso.split("T")[0];
